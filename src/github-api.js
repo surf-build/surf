@@ -1,8 +1,10 @@
 import './babel-maybefill';
-import rx from 'rx';
+
+import _ from 'lodash';
 import request from 'request-promise';
 import parseLinkHeader from 'parse-link-header';
-import pkg from '../package.json'
+import pkg from '../package.json';
+import {asyncMap} from './promise-array';
 
 const d = require('debug')('serf:github-api');
 
@@ -26,7 +28,7 @@ export async function githubPaginate(uri, token=null) {
   let ret = [];
   
   do {
-    let resp = github(next);
+    let resp = github(next, token);
     let result = await resp;
     ret = ret.concat(result);
     
@@ -42,4 +44,18 @@ export async function githubPaginate(uri, token=null) {
 
 export function fetchAllRefs(nwo) {
   return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs`);
+}
+
+export async function fetchAllRefsWithInfo(nwo) {
+  let refs = await fetchAllRefs(nwo);
+  
+  let commitInfo = await asyncMap(
+    _.map(refs, (ref) => ref.object.url), 
+    (x) => github(x));
+    
+  _.each(refs, (ref) => {
+    ref.object.commit = commitInfo[ref.object.url];
+  });
+    
+  return refs;
 }
