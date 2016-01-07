@@ -7,12 +7,25 @@ import _ from 'lodash';
 const d = require('debug')('serf:ref-server');
 const app = express();
 
-const argv = require('yargs').argv;
+const yargs = require('yargs')
+  .usage('serf-server owner/repo owner2/repo owner/repo3...')
+  .help('h')
+  .alias('p', 'port')
+  .describe('p', 'The port to start the server on')
+  .alias('h', 'help')
+  .epilog(`
+Some useful environment variables:
+
+SERF_PORT - the port to serve on if not specified via -p, defaults to 3000.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
+
+const argv = yargs.argv;
 
 function main() {
   const validNwos = argv._;
   if (validNwos.length < 1) {
-    console.error("Supply a list of valid repositories in owner/repo format (i.e. 'rails/rails')");
+    console.error("ERROR: Supply a list of valid repositories in owner/repo format (i.e. 'rails/rails')\n");
+    yargs.showHelp();
     process.exit(-1);
   }
   
