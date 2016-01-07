@@ -28,6 +28,7 @@
     "babel-polyfill": "^6.3.14",
     "debug": "^2.2.0",
     "express": "^4.13.3",
+    "iso8601": "^1.1.1",
     "lodash": "^3.10.1",
     "lru-cache": "^4.0.0",
     "node-git": "0.0.0",
