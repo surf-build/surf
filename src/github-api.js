@@ -5,14 +5,15 @@ import request from 'request-promise';
 import parseLinkHeader from 'parse-link-header';
 import pkg from '../package.json';
 import {asyncMap} from './promise-array';
+import createLRU from 'lru-cache';
 
 const d = require('debug')('serf:github-api');
 
-export function github(uri, token=null) {
+export async function gitHub(uri, token=null) {
   let tok = token || process.env.GITHUB_TOKEN;
   
   d(`Fetching GitHub URL: ${uri}`);
-  return request({
+  let ret = request({
     uri: uri,
     headers: {
       'User-Agent': `${pkg.name}/${pkg.version}`,
@@ -21,21 +22,35 @@ export function github(uri, token=null) {
     },
     json: true
   });
+  
+  let result = await ret;
+  return { result, headers: ret.response.headers };
 }
 
-export async function githubPaginate(uri, token=null) {
+const githubCache = createLRU({
+  max: 1000
+});
+
+export async function cachedGitHub(uri, token=null, maxAge=null) {
+  let ret = githubCache.get(uri);
+  if (ret) return ret;
+  
+  ret = await gitHub(uri, token);
+  githubCache.set(uri, ret, maxAge);
+  return ret;
+}
+
+export async function githubPaginate(uri, token=null, maxAge=null) {
   let next = uri;
   let ret = [];
   
   do {
-    let resp = github(next, token);
-    let result = await resp;
+    let {headers, result} = await cachedGitHub(next, token, maxAge);
     ret = ret.concat(result);
     
-    d(JSON.stringify(resp.response.headers));
-    if (!resp.response.headers['link']) break;
+    if (!headers['link']) break;
     
-    let links = parseLinkHeader(resp.response.headers['link']);
+    let links = parseLinkHeader(headers['link']);
     next = 'next' in links ? links.next.url : null;
   } while (next);
   
@@ -43,7 +58,7 @@ export async function githubPaginate(uri, token=null) {
 }
 
 export function fetchAllRefs(nwo) {
-  return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs`);
+  return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs`, null, 60*1000);
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
@@ -51,7 +66,9 @@ export async function fetchAllRefsWithInfo(nwo) {
   
   let commitInfo = await asyncMap(
     _.map(refs, (ref) => ref.object.url), 
-    (x) => github(x));
+    async (x) => {
+      return (await cachedGitHub(x)).result;
+    });
     
   _.each(refs, (ref) => {
     ref.object.commit = commitInfo[ref.object.url];
