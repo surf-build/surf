@@ -21,15 +21,20 @@
   },
   "homepage": "https://github.com/paulcbetts/serf-build",
   "dependencies": {
+    "babel-polyfill": "^6.3.14",
+    "debug": "^2.2.0",
     "express": "^4.13.3",
     "lodash": "^3.10.1",
     "node-git": "0.0.0",
+    "parse-link-header": "^0.4.1",
     "request-promise": "^1.0.2",
     "rx": "^4.0.7"
   },
   "devDependencies": {
     "babel-cli": "^6.3.17",
+    "babel-eslint": "^4.1.6",
     "babel-preset-es2015": "^6.3.13",
-    "babel-preset-stage-0": "^6.3.13"
+    "babel-preset-stage-0": "^6.3.13",
+    "eslint": "^1.10.3"
   }
 }
