@@ -58,7 +58,7 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
 }
 
 export function fetchAllRefs(nwo) {
-  return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs`, null, 60*1000);
+  return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs?per_page=100`, null, 60*1000);
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
