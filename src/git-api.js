@@ -9,9 +9,9 @@ const [rimraf, mkdirp] = _.map(['rimraf', 'mkdirp'], (x) => pify(require(x)));
 
 const d = require('debug')('serf:git-api');
 
-export async function cloneRepo(url, targetDirname, token=null) {
+export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   let opts = new CloneOptions();
-  opts.bare = 1;
+  opts.bare = bare ? 1 : 0;
 
   await Clone.clone(url, targetDirname, opts);
 }
