@@ -1,11 +1,8 @@
 import crypto from 'crypto';
 import path from 'path';
 
-import _ from 'lodash';
-import pify from 'pify';
-import {Repository, FetchOptions, Clone, CloneOptions} from 'nodegit';
-
-const [rimraf, mkdirp] = _.map(['rimraf', 'mkdirp'], (x) => pify(require(x)));
+import { Repository, FetchOptions, Clone, CloneOptions } from 'nodegit';
+import { rimraf, mkdirp } from './promisify';
 
 const d = require('debug')('serf:git-api');
 

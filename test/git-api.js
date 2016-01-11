@@ -1,11 +1,9 @@
 import './support';
 
-import _ from 'lodash';
 import path from 'path';
-import pify from 'pify';
 import { cloneRepo, fetchRepo, cloneOrFetchRepo } from '../src/git-api';
+import { rimraf, mkdirp, fs } from '../src/promisify';
 
-const [rimraf, mkdirp, fs] = _.map(['rimraf', 'mkdirp', 'fs'], (x) => pify(require(x)));
 const d = require('debug')('serf-test:git-api');
 
 let count = 0;
