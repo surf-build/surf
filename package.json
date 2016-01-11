@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/paulcbetts/serf-build",
   "dependencies": {
+    "atom-build-plugins": "^1.0.0",
     "babel-polyfill": "^6.3.14",
     "debug": "^2.2.0",
     "express": "^4.13.3",
@@ -32,6 +33,7 @@
     "lodash": "^3.10.1",
     "lru-cache": "^4.0.0",
     "node-git": "0.0.0",
+    "nodegit": "^0.7.0",
     "parse-link-header": "^0.4.1",
     "request-promise": "^1.0.2",
     "rx": "^4.0.7",
