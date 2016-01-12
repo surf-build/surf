@@ -15,6 +15,17 @@ export function asyncMap(array, selector, maxConcurrency=4) {
     .toPromise();
 }
 
+export function asyncReduce(array, selector, seed) {
+  return Observable.from(array)
+    .map((k) =>
+      Observable.defer(() =>
+        Observable.fromPromise(selector(k))
+          .map((v) => ({ k, v }))))
+    .merge(4)
+    .reduce(selector, seed)
+    .toPromise();
+}
+
 export function delay(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
