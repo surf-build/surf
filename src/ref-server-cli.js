@@ -8,7 +8,8 @@ const d = require('debug')('serf:ref-server');
 const app = express();
 
 const yargs = require('yargs')
-  .usage('serf-server owner/repo owner2/repo owner/repo3...')
+  .usage(`Usage: serf-server owner/repo owner2/repo owner/repo3...
+Runs a web service to monitor GitHub commits and provide them to Serf clients`)
   .help('h')
   .alias('p', 'port')
   .describe('p', 'The port to start the server on')
@@ -28,18 +29,18 @@ function main() {
     yargs.showHelp();
     process.exit(-1);
   }
-  
+
   app.get('/info/:owner/:name', async (req, res) => {
     try {
       if (!req.params.owner || !req.params.name) {
         throw new Error("no");
       }
-      
+
       let needle = `${req.params.owner}/${req.params.name}`;
       if (!_.find(validNwos, (x) => x === needle)) {
         throw new Error("no");
       }
-      
+
       res.json(await fetchAllRefsWithInfo(needle));
     } catch (e) {
       d(e.message);
