@@ -15,15 +15,13 @@ export function asyncMap(array, selector, maxConcurrency=4) {
     .toPromise();
 }
 
-export function asyncReduce(array, selector, seed) {
-  return Observable.from(array)
-    .map((k) =>
-      Observable.defer(() =>
-        Observable.fromPromise(selector(k))
-          .map((v) => ({ k, v }))))
-    .merge(4)
-    .reduce(selector, seed)
-    .toPromise();
+export async function asyncReduce(array, selector, seed) {
+  let acc = seed;
+  for (let x of array) {
+    acc = await selector(acc, x);
+  }
+
+  return acc;
 }
 
 export function delay(ms) {
