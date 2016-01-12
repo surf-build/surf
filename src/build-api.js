@@ -1,10 +1,13 @@
 import _ from 'lodash';
-import AllBuildDiscoverers from './build-discover-drivers';
 import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawn } from './promise-array';
 
+const d = require('debug')('serf:build-api');
+const AllBuildDiscoverers = require('./build-discover-drivers');
+
 export function createBuildDiscovers(rootPath) {
-  return _.map(Object.keys(AllBuildDiscoverers), (Klass) => {
+  return _.map(Object.keys(AllBuildDiscoverers), (key) => {
+    const Klass = AllBuildDiscoverers[key];
     return new Klass(rootPath);
   });
 }
