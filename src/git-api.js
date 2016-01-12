@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import path from 'path';
 
 import { Repository, FetchOptions, Clone, CloneOptions, Checkout, CheckoutOptions } from 'nodegit';
-import { rimraf, mkdirp } from './promisify';
+import { rimraf, mkdirp, fs } from './promisify';
 
 const d = require('debug')('serf:git-api');
 
@@ -29,16 +29,40 @@ export async function checkoutSha(targetDirname, sha) {
   await Checkout.tree(repo, commit);
 }
 
+export async function updateRefspecToPullPRs(targetDirname) {
+  let config = path.join(targetDirname, 'config');
+  let contents = await fs.readFile(config, 'utf8');
+
+  contents += `
+[remote "origin"]
+fetch = +refs/heads/*:refs/remotes/origin/*
+fetch = +refs/pull/*/head:refs/remotes/origin/pr/*`;
+
+  await fs.writeFile(config, contents);
+}
+
 export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   let opts = new CloneOptions();
   opts.bare = bare ? 1 : 0;
 
+  d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
   await Clone.clone(url, targetDirname, opts);
+
+  if (bare) updateRefspecToPullPRs(targetDirname);
+
+  await fetchRepo(targetDirname, token, bare);
 }
 
-export async function fetchRepo(targetDirname, token=null) {
-  let repo = await Repository.openBare(targetDirname);
-  await repo.fetchAll(new FetchOptions());
+export async function fetchRepo(targetDirname, token=null, bare=true) {
+  let repo = bare ?
+    await Repository.openBare(targetDirname) :
+    await Repository.open(targetDirname);
+
+  d(`Fetching all refs for ${targetDirname}`);
+  let fo = new FetchOptions();
+  fo.downloadTags = 1;
+
+  await repo.fetchAll(fo);
 }
 
 export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
