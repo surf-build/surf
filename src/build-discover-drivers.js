@@ -1,31 +1,19 @@
 import path from 'path';
 import {fs} from './promisify';
-
-export class BuildDiscoverBase {
-  constructor(rootDir) {
-    this.rootDir = rootDir;
-  }
-
-  async getAffinityForRootDir() {
-    throw new Error("Implement me!");
-  }
-
-  async getBuildCommand() {
-    throw new Error("Implement me!");
-  }
-}
+import BuildDiscoverBase from './build-discover-base';
 
 const possibleScriptPathsWin32 = [
   'script/ci.ps1',
   'build.cmd'
 ];
 
+
 const possibleScriptPathsPosix = [
   'script/ci',
   'build.sh'
 ];
 
-export class BuildScriptDiscoverer {
+export class BuildScriptDiscoverer extends BuildDiscoverBase {
   constructor(rootDir) {
     super(rootDir);
   }
@@ -51,6 +39,6 @@ export class BuildScriptDiscoverer {
   }
 
   getBuildCommand() {
-    return this.getScriptPath();
+    return { cmd: this.getScriptPath(), args: [] };
   }
 }
