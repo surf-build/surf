@@ -1,10 +1,33 @@
 import crypto from 'crypto';
 import path from 'path';
 
-import { Repository, FetchOptions, Clone, CloneOptions } from 'nodegit';
+import { Repository, FetchOptions, Clone, CloneOptions, Checkout, CheckoutOptions } from 'nodegit';
 import { rimraf, mkdirp } from './promisify';
 
 const d = require('debug')('serf:git-api');
+
+export async function getHeadForRepo(targetDirname) {
+  let repo = await Repository.open(targetDirname);
+  let commit = await repo.getHeadCommit();
+
+  return commit.sha;
+}
+
+export async function checkoutSha(targetDirname, sha) {
+  let repo = await Repository.open(targetDirname);
+  let commit = await repo.getCommit(sha);
+
+  let opts = new CheckoutOptions();
+
+  // Equivalent of `git reset --hard HEAD && git clean -xdf`
+  opts.checkoutStrategy = opts.checkoutStrategy |
+    Checkout.STRATEGY.FORCE |
+    Checkout.STRATEGY.REMOVE_UNTRACKED |
+    Checkout.STRATEGY.USE_THEIRS |
+    Checkout.STRATEGY.UPDATE_SUBMODULES;
+
+  await Checkout.tree(repo, commit);
+}
 
 export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   let opts = new CloneOptions();
