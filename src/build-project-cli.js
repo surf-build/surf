@@ -55,7 +55,7 @@ async function main() {
   // Find a builder, run that shit
   // Copy artifacts to $ARTIFACTS_DIR
 
-  if (!argv.repo) {
+  if (!argv.repo || !argv.sha) {
     yargs.showHelp();
     process.exit(-1);
   }
@@ -63,12 +63,12 @@ async function main() {
   let repoDir = getRepoCloneDir();
 
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
-  await cloneOrFetchRepo(argv.repo, repoDir);
+  let bareRepoDir = await cloneOrFetchRepo(argv.repo, repoDir);
 
   let workDir = getWorkdirForRepoUrl(argv.repo, argv.sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  await cloneRepo(argv.repo, workDir, null, false);
+  await cloneRepo(bareRepoDir, workDir, null, false);
 
   d(`Checking out to given SHA1: ${argv.sha}`);
   await checkoutSha(workDir, argv.sha);
