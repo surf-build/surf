@@ -77,7 +77,7 @@ async function main() {
   let { cmd, args } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
-  await runBuildCommand(cmd, args, workDir, argv.sha);
+  console.log(await runBuildCommand(cmd, args, workDir, argv.sha));
 }
 
 main()
