@@ -2,15 +2,17 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo } from './git-api';
-import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
+import { getNwoFromRepoUrl } from './github-api';
+import { determineBuildCommand, runBuildCommand } from './build-api';
 
 const d = require('debug')('serf:serf-build');
 
 const yargs = require('yargs')
-  .alias('r', 'repo')
-  .describe('repo', 'The repository to clone');
+  .describe('repo', 'The repository to clone')
+  .alias('s', 'sha')
+  .describe('sha', 'The sha to build');
 
 const argv = yargs.argv;
 
@@ -37,12 +39,12 @@ function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
 
-function getWorkdirForRepoUrl(repoUrl, refName) {
+function getWorkdirForRepoUrl(repoUrl, sha) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
   let date = toIso8601(new Date()).replace(/:/g, '.');
 
-  let ret = path.join(tmp, `serf-workdir-${nwo}-${refName}-${date}`);
+  let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
   mkdirp.sync(ret);
   return ret;
 }
@@ -63,10 +65,19 @@ async function main() {
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
   await cloneOrFetchRepo(argv.repo, repoDir);
 
-  let workDir = getWorkdirForRepoUrl(argv.repo, 'master');
+  let workDir = getWorkdirForRepoUrl(argv.repo, argv.sha);
 
   d(`Cloning to work directory: ${workDir}`);
   await cloneRepo(argv.repo, workDir, null, false);
+
+  d(`Checking out to given SHA1: ${argv.sha}`);
+  await checkoutSha(workDir, argv.sha);
+
+  d(`Determining command to build`);
+  let { cmd, args } = await determineBuildCommand(workDir);
+
+  d(`Running ${cmd} ${args.join(' ')}...`);
+  await runBuildCommand(cmd, args, workDir, argv.sha);
 }
 
 main()
