@@ -20,13 +20,14 @@ export async function checkoutSha(targetDirname, sha) {
   let opts = new CheckoutOptions();
 
   // Equivalent of `git reset --hard HEAD && git clean -xdf`
+  d(`Found commit: ${targetDirname}:${commit.sha()}`);
   opts.checkoutStrategy = opts.checkoutStrategy |
     Checkout.STRATEGY.FORCE |
+    Checkout.STRATEGY.RECREATE_MISSING |
     Checkout.STRATEGY.REMOVE_UNTRACKED |
-    Checkout.STRATEGY.USE_THEIRS |
-    Checkout.STRATEGY.UPDATE_SUBMODULES;
+    Checkout.STRATEGY.USE_THEIRS;
 
-  await Checkout.tree(repo, commit);
+  await Checkout.tree(repo, commit, opts);
 }
 
 export async function updateRefspecToPullPRs(targetDirname) {
