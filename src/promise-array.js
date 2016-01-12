@@ -1,4 +1,5 @@
 import {Observable} from 'rx';
+
 const spawnOg = require('child_process').spawn;
 
 export function asyncMap(array, selector, maxConcurrency=4) {
@@ -13,6 +14,15 @@ export function asyncMap(array, selector, maxConcurrency=4) {
       return acc;
     }, {})
     .toPromise();
+}
+
+export async function asyncReduce(array, selector, seed) {
+  let acc = seed;
+  for (let x of array) {
+    acc = await selector(acc, x);
+  }
+
+  return acc;
 }
 
 export function delay(ms) {

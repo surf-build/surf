@@ -1,5 +1,6 @@
 import './babel-maybefill';
 
+import url from 'url';
 import _ from 'lodash';
 import request from 'request-promise';
 import parseLinkHeader from 'parse-link-header';
@@ -8,6 +9,11 @@ import {asyncMap} from './promise-array';
 import createLRU from 'lru-cache';
 
 const d = require('debug')('serf:github-api');
+
+export function getNwoFromRepoUrl(repoUrl) {
+  let u = url.parse(repoUrl);
+  return u.path.slice(1);
+}
 
 export async function gitHub(uri, token=null) {
   let tok = token || process.env.GITHUB_TOKEN;
