@@ -27,9 +27,12 @@ export async function determineBuildCommand(rootPath, sha) {
   if (!discoverer) {
     throw new Error("We can't figure out how to build this repo automatically.");
   }
-
+  
   let { cmd, args } = await discoverer.getBuildCommand(sha);
-  return findActualExecutable(cmd, args);
+  let ret = findActualExecutable(cmd, args);
+  
+  d(`Actual executables to run: ${ret.cmd} ${ret.args.join(' ')}`);
+  return ret;
 }
 
 export function runBuildCommand(cmd, args, rootDir, sha) {

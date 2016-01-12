@@ -44,7 +44,7 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
     return (scriptDir ? 5 : 0);
   }
 
-  getBuildCommand() {
-    return { cmd: this.getScriptPath(), args: [] };
+  async getBuildCommand() {
+    return { cmd: await this.getScriptPath(), args: [] };
   }
 }
