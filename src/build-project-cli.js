@@ -55,7 +55,9 @@ async function main() {
   // Find a builder, run that shit
   // Copy artifacts to $ARTIFACTS_DIR
 
-  if (!argv.repo || !argv.sha) {
+  let sha = argv.sha || process.env.SERF_SHA1;
+
+  if (!argv.repo || !sha) {
     yargs.showHelp();
     process.exit(-1);
   }
@@ -65,19 +67,19 @@ async function main() {
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
   let bareRepoDir = await cloneOrFetchRepo(argv.repo, repoDir);
 
-  let workDir = getWorkdirForRepoUrl(argv.repo, argv.sha);
+  let workDir = getWorkdirForRepoUrl(argv.repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
   await cloneRepo(bareRepoDir, workDir, null, false);
 
-  d(`Checking out to given SHA1: ${argv.sha}`);
-  await checkoutSha(workDir, argv.sha);
+  d(`Checking out to given SHA1: ${sha}`);
+  await checkoutSha(workDir, sha);
 
   d(`Determining command to build`);
   let { cmd, args } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
-  console.log(await runBuildCommand(cmd, args, workDir, argv.sha));
+  console.log(await runBuildCommand(cmd, args, workDir, sha));
 }
 
 main()

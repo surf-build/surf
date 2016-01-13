@@ -72,14 +72,19 @@ async function main() {
 
     let refNames = _.map(currentRefs, (x) => x.ref);
     d(`Building ${changedRefs.length} refs...`);
-    d(`Available refs: ${refNames.join(',')}`)
+    d(`Available refs: ${refNames.join(',')}`);
 
     await asyncMap(changedRefs, async (ref) => {
       try {
-        let args = cmdWithArgs.splice(1).concat([ref.object.sha1]);
+        let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
+        let envToAdd = { 'SERF_SHA1': ref.object.sha };
 
-        d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`)
-        let output = await spawn(cmdWithArgs[0], args);
+        let opts = {
+          env: _.assign({}, envToAdd, process.env)
+        };
+
+        d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
+        let output = await spawn(cmdWithArgs[0], args, opts);
 
         console.log(output);
       } catch (e) {
