@@ -47,7 +47,7 @@ async function main() {
 
   const fetchRefs = async () => {
     try {
-      refInfo = await request({
+      return await request({
         uri: serfUrl,
         json: true
       });
@@ -62,7 +62,7 @@ async function main() {
 
   // All refs on startup are seen refs
   let seenCommits = _.reduce(refInfo, (acc, x) => {
-    acc.set(x.object.sha);
+    acc.add(x.object.sha);
     return acc;
   }, new Set());
 
@@ -70,11 +70,16 @@ async function main() {
     let currentRefs = await fetchRefs();
     let changedRefs = determineChangedRefs(seenCommits, currentRefs);
 
+    let refNames = _.map(currentRefs, (x) => x.ref);
+    d(`Building ${changedRefs.length} refs...`);
+    d(`Available refs: ${refNames.join(',')}`)
+
     await asyncMap(changedRefs, async (ref) => {
       try {
-        let output = await spawn(
-          cmdWithArgs[0],
-          cmdWithArgs.splice(1).concat(ref.object.sha1));
+        let args = cmdWithArgs.splice(1).concat([ref.object.sha1]);
+
+        d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`)
+        let output = await spawn(cmdWithArgs[0], args);
 
         console.log(output);
       } catch (e) {
@@ -82,7 +87,8 @@ async function main() {
       }
     }, jobs);
 
-    await delay(30*1000);
+    d("Waiting to repoll");
+    await delay(5*1000);
   }
 }
 
