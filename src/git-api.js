@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 
-import { Repository, FetchOptions, Clone, CloneOptions, Checkout, CheckoutOptions } from 'nodegit';
+import { Repository, FetchOptions, Clone, CloneOptions, Checkout, CheckoutOptions, Cred } from 'nodegit';
 import { rimraf, mkdirp, fs } from './promisify';
 
 const d = require('debug')('serf:git-api');
@@ -42,9 +42,23 @@ fetch = +refs/pull/*/head:refs/remotes/origin/pr/*`;
   await fs.writeFile(config, contents);
 }
 
-export async function cloneRepo(url, targetDirname, token=null, bare=true) {
-  let opts = new CloneOptions();
-  opts.bare = bare ? 1 : 0;
+export async function cloneRepo(url, targetDirname, token=process.env.GITHUB_TOKEN, bare=true) {
+  let opts = {
+    bare: bare ? 1 : 0,
+    fetchOpts: {
+      callbacks: {
+        credentials: () => {
+          return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+        },
+        certificateCheck: () => {
+          // Yolo
+          return 1;
+        }
+      }
+    }
+  };
+  
+  if (!token) delete opts.fetchOpts;
 
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
   await Clone.clone(url, targetDirname, opts);
@@ -54,15 +68,26 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   await fetchRepo(targetDirname, token, bare);
 }
 
-export async function fetchRepo(targetDirname, token=null, bare=true) {
+export async function fetchRepo(targetDirname, token=process.env.GITHUB_TOKEN, bare=true) {
   let repo = bare ?
     await Repository.openBare(targetDirname) :
     await Repository.open(targetDirname);
 
   d(`Fetching all refs for ${targetDirname}`);
-  let fo = new FetchOptions();
-  fo.downloadTags = 1;
-
+  let fo = {
+    downloadTags: 1,
+    callbacks: {
+      credentials: () => {
+        return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+      },
+      certificateCheck: () => {
+        // Yolo
+        return 1;
+      }
+    }  
+  };
+  
+  if (!token) delete fo.callbacks;
   await repo.fetchAll(fo);
 }
 
