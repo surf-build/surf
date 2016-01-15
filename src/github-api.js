@@ -67,8 +67,8 @@ export async function cachedGitHub(uri, token=null, maxAge=null) {
 
 export function filterBoringRefs(refs) {
   return _.filter(refs, (ref) => {
-    if (ref.name.match(/__gh/)) return false;
-    if (ref.name.match(/\/merge$/i)) return false;
+    if (ref.ref.match(/__gh/)) return false;
+    if (ref.ref.match(/\/merge$/i)) return false;
 
     return true;
   });
