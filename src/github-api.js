@@ -10,6 +10,18 @@ import createLRU from 'lru-cache';
 
 const d = require('debug')('serf:github-api');
 
+function apiUrl(path, gist=false) {
+  let apiRoot = gist ?
+    (process.env.GIST_ENTERPRISE_URL || process.env.GITHUB_ENTERPRISE_URL) :
+    process.env.GITHUB_ENTERPRISE_URL;
+    
+  if (apiRoot) {
+    return `${apiRoot}/api/v3/${path}`;
+  } else {
+    return `https://api.github.com/${path}`;
+  }
+}
+
 export function getNwoFromRepoUrl(repoUrl) {
   let u = url.parse(repoUrl);
   return u.path.slice(1);
@@ -80,7 +92,7 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
 }
 
 export function fetchAllRefs(nwo) {
-  return githubPaginate(`https://api.github.com/repos/${nwo}/git/refs?per_page=100`, null, 60*1000);
+  return githubPaginate(apiUrl(`repos/${nwo}/git/refs?per_page=100`), null, 60*1000);
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
@@ -105,11 +117,11 @@ export function postCommitStatus(nwo, sha, state, description, target_url, conte
     delete body.target_url;
   }
 
-  return gitHub(`https://api.github.com/repos/${nwo}/statuses/${sha}`, token, body);
+  return gitHub(apiUrl(`repos/${nwo}/statuses/${sha}`), token, body);
 }
 
 export function createGist(description, files, publicGist=false, token=null) {
   let body = { files, description, "public": publicGist };
 
-  return gitHub(`https://api.github.com/gists`, token || process.env.GIST_TOKEN, body);
+  return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
