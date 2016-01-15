@@ -1,6 +1,6 @@
 {
   "name": "serf-build",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "The simplest GitHub build server",
   "bin": {
     "serf-server": "./lib/ref-server-cli.js",
