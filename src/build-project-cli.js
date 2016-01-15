@@ -4,7 +4,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { toIso8601 } from 'iso8601';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
-import { getNwoFromRepoUrl } from './github-api';
+import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
 
 const d = require('debug')('serf:serf-build');
@@ -12,7 +12,9 @@ const d = require('debug')('serf:serf-build');
 const yargs = require('yargs')
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
-  .describe('sha', 'The sha to build');
+  .describe('sha', 'The sha to build')
+  .alias('n', 'name')
+  .describe('name', 'The name to give this build on GitHub');
 
 const argv = yargs.argv;
 
@@ -50,11 +52,6 @@ function getWorkdirForRepoUrl(repoUrl, sha) {
 }
 
 async function main() {
-  // Checkout a bare repo to $SECRET_DIR if necessary
-  // Clone a new copy to a work dir
-  // Find a builder, run that shit
-  // Copy artifacts to $ARTIFACTS_DIR
-
   let sha = argv.sha || process.env.SERF_SHA1;
 
   if (!argv.repo || !sha) {
@@ -63,6 +60,14 @@ async function main() {
   }
 
   let repoDir = getRepoCloneDir();
+
+  if (argv.name) {
+    d(`Posting 'pending' to GitHub status`);
+
+    let nwo = getNwoFromRepoUrl(argv.repo);
+    await postCommitStatus(nwo, sha, 
+      'pending', 'Serf Build Server', null, argv.name);
+  }
 
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
   let bareRepoDir = await cloneOrFetchRepo(argv.repo, repoDir);
@@ -79,7 +84,32 @@ async function main() {
   let { cmd, args } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
-  console.log(await runBuildCommand(cmd, args, workDir, sha));
+  let buildPassed = false;
+  let buildOutput = null;
+  
+  try {
+    buildOutput = await runBuildCommand(cmd, args, workDir, sha);
+    console.log(buildOutput);
+    buildPassed = true;
+  } catch (e) {
+    buildOutput = e.message;
+    console.log(`Error during build: ${e.message}`);
+    d(e.stack);
+  }
+
+  if (argv.name) {
+    d(`Posting 'success' to GitHub status`);
+    
+    let gistInfo = await createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
+      "build-output.txt": { 
+        content: buildOutput
+      }
+    });
+
+    let nwo = getNwoFromRepoUrl(argv.repo);
+    await postCommitStatus(nwo, sha, 
+      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, argv.name);
+  }
 }
 
 main()
@@ -87,5 +117,15 @@ main()
   .catch((e) => {
     console.log(`Fatal Error: ${e.message}`);
     d(e.stack);
-    process.exit(-1);
+
+    if (argv.name) {
+      let nwo = getNwoFromRepoUrl(argv.repo);
+      let sha = argv.sha || process.env.SERF_SHA1;
+
+      postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
+        .catch(() => true)
+        .then(() => process.exit(-1));
+    } else {
+      process.exit(-1);
+    }
   });

@@ -15,11 +15,11 @@ export function getNwoFromRepoUrl(repoUrl) {
   return u.path.slice(1);
 }
 
-export async function gitHub(uri, token=null) {
+export async function gitHub(uri, token=null, body=null) {
   let tok = token || process.env.GITHUB_TOKEN;
 
   d(`Fetching GitHub URL: ${uri}`);
-  let ret = request({
+  let opts = {
     uri: uri,
     headers: {
       'User-Agent': `${pkg.name}/${pkg.version}`,
@@ -27,7 +27,14 @@ export async function gitHub(uri, token=null) {
       'Authorization': `token ${tok}`
     },
     json: true
-  });
+  };
+
+  if (body) {
+    opts.body = body;
+    opts.method = 'POST';
+  }
+
+  let ret = request(opts);
 
   let result = await ret;
   return { result, headers: ret.response.headers };
@@ -90,4 +97,19 @@ export async function fetchAllRefsWithInfo(nwo) {
   });
 
   return refs;
+}
+
+export function postCommitStatus(nwo, sha, state, description, target_url, context, token=null) {
+  let body = { state, target_url, description, context };
+  if (!target_url) {
+    delete body.target_url;
+  }
+
+  return gitHub(`https://api.github.com/repos/${nwo}/statuses/${sha}`, token, body);
+}
+
+export function createGist(description, files, publicGist=false, token=null) {
+  let body = { files, description, "public": publicGist };
+
+  return gitHub(`https://api.github.com/gists`, token || process.env.GIST_TOKEN, body);
 }
