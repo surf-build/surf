@@ -70,8 +70,8 @@ async function main() {
     d(`Posting 'pending' to GitHub status`);
 
     let nwo = getNwoFromRepoUrl(argv.repo);
-    await postCommitStatus(nwo, sha,
-      'pending', 'http://butt.industries', argv.name);
+    await postCommitStatus(nwo, sha, 
+      'pending', 'Serf Build Server', 'http://butt.industries', argv.name);
   }
 
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
@@ -102,8 +102,8 @@ async function main() {
     d(`Posting 'success' to GitHub status`);
 
     let nwo = getNwoFromRepoUrl(argv.repo);
-    await postCommitStatus(nwo, sha,
-      buildPassed ? 'success' : 'failure', 'http://butt.industries', argv.name);
+    await postCommitStatus(nwo, sha, 
+      buildPassed ? 'success' : 'failure', 'Serf Build Server', 'http://butt.industries', argv.name);
   }
 }
 
@@ -117,7 +117,7 @@ main()
       let nwo = getNwoFromRepoUrl(argv.repo);
       let sha = argv.sha || process.env.SERF_SHA1;
 
-      postCommitStatus(nwo, sha, 'error', 'http://butt.industries', argv.name)
+      postCommitStatus(nwo, sha, 'error', 'Serf Build Server', 'http://butt.industries', argv.name)
         .catch(() => true)
         .then(() => process.exit(-1));
     } else {
