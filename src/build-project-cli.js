@@ -4,7 +4,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { toIso8601 } from 'iso8601';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
-import { getNwoFromRepoUrl, postCommitStatus } from './github-api';
+import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
 
 const d = require('debug')('serf:serf-build');
@@ -52,11 +52,6 @@ function getWorkdirForRepoUrl(repoUrl, sha) {
 }
 
 async function main() {
-  // Checkout a bare repo to $SECRET_DIR if necessary
-  // Clone a new copy to a work dir
-  // Find a builder, run that shit
-  // Copy artifacts to $ARTIFACTS_DIR
-
   let sha = argv.sha || process.env.SERF_SHA1;
 
   if (!argv.repo || !sha) {
@@ -71,7 +66,7 @@ async function main() {
 
     let nwo = getNwoFromRepoUrl(argv.repo);
     await postCommitStatus(nwo, sha, 
-      'pending', 'Serf Build Server', 'http://butt.industries', argv.name);
+      'pending', 'Serf Build Server', null, argv.name);
   }
 
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
@@ -90,20 +85,30 @@ async function main() {
 
   d(`Running ${cmd} ${args.join(' ')}...`);
   let buildPassed = false;
+  let buildOutput = null;
+  
   try {
-    console.log(await runBuildCommand(cmd, args, workDir, sha));
+    buildOutput = await runBuildCommand(cmd, args, workDir, sha);
+    console.log(buildOutput);
     buildPassed = true;
   } catch (e) {
+    buildOutput = e.message;
     console.log(`Error during build: ${e.message}`);
     d(e.stack);
   }
 
   if (argv.name) {
     d(`Posting 'success' to GitHub status`);
+    
+    let gistInfo = await createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
+      "build-output.txt": { 
+        content: buildOutput
+      }
+    });
 
     let nwo = getNwoFromRepoUrl(argv.repo);
     await postCommitStatus(nwo, sha, 
-      buildPassed ? 'success' : 'failure', 'Serf Build Server', 'http://butt.industries', argv.name);
+      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.html_url, argv.name);
   }
 }
 
@@ -117,7 +122,7 @@ main()
       let nwo = getNwoFromRepoUrl(argv.repo);
       let sha = argv.sha || process.env.SERF_SHA1;
 
-      postCommitStatus(nwo, sha, 'error', 'Serf Build Server', 'http://butt.industries', argv.name)
+      postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
         .catch(() => true)
         .then(() => process.exit(-1));
     } else {

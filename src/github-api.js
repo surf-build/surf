@@ -102,5 +102,15 @@ export async function fetchAllRefsWithInfo(nwo) {
 
 export function postCommitStatus(nwo, sha, state, description, target_url, context, token=null) {
   let body = { state, target_url, description, context };
+  if (!target_url) {
+    delete body.target_url;
+  }
+
   return gitHub(`https://api.github.com/repos/${nwo}/statuses/${sha}`, token, body);
+}
+
+export function createGist(description, files, publicGist=false, token=null) {
+  let body = { files, description, "public": publicGist };
+
+  return gitHub(`https://api.github.com/gists`, token || process.env.GIST_TOKEN, body);
 }
