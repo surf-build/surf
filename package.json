@@ -4,7 +4,7 @@
   "description": "The simplest GitHub build server",
   "bin": {
     "serf-server": "./lib/ref-server-cli.js",
-    "serf-client": "./lib/run-on-every-ref.js",
+    "serf-client": "./lib/run-on-every-ref-cli.js",
     "serf-build": "./lib/build-project-cli.js"
   },
   "scripts": {
