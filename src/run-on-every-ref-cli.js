@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import './babel-maybefill';
 
 import _ from 'lodash';
