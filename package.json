@@ -27,7 +27,6 @@
   },
   "homepage": "https://github.com/paulcbetts/serf-build",
   "dependencies": {
-    "atom-build-plugins": "^1.0.0",
     "babel-polyfill": "^6.3.14",
     "debug": "^2.2.0",
     "express": "^4.13.3",
