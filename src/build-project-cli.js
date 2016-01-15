@@ -4,7 +4,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { toIso8601 } from 'iso8601';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
-import { getNwoFromRepoUrl } from './github-api';
+import { getNwoFromRepoUrl, postCommitStatus } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
 
 const d = require('debug')('serf:serf-build');
@@ -12,7 +12,9 @@ const d = require('debug')('serf:serf-build');
 const yargs = require('yargs')
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
-  .describe('sha', 'The sha to build');
+  .describe('sha', 'The sha to build')
+  .alias('n', 'name')
+  .describe('name', 'The name to give this build on GitHub');
 
 const argv = yargs.argv;
 
@@ -64,6 +66,14 @@ async function main() {
 
   let repoDir = getRepoCloneDir();
 
+  if (argv.name) {
+    d(`Posting 'pending' to GitHub status`);
+
+    let nwo = getNwoFromRepoUrl(argv.repo);
+    await postCommitStatus(nwo, sha,
+      'pending', 'http://butt.industries', argv.name);
+  }
+
   d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
   let bareRepoDir = await cloneOrFetchRepo(argv.repo, repoDir);
 
@@ -79,7 +89,22 @@ async function main() {
   let { cmd, args } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
-  console.log(await runBuildCommand(cmd, args, workDir, sha));
+  let buildPassed = false;
+  try {
+    console.log(await runBuildCommand(cmd, args, workDir, sha));
+    buildPassed = true;
+  } catch (e) {
+    console.log(`Error during build: ${e.message}`);
+    d(e.stack);
+  }
+
+  if (argv.name) {
+    d(`Posting 'success' to GitHub status`);
+
+    let nwo = getNwoFromRepoUrl(argv.repo);
+    await postCommitStatus(nwo, sha,
+      buildPassed ? 'success' : 'failure', 'http://butt.industries', argv.name);
+  }
 }
 
 main()
@@ -87,5 +112,15 @@ main()
   .catch((e) => {
     console.log(`Fatal Error: ${e.message}`);
     d(e.stack);
-    process.exit(-1);
+
+    if (argv.name) {
+      let nwo = getNwoFromRepoUrl(argv.repo);
+      let sha = argv.sha || process.env.SERF_SHA1;
+
+      postCommitStatus(nwo, sha, 'error', 'http://butt.industries', argv.name)
+        .catch(() => true)
+        .then(() => process.exit(-1));
+    } else {
+      process.exit(-1);
+    }
   });
