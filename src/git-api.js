@@ -42,12 +42,14 @@ fetch = +refs/pull/*/head:refs/remotes/origin/pr/*`;
   await fs.writeFile(config, contents);
 }
 
-export async function cloneRepo(url, targetDirname, token=process.env.GITHUB_TOKEN, bare=true) {
+export async function cloneRepo(url, targetDirname, token=null, bare=true) {
+  token = token || process.env.GITHUB_TOKEN;
   let opts = {
     bare: bare ? 1 : 0,
     fetchOpts: {
       callbacks: {
         credentials: () => {
+          d(`Returning ${token} for authentication token`);
           return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
         },
         certificateCheck: () => {
@@ -58,7 +60,10 @@ export async function cloneRepo(url, targetDirname, token=process.env.GITHUB_TOK
     }
   };
   
-  if (!token) delete opts.fetchOpts;
+  if (!token) {
+    d("GitHub token not set, only public repos will work!");
+    delete opts.fetchOpts;
+  }
 
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
   await Clone.clone(url, targetDirname, opts);
@@ -68,7 +73,8 @@ export async function cloneRepo(url, targetDirname, token=process.env.GITHUB_TOK
   await fetchRepo(targetDirname, token, bare);
 }
 
-export async function fetchRepo(targetDirname, token=process.env.GITHUB_TOKEN, bare=true) {
+export async function fetchRepo(targetDirname, token=null, bare=true) {
+  token = token || process.env.GITHUB_TOKEN;
   let repo = bare ?
     await Repository.openBare(targetDirname) :
     await Repository.open(targetDirname);
@@ -78,6 +84,7 @@ export async function fetchRepo(targetDirname, token=process.env.GITHUB_TOKEN, b
     downloadTags: 1,
     callbacks: {
       credentials: () => {
+        d(`Returning ${token} for authentication token`);
         return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
       },
       certificateCheck: () => {
@@ -87,7 +94,10 @@ export async function fetchRepo(targetDirname, token=process.env.GITHUB_TOKEN, b
     }  
   };
   
-  if (!token) delete fo.callbacks;
+  if (!token) {
+    d("GitHub token not set, only public repos will work!");
+    delete fo.callbacks;
+  }
   await repo.fetchAll(fo);
 }
 
