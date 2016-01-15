@@ -108,7 +108,7 @@ async function main() {
 
     let nwo = getNwoFromRepoUrl(argv.repo);
     await postCommitStatus(nwo, sha, 
-      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.html_url, argv.name);
+      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, argv.name);
   }
 }
 

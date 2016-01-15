@@ -30,7 +30,6 @@ export async function gitHub(uri, token=null, body=null) {
   };
 
   if (body) {
-    d(`Request body: ${JSON.stringify(body)}`);
     opts.body = body;
     opts.method = 'POST';
   }
