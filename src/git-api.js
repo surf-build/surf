@@ -19,7 +19,7 @@ export async function getHeadForRepo(targetDirname) {
 export async function getAllWorkdirs() {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
-  
+
   return _.reduce(ret, (acc, x) => {
     if (!x.match(/^serf-workdir/i)) return acc;
 
@@ -30,10 +30,11 @@ export async function getAllWorkdirs() {
 
 export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
-  let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
+  let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
   let date = toIso8601(new Date()).replace(/:/g, '.');
+  let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
+  let ret = path.join(tmp, `serf-${nwo}-${shortSha}-${date}`);
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
@@ -83,7 +84,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
       }
     }
   };
-  
+
   if (!token) {
     d("GitHub token not set, only public repos will work!");
     delete opts.fetchOpts;
@@ -115,9 +116,9 @@ export async function fetchRepo(targetDirname, token=null, bare=true) {
         // Yolo
         return 1;
       }
-    }  
+    }
   };
-  
+
   if (!token) {
     d("GitHub token not set, only public repos will work!");
     delete fo.callbacks;
