@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import path from 'path';
+import _ from 'lodash';
 
 import { Repository, Clone, Checkout, Cred } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
@@ -15,7 +16,19 @@ export async function getHeadForRepo(targetDirname) {
   return commit.sha;
 }
 
-export function getWorkdirForRepoUrl(repoUrl, sha) {
+export async function getAllWorkdirs() {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let ret = await fs.readdir(tmp);
+  
+  return _.reduce(ret, (acc, x) => {
+    if (!x.match(/^serf-workdir/i)) return acc;
+
+    acc.push(path.join(tmp, x));
+    return acc;
+  }, []);
+}
+
+export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
   let date = toIso8601(new Date()).replace(/:/g, '.');
