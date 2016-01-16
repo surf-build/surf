@@ -34,7 +34,7 @@ export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
 
   let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
-  mkdirp.sync(ret);
+  if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
 
