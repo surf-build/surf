@@ -11,11 +11,23 @@ import { determineBuildCommand, runBuildCommand } from './build-api';
 const d = require('debug')('serf:serf-build');
 
 const yargs = require('yargs')
+  .usage(`Usage: serf-build --repo http://github.com/some/repo -s SHA1
+Clones a repo from GitHub and builds the given SHA1`)
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
   .describe('sha', 'The sha to build')
   .alias('n', 'name')
-  .describe('name', 'The name to give this build on GitHub');
+  .describe('name', 'The name to give this build on GitHub')
+  .epilog(`
+Some useful environment variables:
+
+SERF_SHA1 - an alternate way to specify the --sha parameter, provided 
+            automatically by serf-client.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to post status to.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.
+GIST_TOKEN - the GitHub API token to use to create the build output Gist.
+GIST_ENTERPRISE_URL - the GitHub Enterprise URL to post Gists to.
+`);
 
 const argv = yargs.argv;
 

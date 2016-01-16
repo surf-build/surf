@@ -10,7 +10,7 @@ import {asyncMap, delay, spawn} from './promise-array';
 const d = require('debug')('serf:run-on-every-ref');
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-run-build -s http://some.server -r owner/repo -- command arg1 arg2 arg3...
+  .usage(`Usage: serf-client -s http://some.server -r owner/repo -- command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .help('h')
   .alias('s', 'server')
@@ -19,7 +19,12 @@ Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .describe('r', 'The repository to monitor, in name-with-owner format')
   .alias('j', 'jobs')
   .describe('j', 'The number of concurrent jobs to run. Defaults to 2')
-  .alias('h', 'help');
+  .alias('h', 'help')
+  .epilog(`
+Some useful environment variables:
+
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 
 const argv = yargs.argv;
 
