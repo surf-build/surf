@@ -6,6 +6,8 @@ const d = require('debug')('serf:build-discover-drivers');
 
 const possibleScriptPathsWin32 = [
   'script/ci.ps1',
+  'script/ci.cmd',
+  'build.ps1',
   'build.cmd'
 ];
 

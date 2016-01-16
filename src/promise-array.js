@@ -1,6 +1,10 @@
-import {Observable} from 'rx';
+import _ from 'lodash';
+import { Observable } from 'rx';
+import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
+
+const isWindows = process.platform === 'win32';
 
 export function asyncMap(array, selector, maxConcurrency=4) {
   return Observable.from(array)
@@ -31,22 +35,46 @@ export function delay(ms) {
   });
 }
 
-// Public: Maps a process's output into an {Observable}
-//
-// exe - The program to execute
-// params - Arguments passed to the process
-// opts - Options that will be passed to child_process.spawn
-//
-// Returns a {Promise} with a single value, that is the output of the
-// spawned process
+export function statSyncNoException(file) {
+  try {
+    return fs.statSync(file);
+  } catch (e) {
+    return null;
+  }
+}
+
+function runDownPath(exe) {
+  // NB: Windows won't search PATH looking for executables in spawn like
+  // Posix does
+
+  // Files with any directory path don't get this applied
+  if (exe.match(/\\\//)) {
+    return exe;
+  }
+
+  let target = path.join('.', exe);
+  if (statSyncNoException(target)) {
+    return target;
+  }
+
+  let haystack = paths.split(isWindows ? ';' : ':');
+  for (let p of haystack) {
+    let needle = path.join(p, exe);
+    if (statSyncNoException(needle)) return needle;
+  }
+
+  return target;
+}
+
 export function spawn(exe, params, opts=null) {
   let spawnObs = Observable.create((subj) => {
     let proc = null;
 
+    let fullPath = runDownPath(exe);
     if (!opts) {
-      proc = spawnOg(exe, params);
+      proc = spawnOg(fullPath, params);
     } else {
-      proc = spawnOg(exe, params, opts);
+      proc = spawnOg(fullPath, params, opts);
     }
 
     let stdout = '';
