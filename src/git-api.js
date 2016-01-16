@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 import path from 'path';
+import _ from 'lodash';
 
-import { Repository, FetchOptions, Clone, CloneOptions, Checkout, CheckoutOptions, Cred } from 'nodegit';
+import { Repository, Clone, Checkout, Cred } from 'nodegit';
+import { getNwoFromRepoUrl } from './github-api';
+import { toIso8601 } from 'iso8601';
 import { rimraf, mkdirp, fs } from './promisify';
 
 const d = require('debug')('serf:git-api');
@@ -13,16 +16,37 @@ export async function getHeadForRepo(targetDirname) {
   return commit.sha;
 }
 
+export async function getAllWorkdirs() {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let ret = await fs.readdir(tmp);
+  
+  return _.reduce(ret, (acc, x) => {
+    if (!x.match(/^serf-workdir/i)) return acc;
+
+    acc.push(path.join(tmp, x));
+    return acc;
+  }, []);
+}
+
+export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
+  let date = toIso8601(new Date()).replace(/:/g, '.');
+
+  let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
+  if (!dontCreate) mkdirp.sync(ret);
+  return ret;
+}
+
 export async function checkoutSha(targetDirname, sha) {
   let repo = await Repository.open(targetDirname);
   let commit = await repo.getCommit(sha);
 
-  let opts = new CheckoutOptions();
+  let opts = {};
 
   // Equivalent of `git reset --hard HEAD && git clean -xdf`
   d(`Found commit: ${targetDirname}:${commit.sha()}`);
-  opts.checkoutStrategy = opts.checkoutStrategy |
-    Checkout.STRATEGY.FORCE |
+  opts.checkoutStrategy = Checkout.STRATEGY.FORCE |
     Checkout.STRATEGY.RECREATE_MISSING |
     Checkout.STRATEGY.REMOVE_UNTRACKED |
     Checkout.STRATEGY.USE_THEIRS;

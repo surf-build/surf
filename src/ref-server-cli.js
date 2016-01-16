@@ -20,6 +20,7 @@ Runs a web service to monitor GitHub commits and provide them to Serf clients`)
 Some useful environment variables:
 
 SERF_PORT - the port to serve on if not specified via -p, defaults to 3000.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 
 const argv = yargs.argv;

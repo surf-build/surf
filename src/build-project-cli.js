@@ -4,19 +4,30 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { toIso8601 } from 'iso8601';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
 
 const d = require('debug')('serf:serf-build');
 
 const yargs = require('yargs')
+  .usage(`Usage: serf-build --repo http://github.com/some/repo -s SHA1
+Clones a repo from GitHub and builds the given SHA1`)
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
   .describe('sha', 'The sha to build')
   .alias('n', 'name')
-  .describe('name', 'The name to give this build on GitHub');
+  .describe('name', 'The name to give this build on GitHub')
+  .epilog(`
+Some useful environment variables:
+
+SERF_SHA1 - an alternate way to specify the --sha parameter, provided 
+            automatically by serf-client.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to post status to.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.
+GIST_TOKEN - the GitHub API token to use to create the build output Gist.
+GIST_ENTERPRISE_URL - the GitHub Enterprise URL to post Gists to.
+`);
 
 const argv = yargs.argv;
 
@@ -42,17 +53,6 @@ function getRootAppDir() {
 function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
-
-function getWorkdirForRepoUrl(repoUrl, sha) {
-  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
-  let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
-  let date = toIso8601(new Date()).replace(/:/g, '.');
-
-  let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
-  mkdirp.sync(ret);
-  return ret;
-}
-
 async function main() {
   let sha = argv.sha || process.env.SERF_SHA1;
 
