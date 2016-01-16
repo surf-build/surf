@@ -4,8 +4,7 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { toIso8601 } from 'iso8601';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
 
@@ -42,17 +41,6 @@ function getRootAppDir() {
 function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
-
-function getWorkdirForRepoUrl(repoUrl, sha) {
-  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
-  let nwo = getNwoFromRepoUrl(repoUrl).replace('/', '-');
-  let date = toIso8601(new Date()).replace(/:/g, '.');
-
-  let ret = path.join(tmp, `serf-workdir-${nwo}-${sha}-${date}`);
-  mkdirp.sync(ret);
-  return ret;
-}
-
 async function main() {
   let sha = argv.sha || process.env.SERF_SHA1;
 
