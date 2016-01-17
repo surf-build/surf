@@ -102,11 +102,16 @@ export function spawn(exe, params, opts=null) {
       subj.onNext(chunk);
     };
 
+    let noClose = false;
     proc.stdout.on('data', bufHandler);
     proc.stderr.on('data', bufHandler);
-    proc.on('error', (e) => subj.onError(e));
+    proc.on('error', (e) => {
+      noClose = true;
+      subj.onError(e);
+    });
 
     proc.on('close', (code) => {
+      noClose = true;
       if (code === 0) {
         subj.onCompleted();
       } else {
@@ -115,6 +120,7 @@ export function spawn(exe, params, opts=null) {
     });
 
     return Disposable.create(() => {
+      if (noClose) return;
       if (!opts.jobber) {
         proc.kill();
         return;
