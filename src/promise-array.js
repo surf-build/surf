@@ -4,8 +4,9 @@ import { Observable } from 'rx';
 import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
-
 const isWindows = process.platform === 'win32';
+
+const d = require('debug')('serf:promise-array');
 
 export function asyncMap(array, selector, maxConcurrency=4) {
   return Observable.from(array)
@@ -78,8 +79,10 @@ export function spawn(exe, params, opts=null) {
 
     let fullPath = runDownPath(exe);
     if (!opts) {
+      d(`spawning process: ${fullPath} ${params.join()}`);
       proc = spawnOg(fullPath, params);
     } else {
+      d(`spawning process: ${fullPath} ${params.join()}, ${JSON.stringify(opts)}`);
       proc = spawnOg(fullPath, params, opts);
     }
 
