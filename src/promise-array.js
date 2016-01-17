@@ -69,7 +69,7 @@ function runDownPath(exe) {
 }
 
 export function spawnDetached(exe, params, opts=null) {
-  const newParams = [require.resolve('./spawn-child')].concat(params);
+  const newParams = [require.resolve('./spawn-child'), exe].concat(params);
   return spawn(process.execPath, newParams, _.assign({detached: true}, opts || {}));
 }
 
