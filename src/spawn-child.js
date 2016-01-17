@@ -2,8 +2,15 @@ var cp = require('child_process');
 
 var cmd = process.argv[2];
 var argv = process.argv.splice(3);
+<<<<<<< HEAD
 
 var proc = cp.spawn(cmd, argv, { detached: false, stdio: ['pipe', 'inherit', 'inherit'], env: process.env, cwd: undefined });
+=======
+console.error("cmd: " + cmd);
+console.error("argv: " + argv.join());
+
+var proc = cp.spawn(cmd, argv, { stdio: 'inherit', env: process.env, cwd: undefined });
+>>>>>>> more debuggery
 
 proc.on('exit', function(code) {
   process.exit(code);
