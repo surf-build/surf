@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import path from 'path';
+import net from 'net';
 import { Observable, Disposable } from 'rx';
 import { fs } from './promisify';
 
@@ -69,8 +70,15 @@ function runDownPath(exe) {
 }
 
 export function spawnDetached(exe, params, opts=null) {
-  const newParams = [require.resolve('./spawn-child'), exe].concat(params);
-  return spawn(process.execPath, newParams, _.assign({detached: true}, opts || {}));
+  const newParams = [exe].concat(params);
+  if (!isWindows) newParams.unshift(require.resolve('./spawn-child'));
+
+  let target = isWindows ?
+    path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe') :
+    process.execPath;
+
+  let options = _.assign({ detached: true, jobber: true }, opts || {});
+  return spawn(target, newParams, options);
 }
 
 export function spawn(exe, params, opts=null) {
@@ -83,7 +91,7 @@ export function spawn(exe, params, opts=null) {
       proc = spawnOg(fullPath, params);
     } else {
       d(`spawning process: ${fullPath} ${params.join()}, ${JSON.stringify(opts)}`);
-      proc = spawnOg(fullPath, params, opts);
+      proc = spawnOg(fullPath, params, _.omit(opts, 'jobber'));
     }
 
     let stdout = '';
@@ -106,7 +114,22 @@ export function spawn(exe, params, opts=null) {
       }
     });
 
-    return Disposable.create(() => proc.kill());
+    return Disposable.create(() => {
+      if (!opts.jobber) {
+        proc.kill();
+        return;
+      }
+
+      if (isWindows) {
+        // NB: Connecting to Jobber's named pipe will kill it
+        net.connect(`\\\\.\\pipe\\jobber-${proc.pid}`);
+      } else {
+        // Send secret handshake to spawn-child
+        proc.stdin.write(new Buffer('__die__'));
+      }
+
+      setTimeout(() => proc.kill(), 5*1000);
+    });
   });
 
   return spawnObs.reduce((acc, x) => acc += x, '').publishLast().refCount();
