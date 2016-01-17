@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import path from 'path';
-import { Observable } from 'rx';
+import { Observable, Disposable } from 'rx';
 import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
@@ -105,7 +105,9 @@ export function spawn(exe, params, opts=null) {
         subj.onError(new Error(`Failed with exit code: ${code}\nOutput:\n${stdout}`));
       }
     });
+
+    return Disposable.create(() => proc.kill());
   });
 
-  return spawnObs.reduce((acc, x) => acc += x, '').toPromise();
+  return spawnObs.reduce((acc, x) => acc += x, '').publishLast().refCount();
 }
