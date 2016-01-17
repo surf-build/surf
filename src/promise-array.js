@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import path from 'path';
 import { Observable } from 'rx';
 import { fs } from './promisify';
 
@@ -57,7 +57,7 @@ function runDownPath(exe) {
     return target;
   }
 
-  let haystack = paths.split(isWindows ? ';' : ':');
+  let haystack = process.env.PATH.split(isWindows ? ';' : ':');
   for (let p of haystack) {
     let needle = path.join(p, exe);
     if (statSyncNoException(needle)) return needle;
