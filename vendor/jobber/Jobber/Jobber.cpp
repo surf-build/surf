@@ -9,6 +9,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_ LPWSTR    lpCmdLine,
                      _In_ int       nCmdShow)
 {
+	AttachConsole(ATTACH_PARENT_PROCESS);
+
 	// Create a named pipe that we can be signaled on for early termination
 	wchar_t buf[512];
 	wsprintf(buf, L"\\\\.\\pipe\\jobber-%d", GetCurrentProcessId());
