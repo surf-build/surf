@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import path from 'path';
 import { Observable } from 'rx';
 import { fs } from './promisify';
@@ -64,6 +65,11 @@ function runDownPath(exe) {
   }
 
   return target;
+}
+
+export function spawnDetached(exe, params, opts=null) {
+  const newParams = [require.resolve('./spawn-child')].concat(params);
+  return spawn(process.execPath, newParams, _.assign({detached: true}, opts || {}));
 }
 
 export function spawn(exe, params, opts=null) {
