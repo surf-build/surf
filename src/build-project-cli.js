@@ -93,7 +93,7 @@ async function main() {
   let buildOutput = null;
 
   try {
-    buildOutput = await runBuildCommand(cmd, args, workDir, sha);
+    buildOutput = await runBuildCommand(cmd, args, workDir, sha).toPromise();
     console.log(buildOutput);
     buildPassed = true;
   } catch (e) {
