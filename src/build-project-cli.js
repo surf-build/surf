@@ -21,13 +21,15 @@ Clones a repo from GitHub and builds the given SHA1`)
   .epilog(`
 Some useful environment variables:
 
-SERF_SHA1 - an alternate way to specify the --sha parameter, provided 
-            automatically by serf-client.
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to post status to.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 GIST_TOKEN - the GitHub API token to use to create the build output Gist.
 GIST_ENTERPRISE_URL - the GitHub Enterprise URL to post Gists to.
-`);
+
+SERF_SHA1 - an alternate way to specify the --sha parameter, provided
+            automatically by serf-client.
+SERF_REPO - an alternate way to specify the --repo parameter, provided
+            automatically by serf-client.`);
 
 const argv = yargs.argv;
 
@@ -55,8 +57,9 @@ function getRepoCloneDir() {
 }
 async function main() {
   let sha = argv.sha || process.env.SERF_SHA1;
+  let repo = argv.repo || process.env.SERF_REPO;
 
-  if (!argv.repo || !sha) {
+  if (!repo || !sha) {
     yargs.showHelp();
     process.exit(-1);
   }
@@ -66,15 +69,15 @@ async function main() {
   if (argv.name) {
     d(`Posting 'pending' to GitHub status`);
 
-    let nwo = getNwoFromRepoUrl(argv.repo);
-    await postCommitStatus(nwo, sha, 
+    let nwo = getNwoFromRepoUrl(repo);
+    await postCommitStatus(nwo, sha,
       'pending', 'Serf Build Server', null, argv.name);
   }
 
-  d(`Running initial cloneOrFetchRepo: ${argv.repo} => ${repoDir}`);
-  let bareRepoDir = await cloneOrFetchRepo(argv.repo, repoDir);
+  d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
+  let bareRepoDir = await cloneOrFetchRepo(repo, repoDir);
 
-  let workDir = getWorkdirForRepoUrl(argv.repo, sha);
+  let workDir = getWorkdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
   await cloneRepo(bareRepoDir, workDir, null, false);
@@ -88,7 +91,7 @@ async function main() {
   d(`Running ${cmd} ${args.join(' ')}...`);
   let buildPassed = false;
   let buildOutput = null;
-  
+
   try {
     buildOutput = await runBuildCommand(cmd, args, workDir, sha);
     console.log(buildOutput);
@@ -101,15 +104,15 @@ async function main() {
 
   if (argv.name) {
     d(`Posting 'success' to GitHub status`);
-    
+
     let gistInfo = await createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
-      "build-output.txt": { 
+      "build-output.txt": {
         content: buildOutput
       }
     });
 
-    let nwo = getNwoFromRepoUrl(argv.repo);
-    await postCommitStatus(nwo, sha, 
+    let nwo = getNwoFromRepoUrl(repo);
+    await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, argv.name);
   }
 }
@@ -121,8 +124,9 @@ main()
     d(e.stack);
 
     if (argv.name) {
-      let nwo = getNwoFromRepoUrl(argv.repo);
+      let repo = argv.repo || process.env.SERF_REPO;
       let sha = argv.sha || process.env.SERF_SHA1;
+      let nwo = getNwoFromRepoUrl(repo);
 
       postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
         .catch(() => true)
