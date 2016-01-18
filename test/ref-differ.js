@@ -14,7 +14,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe.only('ref differ', function() {
+describe('ref differ', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
