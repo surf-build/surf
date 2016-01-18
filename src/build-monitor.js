@@ -1,17 +1,34 @@
 import _ from 'lodash';
 import determineChangedRefs from './ref-differ';
 import {spawn} from './promise-array';
-import {Observable, Scheduler} from 'rx';
+import {Observable, Scheduler, Disposable, SerialDisposable} from 'rx';
 
-const d = require('debug')('serf:run-on-every-ref');
+const d = require('debug')('serf:build-monitor');
 
-export class ExecuteOnEveryRef {
-  constructor(cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler=null) {
+export function getSeenRefs(refs) {
+  return _.reduce(refs, (acc, x) => {
+    acc.add(x.object.sha);
+    return acc;
+  }, new Set());
+}
+
+export default class BuildMonitor {
+  constructor(cmdWithArgs, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null) {
     _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler});
 
     this.currentBuilds = {};
-    this.seenCommits = new Set();
     this.scheduler = this.scheduler || Scheduler.default;
+    this.currentRunningMonitor = new SerialDisposable();
+
+    if (initialRefs) {
+      this.seenCommits = getSeenRefs(initialRefs);
+    } else {
+      this.seenCommits = new Set();
+    }
+  }
+
+  dispose() {
+    this.currentRunningMonitor.dispose();
   }
 
   runBuild(cmdWithArgs, ref, repo) {
@@ -27,7 +44,9 @@ export class ExecuteOnEveryRef {
 
     d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
     return spawn(cmdWithArgs[0], args, opts)
-      .do((x) => console.log(x), e => console.error(e));
+      .do((x) => console.log(x), e => console.error(e))
+      .publishLast()
+      .refCount();
   }
 
   getOrCreateBuild(cmdWithArgs, ref, repo) {
@@ -42,10 +61,18 @@ export class ExecuteOnEveryRef {
   }
 
   start() {
-    return Observable.interval(5*1000, this.scheduler)
+    this.currentRunningMonitor.setDisposable(Disposable.empty);
+
+    let previousRefs = {};
+    let changedRefs = Observable.interval(5*1000, this.scheduler)
       .flatMap(() => this.fetchRefs())
-      .map((currentRefs) => determineChangedRefs(this.seenCommits, currentRefs))
+      .map((currentRefs) => determineChangedRefs(this.seenCommits, previousRefs, currentRefs));
+
+    let disp = changedRefs
       .map((changedRefs) => {
+        previousRefs = _.clone(changedRefs);
+
+        d(`Found changed refs: ${JSON.stringify(_.map(changedRefs, (x) => x.ref))}`);
         return Observable.fromArray(changedRefs)
           .map((ref) => this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo))
           .merge(this.maxConcurrentJobs)
@@ -53,5 +80,8 @@ export class ExecuteOnEveryRef {
       })
       .switch()
       .subscribe();
+
+    this.currentRunningMonitor.setDisposable(disp);
+    return disp;
   }
 }
