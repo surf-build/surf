@@ -79,10 +79,7 @@ async function main() {
     let currentRefs = await fetchRefs();
     let changedRefs = determineChangedRefs(seenCommits, currentRefs);
 
-    let refNames = _.map(currentRefs, (x) => x.ref);
     d(`Building ${changedRefs.length} refs...`);
-    d(`Available refs: ${refNames.join(',')}`);
-
     await asyncMap(changedRefs, async (ref) => {
       try {
         let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
