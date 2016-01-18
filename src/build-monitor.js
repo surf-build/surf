@@ -13,8 +13,8 @@ export function getSeenRefs(refs) {
 }
 
 export default class BuildMonitor {
-  constructor(cmdWithArgs, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null) {
-    _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler});
+  constructor(cmdWithArgs, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null, pollInterval=5000) {
+    _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval});
 
     this.currentBuilds = {};
     this.scheduler = this.scheduler || Scheduler.default;
@@ -64,7 +64,7 @@ export default class BuildMonitor {
     this.currentRunningMonitor.setDisposable(Disposable.empty);
 
     let previousRefs = {};
-    let changedRefs = Observable.interval(5*1000, this.scheduler)
+    let changedRefs = Observable.interval(this.pollInterval, this.scheduler)
       .flatMap(() => this.fetchRefs())
       .map((currentRefs) => determineChangedRefs(this.seenCommits, previousRefs, currentRefs));
 

@@ -65,14 +65,14 @@ describe.only('the build monitor', function() {
     this.fixture.start();
     expect(buildCount).to.equal(0);
 
-    this.sched.advanceBy(6*1000);
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
     expect(buildCount).to.equal(10);
 
     this.fixture.fetchRefs = () =>
       Observable.just(this.refExamples['refs2.json']);
 
     // Move to the next interval, we should only run the one build
-    this.sched.advanceBy(5*1000);
+    this.sched.advanceBy(this.fixture.pollInterval);
     expect(buildCount).to.equal(11);
   });
 });
