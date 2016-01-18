@@ -13,7 +13,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe.only('the build monitor', function() {
+describe('the build monitor', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -74,5 +74,47 @@ describe.only('the build monitor', function() {
     // Move to the next interval, we should only run the one build
     this.sched.advanceBy(this.fixture.pollInterval);
     expect(buildCount).to.equal(11);
+  });
+
+  it.only('should only build at a max level of concurrency', function() {
+    let buildRequests = 0;
+    let liveBuilds = 0;
+
+    this.fixture.runBuild = (cmdWithArgs, ref) => {
+      buildRequests++;
+
+      return Observable.just('')
+        .do(() => {
+          liveBuilds++;
+          d(`Starting build: ${ref.object.sha}`);
+        })
+        .delay(2*1000, this.sched)
+        .finally(() => {
+          liveBuilds--;
+          d(`Completing build: ${ref.object.sha}`);
+        })
+        .publish()
+        .refCount();
+    };
+
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs1.json']);
+
+    this.fixture.start();
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(2);
+
+    this.sched.advanceBy(1000);
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(2);
+
+    this.sched.advanceBy(30 * 1000);
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(0);
   });
 });
