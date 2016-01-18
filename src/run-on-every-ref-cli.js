@@ -30,34 +30,6 @@ GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 
 const argv = yargs.argv;
 
-function runBuild(cmdWithArgs, ref, repo) {
-  let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
-  let envToAdd = {
-    'SERF_SHA1': ref.object.sha,
-    'SERF_REPO': repo
-  };
-
-  let opts = {
-    env: _.assign({}, envToAdd, process.env)
-  };
-
-  d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
-  return spawn(cmdWithArgs[0], args, opts)
-    .do((x) => console.log(x), e => console.error(e));
-}
-
-const currentBuilds = {};
-function getOrCreateBuild(cmdWithArgs, ref, repo) {
-  let ret = currentBuilds[ref.object.sha];
-  if (ret) return ret;
-
-  d(`Queuing build for SHA: ${ref.object.sha}`);
-  ret = currentBuilds[ref.object.sha] = runBuild(cmdWithArgs, ref, repo)
-    .finally(() => delete currentBuilds[ref.object.sha]);
-
-  return ret;
-}
-
 async function main() {
   const cmdWithArgs = argv._;
 
@@ -103,18 +75,6 @@ async function main() {
     acc.add(x.object.sha);
     return acc;
   }, new Set());
-
-  Observable.interval(5*1000)
-    .flatMap(() => fetchRefs())
-    .map((currentRefs) => determineChangedRefs(seenCommits, currentRefs))
-    .map((changedRefs) => {
-      return Observable.fromArray(changedRefs)
-        .map((ref) => getOrCreateBuild(cmdWithArgs, ref, argv.r))
-        .merge(jobs)
-        .reduce((acc) => acc, null);
-    })
-    .switch()
-    .subscribe();
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
   return new Promise();
