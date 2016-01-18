@@ -7,6 +7,7 @@ import request from 'request-promise';
 import determineChangedRefs from './ref-differ';
 import {asyncMap, delay, spawn} from './promise-array';
 import {getNwoFromRepoUrl} from './github-api';
+import {Observable} from 'rx';
 
 const d = require('debug')('serf:run-on-every-ref');
 
@@ -28,6 +29,22 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 
 const argv = yargs.argv;
+
+function runBuild(cmdWithArgs, ref, repo) {
+  let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
+  let envToAdd = {
+    'SERF_SHA1': ref.object.sha,
+    'SERF_REPO': repo
+  };
+
+  let opts = {
+    env: _.assign({}, envToAdd, process.env)
+  };
+
+  d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
+  return spawn(cmdWithArgs[0], args, opts)
+    .do((x) => console.log(x), e => console.error(e));
+}
 
 async function main() {
   const cmdWithArgs = argv._;
@@ -75,35 +92,17 @@ async function main() {
     return acc;
   }, new Set());
 
-  while(true) {
-    let currentRefs = await fetchRefs();
-    let changedRefs = determineChangedRefs(seenCommits, currentRefs);
-
-    d(`Building ${changedRefs.length} refs...`);
-    await asyncMap(changedRefs, async (ref) => {
-      try {
-        let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
-        let envToAdd = {
-          'SERF_SHA1': ref.object.sha,
-          'SERF_REPO': argv.r
-        };
-
-        let opts = {
-          env: _.assign({}, envToAdd, process.env)
-        };
-
-        d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
-        let output = await spawn(cmdWithArgs[0], args, opts);
-
-        console.log(output);
-      } catch (e) {
-        console.error(e);
-      }
-    }, jobs);
-
-    d("Waiting to repoll");
-    await delay(5*1000);
-  }
+  let stop = Observable.interval(5*1000)
+    .flatMap(() => fetchRefs())
+    .flatMap((currentRefs) =>
+      Observable.fromArray(determineChangedRefs(seenCommits, currentRefs)))
+    .map((ref) => {
+      d(`Building ref ${ref}...`);
+      return runBuild(cmdWithArgs, ref, argv.r)
+        .catch((e) => { console.error(e.message); return Observable.empty(); });
+    })
+    .merge(jobs)
+    .subscribe();
 }
 
 main()
