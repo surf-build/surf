@@ -46,6 +46,18 @@ function runBuild(cmdWithArgs, ref, repo) {
     .do((x) => console.log(x), e => console.error(e));
 }
 
+const currentBuilds = {};
+function getOrCreateBuild(cmdWithArgs, ref, repo) {
+  let ret = currentBuilds[ref.object.sha];
+  if (ret) return ret;
+
+  d(`Queuing build for SHA: ${ref.object.sha}`);
+  ret = currentBuilds[ref.object.sha] = runBuild(cmdWithArgs, ref, repo)
+    .finally(() => delete currentBuilds[ref.object.sha]);
+
+  return ret;
+}
+
 async function main() {
   const cmdWithArgs = argv._;
 
@@ -92,17 +104,20 @@ async function main() {
     return acc;
   }, new Set());
 
-  let stop = Observable.interval(5*1000)
+  Observable.interval(5*1000)
     .flatMap(() => fetchRefs())
-    .flatMap((currentRefs) =>
-      Observable.fromArray(determineChangedRefs(seenCommits, currentRefs)))
-    .map((ref) => {
-      d(`Building ref ${ref}...`);
-      return runBuild(cmdWithArgs, ref, argv.r)
-        .catch((e) => { console.error(e.message); return Observable.empty(); });
+    .map((currentRefs) => determineChangedRefs(seenCommits, currentRefs))
+    .map((changedRefs) => {
+      return Observable.fromArray(changedRefs)
+        .map((ref) => getOrCreateBuild(cmdWithArgs, ref, argv.r))
+        .merge(jobs)
+        .reduce((acc) => acc, null);
     })
-    .merge(jobs)
+    .switch()
     .subscribe();
+
+  // TODO: figure out a way to trap Ctrl-C and dispose stop
+  return new Promise();
 }
 
 main()
