@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import determineChangedRefs from './ref-differ';
 import {spawn} from './promise-array';
 import {Observable, Scheduler, Disposable, SerialDisposable} from 'rx';
+import './custom-rx-operators';
 
 const d = require('debug')('serf:build-monitor');
 
@@ -44,39 +44,57 @@ export default class BuildMonitor {
 
     d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
     return spawn(cmdWithArgs[0], args, opts)
-      .do((x) => console.log(x), e => console.error(e))
-      .publishLast()
-      .refCount();
+      .do((x) => console.log(x), e => console.error(e));
+  }
+
+  determineRefsToBuild(refInfo) {
+    let dedupe = new Set();
+  
+    return _.filter(refInfo, (ref) => {
+      if (this.seenCommits.has(ref.object.sha)) return false;
+      if (dedupe.has(ref.object.sha)) return false;
+      
+      dedupe.add(ref.object.sha);
+      d(`wtf: ${ref.object.sha}`);
+      return true;
+    });
   }
 
   getOrCreateBuild(cmdWithArgs, ref, repo) {
     let ret = this.currentBuilds[ref.object.sha];
-    if (ret) return ret;
+    if (ret) return ret.obs;
 
-    d(`Queuing build for SHA: ${ref.object.sha}`);
-    ret = this.currentBuilds[ref.object.sha] = this.runBuild(cmdWithArgs, ref, repo)
-      .finally(() => delete this.currentBuilds[ref.object.sha]);
+    d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
+    let buildObs = this.runBuild(cmdWithArgs, ref, repo)
+      .subUnsub(() => {
+        this.currentBuilds[ref.object.sha] = { obs: buildObs, disp: buildObs.subscribe() };
+      }, () => {
+        this.currentBuilds[ref.object.sha].disp.dispose();
+        delete this.currentBuilds[ref.object.sha];
+      })
+      .do(() => 
+        this.seenCommits.add(ref.object.sha), () => this.seenCommits.add(ref.object.sha))
+      .publishLast()
+      .refCount();
 
-    return ret;
+    this.currentBuilds[ref.object.sha] = { obs: buildObs, disp: Disposable.empty };
+    return buildObs;
   }
 
   start() {
     this.currentRunningMonitor.setDisposable(Disposable.empty);
 
-    let previousRefs = {};
     let changedRefs = Observable.interval(this.pollInterval, this.scheduler)
       .flatMap(() => this.fetchRefs())
-      .map((currentRefs) => determineChangedRefs(this.seenCommits, previousRefs, currentRefs));
+      .map((currentRefs) => this.determineRefsToBuild(currentRefs));
 
     let disp = changedRefs
       .map((changedRefs) => {
-        previousRefs = _.clone(changedRefs);
-
         d(`Found changed refs: ${JSON.stringify(_.map(changedRefs, (x) => x.ref))}`);
+
         return Observable.fromArray(changedRefs)
           .map((ref) => this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo))
-          .merge(this.maxConcurrentJobs)
-          .reduce((acc) => acc, null);
+          .merge(this.maxConcurrentJobs);
       })
       .switch()
       .subscribe();

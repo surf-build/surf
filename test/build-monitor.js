@@ -3,6 +3,7 @@ import path from 'path';
 import {fs} from '../src/promisify';
 import BuildMonitor from '../src/build-monitor';
 import {Observable, TestScheduler, Disposable} from 'rx';
+import '../src/custom-rx-operators';
 
 const d = require('debug')('serf-test:build-monitor');
 
@@ -57,9 +58,10 @@ describe('the build monitor', function() {
       Observable.just(this.refExamples['refs1.json']);
 
     let buildCount = 0;
-    this.fixture.runBuild = () => {
+    this.fixture.runBuild = (cmdWithArgs, ref) => {
       buildCount++;
-      return Observable.just('');
+      return Observable.just('')
+        .subUnsub(() => d(`Building ${ref.object.sha}`));
     };
 
     this.fixture.start();
@@ -118,7 +120,7 @@ describe('the build monitor', function() {
     expect(liveBuilds).to.equal(0);
   });
 
-  it.only('shouldnt cancel any builds when we only look at one set of refs', function() {
+  it('shouldnt cancel any builds when we only look at one set of refs', function() {
     let buildRequests = 0;
     let liveBuilds = 0;
     let cancelledRefs = [];
@@ -177,5 +179,123 @@ describe('the build monitor', function() {
     expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(0);
     expect(cancelledRefs.length).to.equal(0);
+  });
+  
+  it('should cancel builds when their refs disappear', function() {
+    let buildRequests = 0;
+    let liveBuilds = 0;
+    let cancelledRefs = [];
+
+    this.fixture.runBuild = (cmdWithArgs, ref) => {
+      buildRequests++;
+
+      let ret = Observable.just('')
+        .do(() => {
+          liveBuilds++;
+          d(`Starting build: ${ref.object.sha}`);
+        })
+        .delay(10*1000, this.sched)
+        .do(() => {}, () => {}, () => {
+          liveBuilds--;
+          d(`Completing build: ${ref.object.sha}`);
+        })
+        .publish()
+        .refCount();
+        
+      return Observable.create((subj) => {
+        let producedItem = false;
+        let disp = ret
+          .do(() => producedItem = true)
+          .subscribe(subj);
+
+        return Disposable.create(() => {
+          disp.dispose();
+          if (producedItem) return;
+
+          d(`Canceled ref before it finished! ${ref.object.sha}`);
+          liveBuilds--;
+          cancelledRefs.push(ref.object.sha);
+        });
+      });
+    };
+    
+    this.fixture.seenCommits = getSeenRefs(this.refExamples['refs1.json']);
+
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs3.json']);
+
+    this.fixture.start();
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+    
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(2);
+    expect(liveBuilds).to.equal(2);
+    
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs4.json']);
+      
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+    
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(2);
+    expect(liveBuilds).to.equal(1);
+  });
+  
+  it.only('should cancel builds when their refs change', function() {
+    let buildRequests = 0;
+    let liveBuilds = 0;
+    let cancelledRefs = [];
+
+    this.fixture.runBuild = (cmdWithArgs, ref) => {
+      buildRequests++;
+
+      let ret = Observable.just('')
+        .do(() => {
+          liveBuilds++;
+          d(`Starting build: ${ref.object.sha}`);
+        })
+        .delay(10*1000, this.sched)
+        .do(() => {}, () => {}, () => {
+          liveBuilds--;
+          d(`Completing build: ${ref.object.sha}`);
+        })
+        .publish()
+        .refCount();
+        
+      return Observable.create((subj) => {
+        let producedItem = false;
+        let disp = ret
+          .do(() => producedItem = true)
+          .subscribe(subj);
+
+        return Disposable.create(() => {
+          disp.dispose();
+          if (producedItem) return;
+
+          d(`Canceled ref before it finished! ${ref.object.sha}`);
+          liveBuilds--;
+          cancelledRefs.push(ref.object.sha);
+        });
+      });
+    };
+    
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs1.json']);
+
+    this.fixture.start();
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+    
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(2);
+    
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs2.json']);
+      
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+    
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(11);
+    expect(liveBuilds).to.equal(2);
   });
 });
