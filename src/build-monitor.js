@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import {spawn} from './promise-array';
-import {Observable, Scheduler, Disposable, SerialDisposable} from 'rx';
+import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
 import './custom-rx-operators';
 
 const d = require('debug')('serf:build-monitor');
@@ -19,6 +19,7 @@ export default class BuildMonitor {
     this.currentBuilds = {};
     this.scheduler = this.scheduler || Scheduler.default;
     this.currentRunningMonitor = new SerialDisposable();
+    this.buildsToActuallyExecute = new Subject();
 
     if (initialRefs) {
       this.seenCommits = getSeenRefs(initialRefs);
@@ -47,59 +48,74 @@ export default class BuildMonitor {
       .do((x) => console.log(x), e => console.error(e));
   }
 
+  getOrCreateBuild(cmdWithArgs, ref, repo) {
+    let ret = this.currentBuilds[ref.object.sha];
+    if (ret) return ret;
+
+    d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
+    let cs = new Subject();
+    let cancel = () => cs.onNext(true);
+
+    // Defer + publihLast + connect kinda like refCount but never recreates the build
+    let buildObs = Observable.defer(() => {
+      let ret = this.runBuild(cmdWithArgs, ref, repo)
+        .takeUntil(cs)
+        .subUnsub(() => {
+          this.seenCommits.add(ref.object.sha);
+        }, () => {
+          delete this.currentBuilds[ref.object.sha];
+        })
+        .publishLast();
+
+      ret.connect();
+      return ret;
+    });
+
+    return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
+  }
+
   determineRefsToBuild(refInfo) {
     let dedupe = new Set();
-  
+
     return _.filter(refInfo, (ref) => {
       if (this.seenCommits.has(ref.object.sha)) return false;
       if (dedupe.has(ref.object.sha)) return false;
-      
+
       dedupe.add(ref.object.sha);
-      d(`wtf: ${ref.object.sha}`);
       return true;
     });
   }
 
-  getOrCreateBuild(cmdWithArgs, ref, repo) {
-    let ret = this.currentBuilds[ref.object.sha];
-    if (ret) return ret.obs;
-
-    d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
-    let buildObs = this.runBuild(cmdWithArgs, ref, repo)
-      .subUnsub(() => {
-        this.currentBuilds[ref.object.sha] = { obs: buildObs, disp: buildObs.subscribe() };
-      }, () => {
-        this.currentBuilds[ref.object.sha].disp.dispose();
-        delete this.currentBuilds[ref.object.sha];
-      })
-      .do(() => 
-        this.seenCommits.add(ref.object.sha), () => this.seenCommits.add(ref.object.sha))
-      .publishLast()
-      .refCount();
-
-    this.currentBuilds[ref.object.sha] = { obs: buildObs, disp: Disposable.empty };
-    return buildObs;
-  }
-
   start() {
-    this.currentRunningMonitor.setDisposable(Disposable.empty);
+    let fetchCurrentRefs = Observable.interval(this.pollInterval, this.scheduler)
+      .flatMap(() => this.fetchRefs());
 
-    let changedRefs = Observable.interval(this.pollInterval, this.scheduler)
-      .flatMap(() => this.fetchRefs())
-      .map((currentRefs) => this.determineRefsToBuild(currentRefs));
-
-    let disp = changedRefs
-      .map((changedRefs) => {
-        d(`Found changed refs: ${JSON.stringify(_.map(changedRefs, (x) => x.ref))}`);
-
-        return Observable.fromArray(changedRefs)
-          .map((ref) => this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo))
-          .merge(this.maxConcurrentJobs);
-      })
-      .switch()
+    let disp = this.buildsToActuallyExecute
+      .merge(this.maxConcurrentJobs)
       .subscribe();
 
-    this.currentRunningMonitor.setDisposable(disp);
+    let disp2 = fetchCurrentRefs.subscribe((refs) => {
+      let seenRefs = getSeenRefs(refs);
+      let refsToBuild = this.determineRefsToBuild(refs);
+
+      // Cancel any builds that are out-of-date
+      let cancellers = _.reduce(Object.keys(this.currentBuilds), (acc,x) => {
+        if (seenRefs.has(x)) return acc;
+
+        acc.push(this.currentBuilds[x].cancel);
+        return acc;
+      }, []);
+
+      // NB: We intentionally collect all of these via the reducer first to avoid
+      // altering currentBuilds while iterating through it
+      _.each(cancellers, (x) => x());
+
+      _.each(refsToBuild, (ref) =>
+        this.buildsToActuallyExecute.onNext(
+          this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo).observable));
+    });
+
+    this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));
     return disp;
   }
 }

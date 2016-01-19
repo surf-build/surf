@@ -14,7 +14,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe('the build monitor', function() {
+describe.only('the build monitor', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -79,12 +79,9 @@ describe('the build monitor', function() {
   });
 
   it('should only build at a max level of concurrency', function() {
-    let buildRequests = 0;
     let liveBuilds = 0;
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
-      buildRequests++;
-
       return Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -105,29 +102,20 @@ describe('the build monitor', function() {
     this.fixture.start();
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
 
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(2);
 
     this.sched.advanceBy(1000);
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(2);
 
     this.sched.advanceBy(30 * 1000);
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(0);
   });
 
   it('shouldnt cancel any builds when we only look at one set of refs', function() {
-    let buildRequests = 0;
     let liveBuilds = 0;
     let cancelledRefs = [];
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
-      buildRequests++;
-
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -164,31 +152,22 @@ describe('the build monitor', function() {
     this.fixture.start();
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
 
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(2);
 
     this.sched.advanceBy(1000);
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(2);
 
     this.sched.advanceBy(30 * 1000);
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-
-    expect(buildRequests).to.equal(10);
+    
     expect(liveBuilds).to.equal(0);
     expect(cancelledRefs.length).to.equal(0);
   });
-  
+
   it('should cancel builds when their refs disappear', function() {
-    let buildRequests = 0;
     let liveBuilds = 0;
     let cancelledRefs = [];
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
-      buildRequests++;
-
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -201,7 +180,7 @@ describe('the build monitor', function() {
         })
         .publish()
         .refCount();
-        
+
       return Observable.create((subj) => {
         let producedItem = false;
         let disp = ret
@@ -218,7 +197,7 @@ describe('the build monitor', function() {
         });
       });
     };
-    
+
     this.fixture.seenCommits = getSeenRefs(this.refExamples['refs1.json']);
 
     this.fixture.fetchRefs = () =>
@@ -226,29 +205,21 @@ describe('the build monitor', function() {
 
     this.fixture.start();
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(2);
+
     expect(liveBuilds).to.equal(2);
-    
+
     this.fixture.fetchRefs = () =>
       Observable.just(this.refExamples['refs4.json']);
-      
+
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(2);
     expect(liveBuilds).to.equal(1);
   });
-  
-  it.only('should cancel builds when their refs change', function() {
-    let buildRequests = 0;
+
+  it('should cancel builds when their refs change', function() {
     let liveBuilds = 0;
     let cancelledRefs = [];
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
-      buildRequests++;
-
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -261,7 +232,7 @@ describe('the build monitor', function() {
         })
         .publish()
         .refCount();
-        
+
       return Observable.create((subj) => {
         let producedItem = false;
         let disp = ret
@@ -278,24 +249,18 @@ describe('the build monitor', function() {
         });
       });
     };
-    
+
     this.fixture.fetchRefs = () =>
       Observable.just(this.refExamples['refs1.json']);
 
     this.fixture.start();
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(2);
-    
+
     this.fixture.fetchRefs = () =>
       Observable.just(this.refExamples['refs2.json']);
-      
+
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    
-    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
-    expect(buildRequests).to.equal(11);
     expect(liveBuilds).to.equal(2);
   });
 });
