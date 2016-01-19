@@ -2,7 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 import {fs} from '../src/promisify';
 import BuildMonitor from '../src/build-monitor';
-import {Observable, TestScheduler} from 'rx';
+import {Observable, TestScheduler, Disposable} from 'rx';
 
 const d = require('debug')('serf-test:build-monitor');
 
@@ -76,7 +76,7 @@ describe('the build monitor', function() {
     expect(buildCount).to.equal(11);
   });
 
-  it.only('should only build at a max level of concurrency', function() {
+  it('should only build at a max level of concurrency', function() {
     let buildRequests = 0;
     let liveBuilds = 0;
 
@@ -89,7 +89,7 @@ describe('the build monitor', function() {
           d(`Starting build: ${ref.object.sha}`);
         })
         .delay(2*1000, this.sched)
-        .finally(() => {
+        .do(() => {}, () => {}, () => {
           liveBuilds--;
           d(`Completing build: ${ref.object.sha}`);
         })
@@ -116,5 +116,66 @@ describe('the build monitor', function() {
     d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
     expect(buildRequests).to.equal(10);
     expect(liveBuilds).to.equal(0);
+  });
+
+  it.only('shouldnt cancel any builds when we only look at one set of refs', function() {
+    let buildRequests = 0;
+    let liveBuilds = 0;
+    let cancelledRefs = [];
+
+    this.fixture.runBuild = (cmdWithArgs, ref) => {
+      buildRequests++;
+
+      let ret = Observable.just('')
+        .do(() => {
+          liveBuilds++;
+          d(`Starting build: ${ref.object.sha}`);
+        })
+        .delay(2*1000, this.sched)
+        .do(() => {}, () => {}, () => {
+          liveBuilds--;
+          d(`Completing build: ${ref.object.sha}`);
+        })
+        .publish()
+        .refCount();
+
+      return Observable.create((subj) => {
+        let producedItem = false;
+        let disp = ret
+          .do(() => producedItem = true)
+          .subscribe(subj);
+
+        return Disposable.create(() => {
+          disp.dispose();
+          if (producedItem) return;
+
+          d(`Canceled ref before it finished! ${ref.object.sha}`);
+          liveBuilds--;
+          cancelledRefs.push(ref.object.sha);
+        });
+      });
+    };
+
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs1.json']);
+
+    this.fixture.start();
+    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(2);
+
+    this.sched.advanceBy(1000);
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(2);
+
+    this.sched.advanceBy(30 * 1000);
+    d(`liveBuilds: ${liveBuilds}, buildRequests: ${buildRequests}`);
+
+    expect(buildRequests).to.equal(10);
+    expect(liveBuilds).to.equal(0);
+    expect(cancelledRefs.length).to.equal(0);
   });
 });
