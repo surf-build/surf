@@ -61,8 +61,10 @@ export default class BuildMonitor {
       let ret = this.runBuild(cmdWithArgs, ref, repo)
         .takeUntil(cs)
         .subUnsub(() => {
+          d(`Adding ${ref.object.sha} to seen commits`);
           this.seenCommits.add(ref.object.sha);
         }, () => {
+          d(`Removing ${ref.object.sha} from active builds`);
           delete this.currentBuilds[ref.object.sha];
         })
         .publishLast();
@@ -71,7 +73,7 @@ export default class BuildMonitor {
       return ret;
     });
 
-    return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
+    return this.currentBuilds[ref.object.sha] = { observable: buildObs.publishLast().refCount(), cancel };
   }
 
   determineRefsToBuild(refInfo) {
@@ -96,7 +98,6 @@ export default class BuildMonitor {
 
     let disp2 = fetchCurrentRefs.subscribe((refs) => {
       let seenRefs = getSeenRefs(refs);
-      let refsToBuild = this.determineRefsToBuild(refs);
 
       // Cancel any builds that are out-of-date
       let cancellers = _.reduce(Object.keys(this.currentBuilds), (acc,x) => {
@@ -110,6 +111,7 @@ export default class BuildMonitor {
       // altering currentBuilds while iterating through it
       _.each(cancellers, (x) => x());
 
+      let refsToBuild = this.determineRefsToBuild(refs);
       _.each(refsToBuild, (ref) =>
         this.buildsToActuallyExecute.onNext(
           this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo).observable));

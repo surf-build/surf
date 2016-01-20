@@ -80,8 +80,12 @@ describe.only('the build monitor', function() {
 
   it('should only build at a max level of concurrency', function() {
     let liveBuilds = 0;
+    let completedBuilds = 0;
+    let completedShas = new Set();
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
+      if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
+
       return Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -90,6 +94,8 @@ describe.only('the build monitor', function() {
         .delay(2*1000, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
+          completedBuilds++;
+          completedShas.add(ref.object.sha);
           d(`Completing build: ${ref.object.sha}`);
         })
         .publish()
@@ -100,15 +106,18 @@ describe.only('the build monitor', function() {
       Observable.just(this.refExamples['refs1.json']);
 
     this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
+    this.sched.advanceBy(this.fixture.pollInterval + 2);
 
     expect(liveBuilds).to.equal(2);
+    expect(completedBuilds).to.equal(0);
 
-    this.sched.advanceBy(1000);
+    this.sched.advanceBy(this.fixture.pollInterval);
     expect(liveBuilds).to.equal(2);
+    expect(completedBuilds).to.equal(4);  // two builds per 2sec, for 5sec
 
     this.sched.advanceBy(30 * 1000);
     expect(liveBuilds).to.equal(0);
+    expect(completedBuilds).to.equal(10);
   });
 
   it('shouldnt cancel any builds when we only look at one set of refs', function() {
@@ -158,7 +167,7 @@ describe.only('the build monitor', function() {
     expect(liveBuilds).to.equal(2);
 
     this.sched.advanceBy(30 * 1000);
-    
+
     expect(liveBuilds).to.equal(0);
     expect(cancelledRefs.length).to.equal(0);
   });
