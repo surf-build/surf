@@ -321,4 +321,27 @@ describe('the build monitor', function() {
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
     expect(liveBuilds).to.equal(2);
   });
+  
+  it('shouldnt die when builds fail', function() {
+    this.fixture.runBuild = () => Observable.throw(new Error("no"));
+    
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs1.json']);  
+
+    this.fixture.start();
+    this.sched.advanceBy(this.fixture.pollInterval + 1);
+    
+    let ranBuild = false;
+    this.fixture.runBuild = () => {
+      ranBuild = true;
+      return Observable.just('');
+    };
+    
+    this.fixture.fetchRefs = () =>
+      Observable.just(this.refExamples['refs2.json']);
+      
+    this.sched.advanceBy(this.fixture.pollInterval);
+    
+    expect(ranBuild).to.be.ok;
+  });
 });

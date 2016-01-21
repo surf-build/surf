@@ -96,6 +96,12 @@ export default class BuildMonitor {
       .flatMap(() => this.fetchRefs());
 
     let disp = this.buildsToActuallyExecute
+      .map((x) => x.catch((e) => {
+        console.log(e.message);
+        d(e.stack);
+
+        return Observable.empty();
+      }))
       .merge(this.maxConcurrentJobs)
       .subscribe();
 
