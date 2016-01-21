@@ -73,14 +73,12 @@ function runDownPath(exe) {
 }
 
 export function spawnDetached(exe, params, opts=null) {
+  if (!isWindows) return spawn(exe, params, _.assign({ detached: true }, opts || {}));
   const newParams = [exe].concat(params);
-  if (!isWindows) newParams.unshift(require.resolve('./spawn-child'));
 
-  let target = isWindows ?
-    path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe') :
-    process.execPath;
-
+  let target = path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe');
   let options = _.assign({ detached: true, jobber: true }, opts || {});
+  
   d(`spawnDetached: ${target}, ${newParams}`);
   return spawn(target, newParams, options);
 }
@@ -125,19 +123,15 @@ export function spawn(exe, params, opts=null) {
 
     return Disposable.create(() => {
       if (noClose) return;
+      
+      d(`Killing process: ${fullPath} ${params.join()}`);
       if (!opts.jobber) {
         proc.kill();
         return;
       }
 
-      if (isWindows) {
-        // NB: Connecting to Jobber's named pipe will kill it
-        net.connect(`\\\\.\\pipe\\jobber-${proc.pid}`);
-      } else {
-        // Send secret handshake to spawn-child
-        proc.stdin.write(new Buffer('__die__'));
-      }
-
+      // NB: Connecting to Jobber's named pipe will kill it
+      net.connect(`\\\\.\\pipe\\jobber-${proc.pid}`);
       setTimeout(() => proc.kill(), 5*1000);
     });
   });
