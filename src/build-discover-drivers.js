@@ -1,5 +1,6 @@
 import path from 'path';
 import {fs} from './promisify';
+import {statNoException} from './promise-array';
 import BuildDiscoverBase from './build-discover-base';
 
 const d = require('debug')('serf:build-discover-drivers');
@@ -19,6 +20,11 @@ const possibleScriptPathsPosix = [
 export class BuildScriptDiscoverer extends BuildDiscoverBase {
   constructor(rootDir) {
     super(rootDir);
+  }
+
+  async getAffinityForRootDir() {
+    let scriptDir = await this.getScriptPath();
+    return (scriptDir ? 50 : 0);
   }
 
   async getScriptPath() {
@@ -41,12 +47,50 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
     return null;
   }
 
+  async getBuildCommand() {
+    return { cmd: await this.getScriptPath(), args: [] };
+  }
+}
+
+export class DotNetBuildDiscoverer extends BuildDiscoverBase {
+  constructor(rootDir) {
+    super(rootDir);
+  }
+
+  async findSolutionFile(dir=this.rootDir, recurse=true) {
+    // Look in one-level's worth of directories for any file ending in sln
+    let dentries = await fs.readdir();
+
+    for (let entry of dentries) {
+      let target = path.join(this.rootDir, entry);
+      let stat = await statNoException(target);
+
+      if (stat.isDirectory()) {
+        if (!recurse) continue;
+
+        let didItWork = await this.findSolutionFile(target, false);
+        if (didItWork) return didItWork;
+      }
+
+      if (!target.match(/\.sln$/i)) continue;
+      return target;
+    }
+
+    return null;
+  }
+
   async getAffinityForRootDir() {
-    let scriptDir = await this.getScriptPath();
-    return (scriptDir ? 5 : 0);
+    let file = await this.findSolutionFile();
+    return (file ? 10 : 0);
   }
 
   async getBuildCommand() {
-    return { cmd: await this.getScriptPath(), args: [] };
+    // TODO: This sucks right now, make it more better'er
+    let buildCommand = process.platform === 'win32' ? 'msbuild' : 'xbuild';
+    let slnFile = await this.findSolutionFile();
+
+    return {
+      cmd: buildCommand, args: ['/p:Configuration=Release', slnFile]
+    };
   }
 }
