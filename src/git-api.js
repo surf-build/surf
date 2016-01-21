@@ -21,7 +21,7 @@ export async function getAllWorkdirs() {
   let ret = await fs.readdir(tmp);
 
   return _.reduce(ret, (acc, x) => {
-    if (!x.match(/^serf-workdir/i)) return acc;
+    if (!x.match(/^serf(tmp)?-/i)) return acc;
 
     acc.push(path.join(tmp, x));
     return acc;
