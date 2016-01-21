@@ -4,6 +4,7 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
+import fs from 'fs';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
@@ -98,9 +99,12 @@ async function main() {
     buildPassed = true;
   } catch (e) {
     buildOutput = e.message;
+
     console.log(`Error during build: ${e.message}`);
     d(e.stack);
   }
+  
+  fs.writeFileSync(path.join(workDir, 'build-output.log'), buildOutput);
 
   if (argv.name) {
     d(`Posting 'success' to GitHub status`);
