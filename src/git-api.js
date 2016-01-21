@@ -16,12 +16,14 @@ export async function getHeadForRepo(targetDirname) {
   return commit.sha;
 }
 
-export async function getAllWorkdirs() {
+export async function getAllWorkdirs(repoUrl) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
 
   return _.reduce(ret, (acc, x) => {
+    let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
     if (!x.match(/^serf(tmp)?-/i)) return acc;
+    if (!x.indexOf(`-${nwo}-`)) return acc;
 
     acc.push(path.join(tmp, x));
     return acc;

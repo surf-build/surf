@@ -5,14 +5,14 @@ import './babel-maybefill';
 import _ from 'lodash';
 import { asyncMap } from './promise-array';
 import { rimraf } from './promisify';
-import { getWorkdirForRepoUrl, getAllWorkdirs } from './git-api';
+import { getAllWorkdirs } from './git-api';
 import { getNwoFromRepoUrl } from './github-api';
 import request from 'request-promise';
 
 const d = require('debug')('serf:serf-clean');
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-clean -s http://some.server -r owner/repo
+  .usage(`Usage: serf-clean -s http://some.server -r https://github.com/owner/repo
 Cleans builds that no longer correspond to any active ref`)
   .help('h')
   .alias('s', 'server')
@@ -20,7 +20,7 @@ Cleans builds that no longer correspond to any active ref`)
   .boolean('dry-run')
   .describe('dry-run', 'If set, report the directories we would delete')
   .alias('r', 'repository')
-  .describe('r', 'The repository URL to monitor')
+  .describe('r', 'The repository URL to remove old builds for')
   .alias('h', 'help');
   
 const argv = yargs.argv;
@@ -46,14 +46,13 @@ async function main() {
     process.exit(-1);
   }
 
-  let safeDirs = _.reduce(refInfo, (acc, ref) => {
-    acc.add(getWorkdirForRepoUrl(argv.r, ref.object.sha, true));
-    acc.add(getTempdirForRepoUrl(argv.r, ref.object.sha, true));
-    return acc;
-  }, new Set());
+  let safeShas = _.map(refInfo, (ref) => `-${ref.object.sha.substr(0,6)}-`);
   
-  let allDirs = await getAllWorkdirs();
-  let toDelete = _.filter(allDirs, (x) => !safeDirs.has(x));
+  d(`safeShas: ${Array.from(safeShas).join()}`);
+  let allDirs = await getAllWorkdirs(argv.r);
+  let toDelete = _.filter(
+    allDirs, 
+    (x) => !_.find(safeShas, (sha) => x.indexOf(sha) > 0));
   
   if (argv['dry-run']) {
     _.each(toDelete, (x) => console.log(x));
