@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import findActualExecutable from './find-actual-executable';
-import { asyncReduce, spawn } from './promise-array';
+import { asyncReduce, spawnDetached } from './promise-array';
 
 const d = require('debug')('serf:build-api');
 const AllBuildDiscoverers = require('./build-discover-drivers');
@@ -43,5 +43,5 @@ export function runBuildCommand(cmd, args, rootDir, sha) {
     env: _.assign({}, envToAdd, process.env)
   };
 
-  return spawn(cmd, args, opts);
+  return spawnDetached(cmd, args, opts);
 }

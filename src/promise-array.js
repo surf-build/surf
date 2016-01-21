@@ -1,10 +1,13 @@
+import _ from 'lodash';
 import path from 'path';
-import { Observable } from 'rx';
+import net from 'net';
+import { Observable, Disposable } from 'rx';
 import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
-
 const isWindows = process.platform === 'win32';
+
+const d = require('debug')('serf:promise-array');
 
 export function asyncMap(array, selector, maxConcurrency=4) {
   return Observable.from(array)
@@ -48,12 +51,14 @@ function runDownPath(exe) {
   // Posix does
 
   // Files with any directory path don't get this applied
-  if (exe.match(/\\\//)) {
+  if (exe.match(/[\\\/]/)) {
+    d('Path has slash in directory, bailing');
     return exe;
   }
 
   let target = path.join('.', exe);
   if (statSyncNoException(target)) {
+    d(`Found executable in currect directory: ${target}`);
     return target;
   }
 
@@ -63,7 +68,19 @@ function runDownPath(exe) {
     if (statSyncNoException(needle)) return needle;
   }
 
-  return target;
+  d('Failed to find executable anywhere in path');
+  return exe;
+}
+
+export function spawnDetached(exe, params, opts=null) {
+  if (!isWindows) return spawn(exe, params, _.assign({ detached: true }, opts || {}));
+  const newParams = [exe].concat(params);
+
+  let target = path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe');
+  let options = _.assign({ detached: true, jobber: true }, opts || {});
+  
+  d(`spawnDetached: ${target}, ${newParams}`);
+  return spawn(target, newParams, options);
 }
 
 export function spawn(exe, params, opts=null) {
@@ -72,9 +89,11 @@ export function spawn(exe, params, opts=null) {
 
     let fullPath = runDownPath(exe);
     if (!opts) {
+      d(`spawning process: ${fullPath} ${params.join()}`);
       proc = spawnOg(fullPath, params);
     } else {
-      proc = spawnOg(fullPath, params, opts);
+      d(`spawning process: ${fullPath} ${params.join()}, ${JSON.stringify(opts)}`);
+      proc = spawnOg(fullPath, params, _.omit(opts, 'jobber'));
     }
 
     let stdout = '';
@@ -85,18 +104,37 @@ export function spawn(exe, params, opts=null) {
       subj.onNext(chunk);
     };
 
+    let noClose = false;
     proc.stdout.on('data', bufHandler);
     proc.stderr.on('data', bufHandler);
-    proc.on('error', (e) => subj.onError(e));
+    proc.on('error', (e) => {
+      noClose = true;
+      subj.onError(e);
+    });
 
     proc.on('close', (code) => {
+      noClose = true;
       if (code === 0) {
         subj.onCompleted();
       } else {
         subj.onError(new Error(`Failed with exit code: ${code}\nOutput:\n${stdout}`));
       }
     });
+
+    return Disposable.create(() => {
+      if (noClose) return;
+      
+      d(`Killing process: ${fullPath} ${params.join()}`);
+      if (!opts.jobber) {
+        proc.kill();
+        return;
+      }
+
+      // NB: Connecting to Jobber's named pipe will kill it
+      net.connect(`\\\\.\\pipe\\jobber-${proc.pid}`);
+      setTimeout(() => proc.kill(), 5*1000);
+    });
   });
 
-  return spawnObs.reduce((acc, x) => acc += x, '').toPromise();
+  return spawnObs.reduce((acc, x) => acc += x, '').publishLast().refCount();
 }

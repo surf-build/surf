@@ -4,9 +4,8 @@ import './babel-maybefill';
 
 import _ from 'lodash';
 import request from 'request-promise';
-import determineChangedRefs from './ref-differ';
-import {asyncMap, delay, spawn} from './promise-array';
 import {getNwoFromRepoUrl} from './github-api';
+import BuildMonitor from './build-monitor';
 
 const d = require('debug')('serf:run-on-every-ref');
 
@@ -69,41 +68,12 @@ async function main() {
 
   refInfo = await fetchRefs();
 
-  // All refs on startup are seen refs
-  let seenCommits = _.reduce(refInfo, (acc, x) => {
-    acc.add(x.object.sha);
-    return acc;
-  }, new Set());
-
-  while(true) {
-    let currentRefs = await fetchRefs();
-    let changedRefs = determineChangedRefs(seenCommits, currentRefs);
-
-    d(`Building ${changedRefs.length} refs...`);
-    await asyncMap(changedRefs, async (ref) => {
-      try {
-        let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
-        let envToAdd = {
-          'SERF_SHA1': ref.object.sha,
-          'SERF_REPO': argv.r
-        };
-
-        let opts = {
-          env: _.assign({}, envToAdd, process.env)
-        };
-
-        d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
-        let output = await spawn(cmdWithArgs[0], args, opts);
-
-        console.log(output);
-      } catch (e) {
-        console.error(e);
-      }
-    }, jobs);
-
-    d("Waiting to repoll");
-    await delay(5*1000);
-  }
+  // TODO: figure out a way to trap Ctrl-C and dispose stop
+  console.log(`Watching ${argv.r}, will run '${cmdWithArgs.join(' ')}'\n`);
+  let buildMonitor = new BuildMonitor(cmdWithArgs, argv.r, jobs, fetchRefs, refInfo);
+  buildMonitor.start();
+  
+  return new Promise(() => {});
 }
 
 main()
