@@ -13,8 +13,8 @@ export function getSeenRefs(refs) {
 }
 
 export default class BuildMonitor {
-  constructor(cmdWithArgs, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null, pollInterval=5000) {
-    _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval});
+  constructor(cmdWithArgs, repo, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null, pollInterval=5000) {
+    _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval, repo});
 
     this.currentBuilds = {};
     this.scheduler = this.scheduler || Scheduler.default;
@@ -32,23 +32,23 @@ export default class BuildMonitor {
     this.currentRunningMonitor.dispose();
   }
 
-  runBuild(cmdWithArgs, ref, repo) {
-    let args = _.clone(cmdWithArgs).splice(1).concat([ref.object.sha]);
+  runBuild(ref) {
+    let args = _.clone(this.cmdWithArgs).splice(1).concat([ref.object.sha]);
     let envToAdd = {
       'SERF_SHA1': ref.object.sha,
-      'SERF_REPO': repo
+      'SERF_REPO': this.repo
     };
 
     let opts = {
       env: _.assign({}, envToAdd, process.env)
     };
 
-    d(`About to run: ${cmdWithArgs[0]} ${args.join(' ')}`);
-    return spawn(cmdWithArgs[0], args, opts)
+    d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`);
+    return spawn(this.cmdWithArgs[0], args, opts)
       .do((x) => console.log(x), e => console.error(e));
   }
 
-  getOrCreateBuild(cmdWithArgs, ref, repo) {
+  getOrCreateBuild(ref) {
     let ret = this.currentBuilds[ref.object.sha];
     if (ret) return ret;
 
@@ -56,7 +56,7 @@ export default class BuildMonitor {
     let cs = new Subject();
     let cancel = () => cs.onNext(true);
 
-    let innerObs = this.runBuild(cmdWithArgs, ref, repo)
+    let innerObs = this.runBuild(ref)
       .takeUntil(cs)
       .publishLast();
       
@@ -117,7 +117,7 @@ export default class BuildMonitor {
       let refsToBuild = this.determineRefsToBuild(refs);
       _.each(refsToBuild, (ref) =>
         this.buildsToActuallyExecute.onNext(
-          this.getOrCreateBuild(this.cmdWithArgs, ref, this.repo).observable));
+          this.getOrCreateBuild(ref).observable));
     });
 
     this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));

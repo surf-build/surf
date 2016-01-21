@@ -29,7 +29,7 @@ describe('the build monitor', function() {
     this.refExamples = acc;
 
     this.sched = new TestScheduler();
-    this.fixture = new BuildMonitor(null, 2, null, null, this.sched);
+    this.fixture = new BuildMonitor(null, null, 2, null, null, this.sched);
   });
   
   afterEach(function() {
@@ -51,7 +51,7 @@ describe('the build monitor', function() {
     
     d('Initial getOrCreateBuild');
     let ref = this.refExamples['refs1.json'][1];
-    let result = this.fixture.getOrCreateBuild('', ref, '');
+    let result = this.fixture.getOrCreateBuild(ref);
     this.sched.start();
     expect(buildCount).to.equal(0);
     expect(runBuildCount).to.equal(1);
@@ -68,7 +68,7 @@ describe('the build monitor', function() {
     expect(buildCount).to.equal(1);
     
     d('Second getOrCreateBuild');
-    result = this.fixture.getOrCreateBuild('', ref, '');
+    result = this.fixture.getOrCreateBuild(ref);
     result.observable.subscribe();
     this.sched.start();
     expect(buildCount).to.equal(1);
@@ -79,7 +79,7 @@ describe('the build monitor', function() {
     buildSubject.onCompleted();
       
     d('Third getOrCreateBuild');
-    result = this.fixture.getOrCreateBuild('', ref, '');
+    result = this.fixture.getOrCreateBuild(ref);
     result.observable.subscribe();
     this.sched.start();
     expect(buildCount).to.equal(2);
@@ -108,7 +108,7 @@ describe('the build monitor', function() {
       Observable.just(this.refExamples['refs1.json']);
 
     let buildCount = 0;
-    this.fixture.runBuild = (cmdWithArgs, ref) => {
+    this.fixture.runBuild = (ref) => {
       buildCount++;
       return Observable.just('')
         .subUnsub(() => d(`Building ${ref.object.sha}`));
@@ -133,7 +133,7 @@ describe('the build monitor', function() {
     let completedBuilds = 0;
     let completedShas = new Set();
 
-    this.fixture.runBuild = (cmdWithArgs, ref) => {
+    this.fixture.runBuild = (ref) => {
       return Observable.just('')
         .do(() => {
           if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
@@ -173,7 +173,7 @@ describe('the build monitor', function() {
     let liveBuilds = 0;
     let cancelledRefs = [];
 
-    this.fixture.runBuild = (cmdWithArgs, ref) => {
+    this.fixture.runBuild = (ref) => {
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -225,7 +225,7 @@ describe('the build monitor', function() {
     let liveBuilds = 0;
     let cancelledRefs = [];
 
-    this.fixture.runBuild = (cmdWithArgs, ref) => {
+    this.fixture.runBuild = (ref) => {
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
@@ -277,7 +277,7 @@ describe('the build monitor', function() {
     let liveBuilds = 0;
     let cancelledRefs = [];
 
-    this.fixture.runBuild = (cmdWithArgs, ref) => {
+    this.fixture.runBuild = (ref) => {
       let ret = Observable.just('')
         .do(() => {
           liveBuilds++;
