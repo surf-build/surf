@@ -39,6 +39,16 @@ export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   return ret;
 }
 
+export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
+  let date = toIso8601(new Date()).replace(/:/g, '.');
+  let shortSha = sha.substr(0,6);
+
+  let ret = path.join(tmp, `serftmp-${nwo}-${shortSha}-${date}`);
+  if (!dontCreate) mkdirp.sync(ret);
+  return ret;
+}
 export async function checkoutSha(targetDirname, sha) {
   let repo = await Repository.open(targetDirname);
   let commit = await repo.getCommit(sha);
