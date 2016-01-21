@@ -2,7 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 import {fs} from '../src/promisify';
 import BuildMonitor from '../src/build-monitor';
-import {Observable, TestScheduler, Disposable} from 'rx';
+import {Observable, TestScheduler, Disposable, Subject} from 'rx';
 import '../src/custom-rx-operators';
 
 const d = require('debug')('serf-test:build-monitor');
@@ -14,7 +14,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe.only('the build monitor', function() {
+describe('the build monitor', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -31,9 +31,59 @@ describe.only('the build monitor', function() {
     this.sched = new TestScheduler();
     this.fixture = new BuildMonitor(null, 2, null, null, this.sched);
   });
-
+  
   afterEach(function() {
     this.fixture.dispose();
+  });
+  
+  it('shouldnt run builds in getOrCreateBuild until you subscribe', function() {
+    let buildCount = 0;
+    let runBuildCount = 0;
+    
+    // Scheduling is live
+    this.sched.start();
+    
+    let buildSubject = new Subject();
+    this.fixture.runBuild = () => {
+      runBuildCount++;
+      return buildSubject.subUnsub(() => buildCount++);
+    };
+    
+    d('Initial getOrCreateBuild');
+    let ref = this.refExamples['refs1.json'][1];
+    let result = this.fixture.getOrCreateBuild('', ref, '');
+    this.sched.start();
+    expect(buildCount).to.equal(0);
+    expect(runBuildCount).to.equal(1);
+    
+    d('Subscribing 1x');
+    result.observable.subscribe();
+    this.sched.start();
+    expect(buildCount).to.equal(1);
+    
+    // Double subscribes do nothing
+    d('Subscribing 2x');
+    result.observable.subscribe();
+    this.sched.start();
+    expect(buildCount).to.equal(1);
+    
+    d('Second getOrCreateBuild');
+    result = this.fixture.getOrCreateBuild('', ref, '');
+    result.observable.subscribe();
+    this.sched.start();
+    expect(buildCount).to.equal(1);
+    expect(runBuildCount).to.equal(1);
+    
+    d('Complete the build');
+    buildSubject.onNext('');  
+    buildSubject.onCompleted();
+      
+    d('Third getOrCreateBuild');
+    result = this.fixture.getOrCreateBuild('', ref, '');
+    result.observable.subscribe();
+    this.sched.start();
+    expect(buildCount).to.equal(2);
+    expect(runBuildCount).to.equal(2);
   });
 
   it('should decide to build new refs from a blank slate', function() {
@@ -84,10 +134,9 @@ describe.only('the build monitor', function() {
     let completedShas = new Set();
 
     this.fixture.runBuild = (cmdWithArgs, ref) => {
-      if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
-
       return Observable.just('')
         .do(() => {
+          if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
@@ -208,7 +257,7 @@ describe.only('the build monitor', function() {
     };
 
     this.fixture.seenCommits = getSeenRefs(this.refExamples['refs1.json']);
-
+    
     this.fixture.fetchRefs = () =>
       Observable.just(this.refExamples['refs3.json']);
 

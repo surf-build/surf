@@ -56,24 +56,27 @@ export default class BuildMonitor {
     let cs = new Subject();
     let cancel = () => cs.onNext(true);
 
-    // Defer + publihLast + connect kinda like refCount but never recreates the build
-    let buildObs = Observable.defer(() => {
-      let ret = this.runBuild(cmdWithArgs, ref, repo)
-        .takeUntil(cs)
-        .subUnsub(() => {
-          d(`Adding ${ref.object.sha} to seen commits`);
-          this.seenCommits.add(ref.object.sha);
-        }, () => {
-          d(`Removing ${ref.object.sha} from active builds`);
-          delete this.currentBuilds[ref.object.sha];
-        })
-        .publishLast();
-
-      ret.connect();
-      return ret;
+    let innerObs = this.runBuild(cmdWithArgs, ref, repo)
+      .takeUntil(cs)
+      .publishLast();
+      
+    innerObs.catch(() => Observable.just(''))
+      .subscribe(() => {
+        d(`Removing ${ref.object.sha} from active builds`);
+        delete this.currentBuilds[ref.object.sha];
+      });
+      
+    let connected = null;
+    let buildObs = Observable.create((subj) => {
+      this.seenCommits.add(ref.object.sha);
+      
+      let disp = innerObs.subscribe(subj);
+      if (!connected) connected = innerObs.connect();
+      
+      return disp;
     });
-
-    return this.currentBuilds[ref.object.sha] = { observable: buildObs.publishLast().refCount(), cancel };
+        
+    return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
   }
 
   determineRefsToBuild(refInfo) {

@@ -11,3 +11,14 @@ Observable.prototype.subUnsub = function(onSub=null, onUnsub=null) {
     });
   });
 };
+
+Observable.prototype.permaRefcount = function() {
+  let connected = null;
+  
+  return Observable.create((subj) => {
+    let d = this.subscribe(subj);
+    if (!connected) connected = this.connect();
+
+    return d;
+  });
+};
