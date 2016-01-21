@@ -44,6 +44,8 @@ export default class BuildMonitor {
     };
 
     d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`);
+    console.log(`Building ${this.repo}@${ref.object.sha} (${ref.ref})`);
+
     return spawn(this.cmdWithArgs[0], args, opts)
       .do((x) => console.log(x), e => console.error(e));
   }

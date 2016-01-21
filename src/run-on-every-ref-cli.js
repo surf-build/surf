@@ -69,6 +69,7 @@ async function main() {
   refInfo = await fetchRefs();
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
+  console.log(`Watching ${argv.r}, will run '${cmdWithArgs.join(' ')}'\n`);
   let buildMonitor = new BuildMonitor(cmdWithArgs, argv.r, jobs, fetchRefs, refInfo);
   buildMonitor.start();
   
