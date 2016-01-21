@@ -4,10 +4,8 @@ import './babel-maybefill';
 
 import _ from 'lodash';
 import request from 'request-promise';
-import determineChangedRefs from './ref-differ';
-import {asyncMap, delay, spawn} from './promise-array';
 import {getNwoFromRepoUrl} from './github-api';
-import {Observable} from 'rx';
+import BuildMonitor from './build-monitor';
 
 const d = require('debug')('serf:run-on-every-ref');
 
@@ -70,14 +68,11 @@ async function main() {
 
   refInfo = await fetchRefs();
 
-  // All refs on startup are seen refs
-  let seenCommits = _.reduce(refInfo, (acc, x) => {
-    acc.add(x.object.sha);
-    return acc;
-  }, new Set());
-
   // TODO: figure out a way to trap Ctrl-C and dispose stop
-  return new Promise();
+  let buildMonitor = new BuildMonitor(cmdWithArgs, argv.r, jobs, fetchRefs, refInfo);
+  buildMonitor.start();
+  
+  return new Promise(() => {});
 }
 
 main()
