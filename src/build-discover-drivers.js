@@ -33,6 +33,7 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
     for (let guess of guesses) {
       try {
         let fullPath = path.join(this.rootDir, guess);
+
         d(`Looking for file ${fullPath}`);
         let stat = await fs.stat(fullPath);
 
@@ -59,11 +60,17 @@ export class DotNetBuildDiscoverer extends BuildDiscoverBase {
 
   async findSolutionFile(dir=this.rootDir, recurse=true) {
     // Look in one-level's worth of directories for any file ending in sln
-    let dentries = await fs.readdir();
+    let dentries = await fs.readdir(dir);
 
+    d(dentries.join());
     for (let entry of dentries) {
-      let target = path.join(this.rootDir, entry);
+      let target = path.join(dir, entry);
       let stat = await statNoException(target);
+
+      if (!stat) {
+        d(`Failed to stat: ${target}`);
+        continue;
+      }
 
       if (stat.isDirectory()) {
         if (!recurse) continue;
