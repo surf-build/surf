@@ -35,8 +35,12 @@ export async function determineBuildCommand(rootPath, sha) {
   return ret;
 }
 
-export function runBuildCommand(cmd, args, rootDir, sha) {
-  let envToAdd = { 'SERF_SHA1': sha };
+export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
+  let envToAdd = { 
+    'SERF_SHA1': sha,
+    'TMPDIR': tempDir,
+    'TEMP': tempDir
+  };
 
   let opts = {
     cwd: rootDir,

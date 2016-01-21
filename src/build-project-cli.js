@@ -4,9 +4,10 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand } from './build-api';
+import { fs, rimraf } from './promisify';
 
 const d = require('debug')('serf:serf-build');
 
@@ -55,6 +56,7 @@ function getRootAppDir() {
 function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
+
 async function main() {
   let sha = argv.sha || process.env.SERF_SHA1;
   let repo = argv.repo || process.env.SERF_REPO;
@@ -78,6 +80,7 @@ async function main() {
   let bareRepoDir = await cloneOrFetchRepo(repo, repoDir);
 
   let workDir = getWorkdirForRepoUrl(repo, sha);
+  let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
   await cloneRepo(bareRepoDir, workDir, null, false);
@@ -93,13 +96,20 @@ async function main() {
   let buildOutput = null;
 
   try {
-    buildOutput = await runBuildCommand(cmd, args, workDir, sha).toPromise();
+    buildOutput = await runBuildCommand(cmd, args, workDir, sha, tempDir).toPromise();
     console.log(buildOutput);
     buildPassed = true;
   } catch (e) {
     buildOutput = e.message;
+
     console.log(`Error during build: ${e.message}`);
     d(e.stack);
+  }
+  
+  await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
+  
+  if (buildPassed) {
+    await rimraf(tempDir);
   }
 
   if (argv.name) {

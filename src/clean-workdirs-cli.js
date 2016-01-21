@@ -48,6 +48,7 @@ async function main() {
 
   let safeDirs = _.reduce(refInfo, (acc, ref) => {
     acc.add(getWorkdirForRepoUrl(argv.r, ref.object.sha, true));
+    acc.add(getTempdirForRepoUrl(argv.r, ref.object.sha, true));
     return acc;
   }, new Set());
   
