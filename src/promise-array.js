@@ -6,6 +6,7 @@ import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
 const isWindows = process.platform === 'win32';
+const sfs = require('fs');
 
 const d = require('debug')('serf:promise-array');
 
@@ -38,9 +39,17 @@ export function delay(ms) {
   });
 }
 
+export async function statNoException(file) {
+  try {
+    return await fs.stat(file);
+  } catch (e) {
+    return null;
+  }
+}
+
 export function statSyncNoException(file) {
   try {
-    return fs.statSync(file);
+    return sfs.statSync(file);
   } catch (e) {
     return null;
   }
@@ -78,7 +87,7 @@ export function spawnDetached(exe, params, opts=null) {
 
   let target = path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe');
   let options = _.assign({ detached: true, jobber: true }, opts || {});
-  
+
   d(`spawnDetached: ${target}, ${newParams}`);
   return spawn(target, newParams, options);
 }
@@ -123,7 +132,7 @@ export function spawn(exe, params, opts=null) {
 
     return Disposable.create(() => {
       if (noClose) return;
-      
+
       d(`Killing process: ${fullPath} ${params.join()}`);
       if (!opts.jobber) {
         proc.kill();
