@@ -51,12 +51,14 @@ function runDownPath(exe) {
   // Posix does
 
   // Files with any directory path don't get this applied
-  if (exe.match(/\\\//)) {
+  if (exe.match(/[\\\/]/)) {
+    d('Path has slash in directory, bailing');
     return exe;
   }
 
   let target = path.join('.', exe);
   if (statSyncNoException(target)) {
+    d(`Found executable in currect directory: ${target}`);
     return target;
   }
 
@@ -66,7 +68,8 @@ function runDownPath(exe) {
     if (statSyncNoException(needle)) return needle;
   }
 
-  return target;
+  d('Failed to find executable anywhere in path');
+  return exe;
 }
 
 export function spawnDetached(exe, params, opts=null) {
@@ -78,6 +81,7 @@ export function spawnDetached(exe, params, opts=null) {
     process.execPath;
 
   let options = _.assign({ detached: true, jobber: true }, opts || {});
+  d(`spawnDetached: ${target}, ${newParams}`);
   return spawn(target, newParams, options);
 }
 
