@@ -53,6 +53,7 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
     let artifactDir = path.join(this.rootDir, 'serf-artifacts');
     await mkdirp(artifactDir);
 
+    process.env.SERF_ARTIFACT_DIR = artifactDir;
     return { cmd: await this.getScriptPath(), args: [], artifactDirs: [artifactDir] };
   }
 }
