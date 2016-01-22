@@ -1,6 +1,7 @@
+import _ from 'lodash';
 import path from 'path';
 import {fs} from './promisify';
-import {statNoException} from './promise-array';
+import {statNoException, readdirRecursive} from './promise-array';
 import BuildDiscoverBase from './build-discover-base';
 
 const d = require('debug')('serf:build-discover-drivers');
@@ -96,8 +97,16 @@ export class DotNetBuildDiscoverer extends BuildDiscoverBase {
     let buildCommand = process.platform === 'win32' ? 'msbuild' : 'xbuild';
     let slnFile = await this.findSolutionFile();
 
+    let projFiles = _.filter(
+      await readdirRecursive(this.rootDir),
+      (x) => x.match(/\.(cs|vb|fs)proj/i));
+
+    let artifactDirs = _.map(projFiles, (x) => path.join(path.dirname(x), 'bin', 'Release'));
+
     return {
-      cmd: buildCommand, args: ['/p:Configuration=Release', slnFile]
+      cmd: buildCommand,
+      args: ['/p:Configuration=Release', slnFile],
+      artifactDirs: _.uniq(artifactDirs)
     };
   }
 }

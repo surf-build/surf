@@ -60,7 +60,6 @@ export async function readdirRecursive(dir) {
 
   for (let entry of await fs.readdir(dir)) {
     let target = path.resolve(dir, entry);
-    d(target);
     let stat = await statNoException(target);
 
     if (stat && stat.isDirectory()) {
