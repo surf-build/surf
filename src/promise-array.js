@@ -55,6 +55,25 @@ export function statSyncNoException(file) {
   }
 }
 
+export async function readdirRecursive(dir) {
+  let acc = [];
+
+  for (let entry of await fs.readdir(dir)) {
+    let target = path.resolve(dir, entry);
+    d(target);
+    let stat = await statNoException(target);
+
+    if (stat && stat.isDirectory()) {
+      let entries = await readdirRecursive(target);
+      _.each(entries, (x) => acc.push(x));
+    } else {
+      acc.push(target);
+    }
+  }
+
+  return acc;
+}
+
 function runDownPath(exe) {
   // NB: Windows won't search PATH looking for executables in spawn like
   // Posix does
