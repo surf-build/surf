@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import path from 'path';
-import {fs} from './promisify';
+import {fs, mkdirp} from './promisify';
 import {statNoException, readdirRecursive} from './promise-array';
 import BuildDiscoverBase from './build-discover-base';
 
@@ -50,7 +50,10 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
   }
 
   async getBuildCommand() {
-    return { cmd: await this.getScriptPath(), args: [] };
+    let artifactDir = path.join(this.rootDir, 'serf-artifacts');
+    await mkdirp(artifactDir);
+
+    return { cmd: await this.getScriptPath(), args: [], artifactDirs: [artifactDir] };
   }
 }
 
