@@ -6,6 +6,7 @@ import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
 const isWindows = process.platform === 'win32';
+const sfs = require('fs');
 
 const d = require('debug')('serf:promise-array');
 
@@ -38,12 +39,38 @@ export function delay(ms) {
   });
 }
 
-export function statSyncNoException(file) {
+export async function statNoException(file) {
   try {
-    return fs.statSync(file);
+    return await fs.stat(file);
   } catch (e) {
     return null;
   }
+}
+
+export function statSyncNoException(file) {
+  try {
+    return sfs.statSync(file);
+  } catch (e) {
+    return null;
+  }
+}
+
+export async function readdirRecursive(dir) {
+  let acc = [];
+
+  for (let entry of await fs.readdir(dir)) {
+    let target = path.resolve(dir, entry);
+    let stat = await statNoException(target);
+
+    if (stat && stat.isDirectory()) {
+      let entries = await readdirRecursive(target);
+      _.each(entries, (x) => acc.push(x));
+    } else {
+      acc.push(target);
+    }
+  }
+
+  return acc;
 }
 
 function runDownPath(exe) {
@@ -78,7 +105,7 @@ export function spawnDetached(exe, params, opts=null) {
 
   let target = path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe');
   let options = _.assign({ detached: true, jobber: true }, opts || {});
-  
+
   d(`spawnDetached: ${target}, ${newParams}`);
   return spawn(target, newParams, options);
 }
@@ -123,7 +150,7 @@ export function spawn(exe, params, opts=null) {
 
     return Disposable.create(() => {
       if (noClose) return;
-      
+
       d(`Killing process: ${fullPath} ${params.join()}`);
       if (!opts.jobber) {
         proc.kill();

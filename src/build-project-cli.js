@@ -6,7 +6,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
-import { determineBuildCommand, runBuildCommand } from './build-api';
+import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 
 const d = require('debug')('serf:serf-build');
@@ -57,23 +57,34 @@ function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
 
-async function main() {
-  let sha = argv.sha || process.env.SERF_SHA1;
-  let repo = argv.repo || process.env.SERF_REPO;
+export async function main(testSha=null, testRepo=null, testName=null) {
+  let sha = testSha || argv.sha || process.env.SERF_SHA1;
+  let repo = testRepo || argv.repo || process.env.SERF_REPO;
+  let name = testName || argv.name;
 
+  if (name === '__test__') {
+    // NB: Don't end up setting statuses in unit tests, even if argv.name is set
+    name = null;
+  }
+
+  d(`repo: ${repo}, sha: ${sha}`);
   if (!repo || !sha) {
     yargs.showHelp();
-    process.exit(-1);
+    if (testSha || testRepo) {
+      throw new Error("Would've Died");
+    } else {
+      process.exit(-1);
+    }
   }
 
   let repoDir = getRepoCloneDir();
 
-  if (argv.name) {
+  if (name) {
     d(`Posting 'pending' to GitHub status`);
 
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
-      'pending', 'Serf Build Server', null, argv.name);
+      'pending', 'Serf Build Server', null, name);
   }
 
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
@@ -89,7 +100,7 @@ async function main() {
   await checkoutSha(workDir, sha);
 
   d(`Determining command to build`);
-  let { cmd, args } = await determineBuildCommand(workDir);
+  let { cmd, args, artifactDirs } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
   let buildPassed = false;
@@ -105,14 +116,10 @@ async function main() {
     console.log(`Error during build: ${e.message}`);
     d(e.stack);
   }
-  
-  await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
-  
-  if (buildPassed) {
-    await rimraf(tempDir);
-  }
 
-  if (argv.name) {
+  await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
+
+  if (name) {
     d(`Posting 'success' to GitHub status`);
 
     let gistInfo = await createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
@@ -120,28 +127,49 @@ async function main() {
         content: buildOutput
       }
     });
+    
+    d(`Gist result: ${gistInfo.result.html_url}`);
+    d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
+    if (buildPassed) {
+      let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
 
+      try {
+        d(`Uploading build artifacts using token: ${token}`);
+        let targetDir = await uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, token);
+        await rimraf(targetDir);
+      } catch (e) {
+        console.error(`Failed to upload build artifacts: ${e.message}`);
+        d(e.stack);
+      }
+    }
+        
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
-      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, argv.name);
+      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, name);
+  }
+  
+  if (buildPassed) {
+    await rimraf(tempDir);
   }
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+if (process.mainModule === module) {
+  main()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.log(`Fatal Error: ${e.message}`);
+      d(e.stack);
 
-    if (argv.name) {
-      let repo = argv.repo || process.env.SERF_REPO;
-      let sha = argv.sha || process.env.SERF_SHA1;
-      let nwo = getNwoFromRepoUrl(repo);
+      if (argv.name) {
+        let repo = argv.repo || process.env.SERF_REPO;
+        let sha = argv.sha || process.env.SERF_SHA1;
+        let nwo = getNwoFromRepoUrl(repo);
 
-      postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
-        .catch(() => true)
-        .then(() => process.exit(-1));
-    } else {
-      process.exit(-1);
-    }
-  });
+        postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
+          .catch(() => true)
+          .then(() => process.exit(-1));
+      } else {
+        process.exit(-1);
+      }
+    });
+}

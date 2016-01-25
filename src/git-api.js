@@ -2,10 +2,11 @@ import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
 
-import { Repository, Clone, Checkout, Cred } from 'nodegit';
+import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { rimraf, mkdirp, fs } from './promisify';
+import { statNoException } from './promise-array';
 
 const d = require('debug')('serf:git-api');
 
@@ -47,10 +48,19 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `serftmp-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `serft-${nwo}-${shortSha}-${date}`);
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
+
+export function getGistTempdir(id) {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let date = toIso8601(new Date()).replace(/:/g, '.');
+
+  let ret = path.join(tmp, `serfg-${id}-${date}`);
+  return ret;
+}
+
 export async function checkoutSha(targetDirname, sha) {
   let repo = await Repository.open(targetDirname);
   let commit = await repo.getCommit(sha);
@@ -155,4 +165,69 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
 
   await cloneRepo(url, targetDirname, token);
   return targetDirname;
+}
+
+export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
+  if (!(await statNoException(targetDir))) {
+    d(`${targetDir} doesn't exist, cloning it`);
+    await mkdirp(targetDir);
+    await cloneRepo(repoUrl, targetDir, token, false);
+  }
+
+  d("Opening repo");
+  let repo = await Repository.open(targetDir);
+
+  d("Opening index");
+  let idx = await repo.openIndex();
+  await idx.read(1);
+
+  d("Reading artifacts directory");
+  let artifacts = await fs.readdir(artifactDir);
+  for (let entry of artifacts) {
+    let tgt = path.join(targetDir, entry);
+    fs.copySync(path.join(artifactDir, entry), tgt);
+
+    d(`Adding artifact: ${tgt}`);
+    await idx.addByPath(entry);
+  }
+
+  await idx.write();
+  let oid = await idx.writeTree();
+  let head = await Reference.nameToId(repo, "HEAD");
+  let parent = await repo.getCommit(head);
+
+  d(`Writing commit to gist`);
+  let now = new Date();
+  let sig = await Signature.create("Serf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
+  let sig2 = await Signature.create("Serf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
+
+  d(`Creating commit`);
+  await repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);
+
+  return targetDir;
+}
+
+export async function pushGistRepoToMaster(targetDir, token) {
+  d("Opening repo");
+  let repo = await Repository.open(targetDir);
+  
+  d("Looking up origin");
+  let origin = await Remote.lookup(repo, 'origin');
+  
+  let refspec = "refs/heads/master:refs/heads/master";
+  let pushopts = {
+    callbacks: {
+      credentials: () => {
+        d(`Returning ${token} for authentication token`);
+        return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+      },
+      certificateCheck: () => {
+        // Yolo
+        return 1;
+      }
+    }
+  };
+  
+  d("Pushing to Gist");
+  await origin.push([refspec], pushopts);
 }

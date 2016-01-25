@@ -8,6 +8,11 @@ const toImport = [
 ];
 
 module.exports = _.reduce(toImport, (acc,x) => {
-  acc[x] = pify(require(x));
+  if (x == 'fs') {
+    acc[x] = pify(require('fs-extra'));
+  } else {
+    acc[x] = pify(require(x));
+  }
+
   return acc;
 }, {});

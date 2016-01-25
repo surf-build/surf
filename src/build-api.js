@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawnDetached } from './promise-array';
+import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
 const d = require('debug')('serf:build-api');
 const AllBuildDiscoverers = require('./build-discover-drivers');
@@ -28,8 +29,8 @@ export async function determineBuildCommand(rootPath, sha) {
     throw new Error("We can't figure out how to build this repo automatically.");
   }
   
-  let { cmd, args } = await discoverer.getBuildCommand(sha);
-  let ret = findActualExecutable(cmd, args);
+  let ret = await discoverer.getBuildCommand(sha);
+  ret = _.assign({}, findActualExecutable(ret.cmd, ret.args), ret);
   
   d(`Actual executables to run: ${ret.cmd} ${ret.args.join(' ')}`);
   return ret;
@@ -48,4 +49,15 @@ export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   };
 
   return spawnDetached(cmd, args, opts);
+}
+
+export async function uploadBuildArtifacts(gistId, gistCloneUrl, artifactDirs, token) {
+  let targetDir = getGistTempdir(gistId);
+  
+  for (let artifactDir of artifactDirs) {
+    await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token);
+  }
+  
+  await pushGistRepoToMaster(targetDir, token);
+  return targetDir;
 }
