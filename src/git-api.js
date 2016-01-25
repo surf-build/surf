@@ -48,8 +48,18 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `serftmp-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `serft-${nwo}-${shortSha}-${date}`);
   if (!dontCreate) mkdirp.sync(ret);
+  return ret;
+}
+
+export function getGistTempdir(gistUrl) {
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let gistToken = gistUrl.replace('https://gist.github.com/', '');
+  let date = toIso8601(new Date()).replace(/:/g, '.');
+
+  let ret = path.join(tmp, `serfg-${gistToken}-${date}`);
+  mkdirp.sync(ret);
   return ret;
 }
 

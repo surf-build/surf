@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawnDetached } from './promise-array';
+import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
 const d = require('debug')('serf:build-api');
 const AllBuildDiscoverers = require('./build-discover-drivers');
@@ -48,4 +49,15 @@ export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   };
 
   return spawnDetached(cmd, args, opts);
+}
+
+export async function uploadBuildArtifacts(gistCloneUrl, artifactDirs, token) {
+  let targetDir = getGistTempdir(gistCloneUrl);
+  
+  for (let artifactDir of artifactDirs) {
+    await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token);
+  }
+  
+  await pushGistRepoToMaster(targetDir, token);
+  return gistCloneUrl;
 }

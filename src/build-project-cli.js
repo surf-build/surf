@@ -6,7 +6,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
-import { determineBuildCommand, runBuildCommand } from './build-api';
+import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 
 const d = require('debug')('serf:serf-build');
@@ -100,7 +100,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
   await checkoutSha(workDir, sha);
 
   d(`Determining command to build`);
-  let { cmd, args } = await determineBuildCommand(workDir);
+  let { cmd, args, artifactDirs } = await determineBuildCommand(workDir);
 
   d(`Running ${cmd} ${args.join(' ')}...`);
   let buildPassed = false;
@@ -119,10 +119,6 @@ export async function main(testSha=null, testRepo=null, testName=null) {
 
   await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
 
-  if (buildPassed) {
-    await rimraf(tempDir);
-  }
-
   if (name) {
     d(`Posting 'success' to GitHub status`);
 
@@ -135,6 +131,15 @@ export async function main(testSha=null, testRepo=null, testName=null) {
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, name);
+      
+    if (buildPassed) {
+      let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
+      await uploadBuildArtifacts(gistInfo.result.git_pull_url, artifactDirs, token);
+    }
+  }
+  
+  if (buildPassed) {
+    await rimraf(tempDir);
   }
 }
 
