@@ -30,7 +30,7 @@ export async function determineBuildCommand(rootPath, sha) {
   }
   
   let ret = await discoverer.getBuildCommand(sha);
-  ret = _.assign({}, findActualExecutable(ret.cmd, ret.args), ret);
+  _.assign(ret, findActualExecutable(ret.cmd, ret.args));
   
   d(`Actual executables to run: ${ret.cmd} ${ret.args.join(' ')}`);
   return ret;
