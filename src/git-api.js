@@ -159,10 +159,6 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
   return targetDirname;
 }
 
-export async function pushCurrentBranchToRemote(targetDir, remote, token) {
-  let repo = await Repository.open(targetDir);
-}
-
 export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
   if (!(await statNoException(targetDir))) {
     d(`${targetDir} doesn't exist, cloning it`);

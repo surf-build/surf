@@ -2,7 +2,6 @@
 
 import './babel-maybefill';
 
-import _ from 'lodash';
 import request from 'request-promise';
 import {getNwoFromRepoUrl} from './github-api';
 import BuildMonitor from './build-monitor';
