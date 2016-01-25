@@ -127,15 +127,25 @@ export async function main(testSha=null, testRepo=null, testName=null) {
         content: buildOutput
       }
     });
+    
+    d(`Gist result: ${gistInfo.result.html_url}`);
+    d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
+    if (buildPassed) {
+      let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
 
+      try {
+        d(`Uploading build artifacts using token: ${token}`);
+        let targetDir = await uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, token);
+        await rimraf(targetDir);
+      } catch (e) {
+        console.error(`Failed to upload build artifacts: ${e.message}`);
+        d(e.stack);
+      }
+    }
+        
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, name);
-      
-    if (buildPassed) {
-      let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
-      await uploadBuildArtifacts(gistInfo.result.git_pull_url, artifactDirs, token);
-    }
   }
   
   if (buildPassed) {

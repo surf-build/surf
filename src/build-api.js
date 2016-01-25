@@ -51,13 +51,13 @@ export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   return spawnDetached(cmd, args, opts);
 }
 
-export async function uploadBuildArtifacts(gistCloneUrl, artifactDirs, token) {
-  let targetDir = getGistTempdir(gistCloneUrl);
+export async function uploadBuildArtifacts(gistId, gistCloneUrl, artifactDirs, token) {
+  let targetDir = getGistTempdir(gistId);
   
   for (let artifactDir of artifactDirs) {
     await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token);
   }
   
   await pushGistRepoToMaster(targetDir, token);
-  return gistCloneUrl;
+  return targetDir;
 }

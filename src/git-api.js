@@ -53,13 +53,11 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   return ret;
 }
 
-export function getGistTempdir(gistUrl) {
+export function getGistTempdir(id) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
-  let gistToken = gistUrl.replace('https://gist.github.com/', '');
   let date = toIso8601(new Date()).replace(/:/g, '.');
 
-  let ret = path.join(tmp, `serfg-${gistToken}-${date}`);
-  mkdirp.sync(ret);
+  let ret = path.join(tmp, `serfg-${id}-${date}`);
   return ret;
 }
 
@@ -214,7 +212,7 @@ export async function pushGistRepoToMaster(targetDir, token) {
   let repo = await Repository.open(targetDir);
   
   d("Looking up origin");
-  let origin = Remote.lookup(repo, 'origin');
+  let origin = await Remote.lookup(repo, 'origin');
   
   let refspec = "refs/heads/master:refs/heads/master";
   let pushopts = {
