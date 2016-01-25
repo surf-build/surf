@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
 
-import { Repository, Clone, Checkout, Cred, Reference, Signature } from 'nodegit';
+import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { rimraf, mkdirp, fs } from './promisify';
@@ -201,4 +201,29 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
   await repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);
 
   return targetDir;
+}
+
+export async function pushGistRepoToMaster(targetDir, token) {
+  d("Opening repo");
+  let repo = await Repository.open(targetDir);
+  
+  d("Looking up origin");
+  let origin = Remote.lookup(repo, 'origin');
+  
+  let refspec = "refs/heads/master:refs/heads/master";
+  let pushopts = {
+    callbacks: {
+      credentials: () => {
+        d(`Returning ${token} for authentication token`);
+        return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+      },
+      certificateCheck: () => {
+        // Yolo
+        return 1;
+      }
+    }
+  };
+  
+  d("Pushing to Gist");
+  await origin.push([refspec], pushopts);
 }
