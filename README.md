@@ -34,7 +34,11 @@ Now, try running `surf-build`, which is a command-line app that knows how to bui
 surf-build --repo https://github.com/surf-build/surf -s 805230d579cb49ffd7e33ee060023baebaf203e5
 ```
 
-Tada! You made a build. Creating a continuous build isn't much harder - first, do the following:
+Tada! You made a build. 
+
+### Setting up Continuous Build
+
+Creating a continuous build isn't much harder - first, do the following:
 
 1. Go to https://github.com/settings/tokens to get a token
 1. Make sure to check `repo` and `gist`.
