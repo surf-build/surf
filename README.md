@@ -46,6 +46,10 @@ surf-client -s http://localhost:3000 -r https://github.com/surf-build/surf -- su
 
 That's it! Every time someone pushes a PR or change to Surf, your computer will clean-build the project. Since you (probably) don't have write permission on the Surf repo, you can't save the results to GitHub. 
 
+## How does Surf know to build my project?
+
+The most straightforward way (and one of the only ways at the moment), is to have a script at the root of the repo called `build.sh` and `build.cmd/ps1` for Windows. Future versions of Surf will know how to build common project types automatically, so you won't have to do this.
+
 ## How to set up builds against GitHub PRs
 
 Surf is great at running builds to verify your PRs, which show up here on the GitHub UI:
@@ -60,3 +64,80 @@ surf-client -s http://localhost:3000 -r https://github.com/surf-build/example-cs
 ```
 
 Pass a descriptive name as your parameter to `-n`, usually the platform / architecture that you're building on. The build output will be a link on the checkmark, and posted to your account as a GitHub Gist. Check out an example: https://gist.github.com/paulcbetts/b6ab52eeb43d0c551516.
+
+## Available Commands
+
+### `surf-server`
+
+Sets up a build server which allows clients to query GitHub without running out of API calls. In the future, this will also run a small status page.
+
+```
+Usage: surf-server owner/repo owner2/repo owner/repo3...
+Runs a web service to monitor GitHub commits and provide them to Surf clients
+
+Options:
+  -h, --help  Show help                                                [boolean]
+  -p, --port  The port to start the server on
+
+Some useful environment variables:
+
+SURF_PORT - the port to serve on if not specified via -p, defaults to 3000.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.
+```
+
+### `surf-client`
+
+Monitors a GitHub repo and runs a command on every changed ref, constrained to a certain number of processes in parallel.
+
+```
+sage: surf-client -s http://some.server -r https://github.com/some/repo --
+command arg1 arg2 arg3...
+Monitors a GitHub repo and runs a command for each changed branch / PR.
+
+Options:
+  -h, --help    Show help                                              [boolean]
+  -s, --server  The Surf server to connect to
+  -r, --repo    The URL of the repository to monitor
+  -j, --jobs    The number of concurrent jobs to run. Defaults to 2
+
+Some useful environment variables:
+
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use instead of .com.
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
+provided.
+```
+
+`surf-client` will set a few useful environment variables to the command that it runs for every changed branch:
+
+* `SURF_REPO` - the repository URL to use
+* `SURF_SHA1` - the commit to build
+
+### `surf-build`
+
+Clones a repo from GitHub, checks out the specified commit, and builds the project (currently via `build.sh` / `build.cmd` but in the future will know how to build various projects).
+
+```
+Usage: surf-build -r http://github.com/some/repo -s SHA1
+Clones a repo from GitHub and builds the given SHA1
+
+Options:
+  -r, --repo  The repository to clone
+  -s, --sha   The sha to build
+  -n, --name  The name to give this build on GitHub
+
+Some useful environment variables:
+
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post status
+to.
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
+provided.
+GIST_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post Gists to.
+GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the
+build output Gist.
+
+SURF_SHA1 - an alternate way to specify the --sha parameter, provided
+            automatically by surf-client.
+SURF_REPO - an alternate way to specify the --repo parameter, provided
+            automatically by surf-client.
+```
