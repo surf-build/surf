@@ -1,6 +1,6 @@
 # Surf: A Build Server for GitHub
 
-Surf is a multi-platform, GitHub oriented server for building your apps continuously that is easy to set up, works on every operating system, and is way less of a pain in the ass than anything else out there. Since Surf is built around Git and GitHub, its configuration is vastly simpler than other build servers and since it's built on node.js, installing it is really easy.
+Surf is a multi-platform, language-agnostic, GitHub oriented server for building your apps continuously that is easy to set up, works on every operating system, and is way less of a pain in the ass than anything else out there. Since Surf is built around Git and GitHub, its configuration is vastly simpler than other build servers and since it's built on node.js, installing it is really easy.
 
 Philosophically, Surf tries to be really simple - it gives you the reusable pieces you need to easily create simple build systems, and have the ability to make more complicated ones if you need to. Architecturally, Surf's design is similar to [BuildBot](http://buildbot.net), but Git / GitHub focused. Some design inspiration, from BuildBot's website:
 
@@ -13,6 +13,12 @@ Philosophically, Surf tries to be really simple - it gives you the reusable piec
 * Surf works on every platform, really easily
 * Surf works even if you can't set up a WebHook (either because of GitHub privileges, firewall issues, whatever).
 * Surf works inside your company firewall, without needing to carve out exceptions. As long as you can make outgoing HTTP requests, it'll work.
+
+### Why should I use $ALTERNATIVE instead?
+
+* Surf only works with Git and GitHub - if you use Subversion or Bitbucket, you're out of luck
+* Surf doesn't have any of its own UI, so if you like lots of knobs and buttons to click, you might be happier with Jenkins
+* Surf is very early and doesn't have a huge plugin community (or, plugins!)  Language-specific build servers might be easier to set up.
 
 ### Try it out by building Surf itself:
 
