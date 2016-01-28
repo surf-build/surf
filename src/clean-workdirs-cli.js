@@ -19,7 +19,7 @@ Cleans builds that no longer correspond to any active ref`)
   .describe('s', 'The Surf server to connect to')
   .boolean('dry-run')
   .describe('dry-run', 'If set, report the directories we would delete')
-  .alias('r', 'repository')
+  .alias('r', 'repo')
   .describe('r', 'The repository URL to remove old builds for')
   .alias('h', 'help');
   

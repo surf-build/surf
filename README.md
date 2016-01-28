@@ -157,3 +157,18 @@ SURF_SHA1 - an alternate way to specify the --sha parameter, provided
 SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.
 ```
+
+### `surf-clean`
+
+Surf will leave lots of temporary directories around for work directories by-default. `surf-clean` will mop up ones that are no longer mapped to current branches.
+
+```sh
+Usage: surf-clean -s http://some.server -r https://github.com/owner/repo
+Cleans builds that no longer correspond to any active ref
+
+Options:
+  -h, --help        Show help                                          [boolean]
+  -s, --server      The Surf server to connect to
+  --dry-run         If set, report the directories we would delete     [boolean]
+  -r, --repo        The repository URL to remove old builds for
+```
