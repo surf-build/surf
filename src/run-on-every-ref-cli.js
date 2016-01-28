@@ -14,7 +14,7 @@ Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .help('h')
   .alias('s', 'server')
   .describe('s', 'The Surf server to connect to')
-  .alias('r', 'repository')
+  .alias('r', 'repo')
   .describe('r', 'The URL of the repository to monitor')
   .alias('j', 'jobs')
   .describe('j', 'The number of concurrent jobs to run. Defaults to 2')
@@ -22,8 +22,8 @@ Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .epilog(`
 Some useful environment variables:
 
-GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
-GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use instead of .com.
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.`);
 
 const argv = yargs.argv;
 

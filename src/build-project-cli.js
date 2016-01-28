@@ -12,8 +12,9 @@ import { fs, rimraf } from './promisify';
 const d = require('debug')('surf:surf-build');
 
 const yargs = require('yargs')
-  .usage(`Usage: surf-build --repo http://github.com/some/repo -s SHA1
+  .usage(`Usage: surf-build -r http://github.com/some/repo -s SHA1
 Clones a repo from GitHub and builds the given SHA1`)
+  .alias('r', 'repo')
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
   .describe('sha', 'The sha to build')
@@ -22,10 +23,10 @@ Clones a repo from GitHub and builds the given SHA1`)
   .epilog(`
 Some useful environment variables:
 
-GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to post status to.
-GITHUB_TOKEN - the GitHub API token to use. Must be provided.
-GIST_TOKEN - the GitHub API token to use to create the build output Gist.
-GIST_ENTERPRISE_URL - the GitHub Enterprise URL to post Gists to.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post status to.
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.
+GIST_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post Gists to.
+GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the build output Gist.
 
 SURF_SHA1 - an alternate way to specify the --sha parameter, provided
             automatically by surf-client.
