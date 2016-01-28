@@ -2,11 +2,13 @@ import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
 
-import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote } from 'nodegit';
+import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { rimraf, mkdirp, fs } from './promisify';
 import { statNoException } from './promise-array';
+
+enableThreadSafety();
 
 const d = require('debug')('serf:git-api');
 
