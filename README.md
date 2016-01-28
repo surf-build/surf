@@ -72,14 +72,26 @@ Surf is great at running builds to verify your PRs, which show up here on the Gi
 
 ![](http://cl.ly/0Q0S0A233I0u/Fix_miscellaneous_Windows_bugs_by_paulcbetts__Pull_Request_7__surf-buildsurf_2016-01-27_21-51-35.png)
 
-To set this up, all we need to do is pass `-n` to `surf-build`: 
+To set this up, all we need to do is pass `-n` to `surf-build` - here's an example with PowerShell in Windows: 
 
 ```sh
-export GITHUB_TOKEN='<< your token >>'
+$env:GITHUB_TOKEN="<< your token >>"
+
 surf-client -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-win32-x64'
 ```
 
 Pass a descriptive name as your parameter to `-n`, usually the platform / architecture that you're building on. The build output will be a link on the checkmark, and posted to your account as a GitHub Gist. Check out an example: https://gist.github.com/paulcbetts/b6ab52eeb43d0c551516.
+
+## Ugh! It doesn't work!
+
+Surf uses the really great [debug module](https://github.com/visionmedia/debug) for all of its diagnostics. To enable it, set the `DEBUG` environment variable to `*,-babel` (since Babel is very noisy):
+
+```sh
+export GITHUB_TOKEN='<< your token >>'
+export DEBUG='*,-babel'
+
+surf-client -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-debian-ia32'
+```
 
 ## Available Commands
 
