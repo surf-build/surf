@@ -1,6 +1,6 @@
 # Surf: A Build Server for GitHub
 
-![](http://f.cl.ly/items/472V291L1Z0z2k3g331k/emoji_u1f3c4.png)
+<img src="http://f.cl.ly/items/472V291L1Z0z2k3g331k/emoji_u1f3c4.png" width=256 />
 
 Surf is a multi-platform, language-agnostic, GitHub oriented server for building your apps continuously that is easy to set up, works on every operating system, and is way less of a pain in the ass than anything else out there. Since Surf is built around Git and GitHub, its configuration is vastly simpler than other build servers and since it's built on node.js, installing it is really easy.
 
