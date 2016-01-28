@@ -6,14 +6,14 @@ import request from 'request-promise';
 import {getNwoFromRepoUrl} from './github-api';
 import BuildMonitor from './build-monitor';
 
-const d = require('debug')('serf:run-on-every-ref');
+const d = require('debug')('surf:run-on-every-ref');
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-client -s http://some.server -r https://github.com/some/repo -- command arg1 arg2 arg3...
+  .usage(`Usage: surf-client -s http://some.server -r https://github.com/some/repo -- command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .help('h')
   .alias('s', 'server')
-  .describe('s', 'The Serf server to connect to')
+  .describe('s', 'The Surf server to connect to')
   .alias('r', 'repository')
   .describe('r', 'The URL of the repository to monitor')
   .alias('j', 'jobs')
@@ -50,16 +50,16 @@ async function main() {
   // Do an initial fetch to get our initial state
   let refInfo = null;
   let nwo = getNwoFromRepoUrl(argv.r);
-  let serfUrl = `${argv.s}/info/${nwo}`;
+  let surfUrl = `${argv.s}/info/${nwo}`;
 
   const fetchRefs = async () => {
     try {
       return await request({
-        uri: serfUrl,
+        uri: surfUrl,
         json: true
       });
     } catch (e) {
-      console.log(`Failed to fetch from ${serfUrl}: ${e.message}`);
+      console.log(`Failed to fetch from ${surfUrl}: ${e.message}`);
       d(e.stack);
       process.exit(-1);
     }

@@ -9,10 +9,10 @@ import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 
-const d = require('debug')('serf:serf-build');
+const d = require('debug')('surf:surf-build');
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-build --repo http://github.com/some/repo -s SHA1
+  .usage(`Usage: surf-build --repo http://github.com/some/repo -s SHA1
 Clones a repo from GitHub and builds the given SHA1`)
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
@@ -27,10 +27,10 @@ GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 GIST_TOKEN - the GitHub API token to use to create the build output Gist.
 GIST_ENTERPRISE_URL - the GitHub Enterprise URL to post Gists to.
 
-SERF_SHA1 - an alternate way to specify the --sha parameter, provided
-            automatically by serf-client.
-SERF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by serf-client.`);
+SURF_SHA1 - an alternate way to specify the --sha parameter, provided
+            automatically by surf-client.
+SURF_REPO - an alternate way to specify the --repo parameter, provided
+            automatically by surf-client.`);
 
 const argv = yargs.argv;
 
@@ -39,13 +39,13 @@ function getRootAppDir() {
 
   switch (process.platform) {
   case 'win32':
-    ret = path.join(process.env.LOCALAPPDATA, 'serf');
+    ret = path.join(process.env.LOCALAPPDATA, 'surf');
     break;
   case 'darwin':
-    ret = path.join(process.env.HOME, 'Library', 'Application Support', 'serf');
+    ret = path.join(process.env.HOME, 'Library', 'Application Support', 'surf');
     break;
   default:
-    ret = path.join(process.env.HOME, '.config', 'serf');
+    ret = path.join(process.env.HOME, '.config', 'surf');
     break;
   }
 
@@ -58,8 +58,8 @@ function getRepoCloneDir() {
 }
 
 export async function main(testSha=null, testRepo=null, testName=null) {
-  let sha = testSha || argv.sha || process.env.SERF_SHA1;
-  let repo = testRepo || argv.repo || process.env.SERF_REPO;
+  let sha = testSha || argv.sha || process.env.SURF_SHA1;
+  let repo = testRepo || argv.repo || process.env.SURF_REPO;
   let name = testName || argv.name;
 
   if (name === '__test__') {
@@ -84,7 +84,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
 
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
-      'pending', 'Serf Build Server', null, name);
+      'pending', 'Surf Build Server', null, name);
   }
 
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
@@ -145,7 +145,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
         
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
-      buildPassed ? 'success' : 'failure', 'Serf Build Server', gistInfo.result.html_url, name);
+      buildPassed ? 'success' : 'failure', 'Surf Build Server', gistInfo.result.html_url, name);
   }
   
   if (buildPassed) {
@@ -161,11 +161,11 @@ if (process.mainModule === module) {
       d(e.stack);
 
       if (argv.name) {
-        let repo = argv.repo || process.env.SERF_REPO;
-        let sha = argv.sha || process.env.SERF_SHA1;
+        let repo = argv.repo || process.env.SURF_REPO;
+        let sha = argv.sha || process.env.SURF_SHA1;
         let nwo = getNwoFromRepoUrl(repo);
 
-        postCommitStatus(nwo, sha, 'error', 'Serf Build Server', null, argv.name)
+        postCommitStatus(nwo, sha, 'error', 'Surf Build Server', null, argv.name)
           .catch(() => true)
           .then(() => process.exit(-1));
       } else {

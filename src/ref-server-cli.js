@@ -6,12 +6,12 @@ import express from 'express';
 import {fetchAllRefsWithInfo} from './github-api';
 import _ from 'lodash';
 
-const d = require('debug')('serf:ref-server');
+const d = require('debug')('surf:ref-server');
 const app = express();
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-server owner/repo owner2/repo owner/repo3...
-Runs a web service to monitor GitHub commits and provide them to Serf clients`)
+  .usage(`Usage: surf-server owner/repo owner2/repo owner/repo3...
+Runs a web service to monitor GitHub commits and provide them to Surf clients`)
   .help('h')
   .alias('p', 'port')
   .describe('p', 'The port to start the server on')
@@ -19,7 +19,7 @@ Runs a web service to monitor GitHub commits and provide them to Serf clients`)
   .epilog(`
 Some useful environment variables:
 
-SERF_PORT - the port to serve on if not specified via -p, defaults to 3000.
+SURF_PORT - the port to serve on if not specified via -p, defaults to 3000.
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 

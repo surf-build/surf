@@ -3,7 +3,7 @@ import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawnDetached } from './promise-array';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
-const d = require('debug')('serf:build-api');
+const d = require('debug')('surf:build-api');
 const AllBuildDiscoverers = require('./build-discover-drivers');
 
 export function createBuildDiscovers(rootPath) {
@@ -38,7 +38,7 @@ export async function determineBuildCommand(rootPath, sha) {
 
 export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   let envToAdd = { 
-    'SERF_SHA1': sha,
+    'SURF_SHA1': sha,
     'TMPDIR': tempDir,
     'TEMP': tempDir
   };

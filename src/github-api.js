@@ -8,7 +8,7 @@ import pkg from '../package.json';
 import {asyncMap} from './promise-array';
 import createLRU from 'lru-cache';
 
-const d = require('debug')('serf:github-api');
+const d = require('debug')('surf:github-api');
 
 function apiUrl(path, gist=false) {
   let apiRoot = gist ?

@@ -30,11 +30,11 @@ describe('The build project CLI', function() {
   });
 
   // NB: This is a valid test but takes forever
-  it.skip('should compile serf itself', async function() {
-    await main('f6db5b824c6d23a5b620d22bb9df7fcc3ee9f2ac', 'https://github.com/serf-build/serf', '__test__');
+  it.skip('should compile surf itself', async function() {
+    await main('f6db5b824c6d23a5b620d22bb9df7fcc3ee9f2ac', 'https://github.com/surf-build/surf', '__test__');
   });
 
   it('should compile the example C# app', async function() {
-    await main('c4d85178b4c46f1e1b56dd3408bb945f6042a40b', 'https://github.com/serf-build/example-csharp', '__test__');
+    await main('c4d85178b4c46f1e1b56dd3408bb945f6042a40b', 'https://github.com/surf-build/example-csharp', '__test__');
   });
 });

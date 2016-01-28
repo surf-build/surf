@@ -9,14 +9,14 @@ import { getAllWorkdirs } from './git-api';
 import { getNwoFromRepoUrl } from './github-api';
 import request from 'request-promise';
 
-const d = require('debug')('serf:serf-clean');
+const d = require('debug')('surf:surf-clean');
 
 const yargs = require('yargs')
-  .usage(`Usage: serf-clean -s http://some.server -r https://github.com/owner/repo
+  .usage(`Usage: surf-clean -s http://some.server -r https://github.com/owner/repo
 Cleans builds that no longer correspond to any active ref`)
   .help('h')
   .alias('s', 'server')
-  .describe('s', 'The Serf server to connect to')
+  .describe('s', 'The Surf server to connect to')
   .boolean('dry-run')
   .describe('dry-run', 'If set, report the directories we would delete')
   .alias('r', 'repository')
@@ -33,15 +33,15 @@ async function main() {
   
   // Do an initial fetch to get our initial state
   let refInfo = null;
-  let serfUrl = `${argv.s}/info/${getNwoFromRepoUrl(argv.r)}`;
+  let surfUrl = `${argv.s}/info/${getNwoFromRepoUrl(argv.r)}`;
 
   try {
     refInfo = await request({
-      uri: serfUrl,
+      uri: surfUrl,
       json: true
     });
   } catch (e) {
-    console.log(`Failed to fetch from ${serfUrl}: ${e.message}`);
+    console.log(`Failed to fetch from ${surfUrl}: ${e.message}`);
     d(e.stack);
     process.exit(-1);
   }

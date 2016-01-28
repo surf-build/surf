@@ -3,7 +3,7 @@ import {spawn} from './promise-array';
 import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
 import './custom-rx-operators';
 
-const d = require('debug')('serf:build-monitor');
+const d = require('debug')('surf:build-monitor');
 
 export function getSeenRefs(refs) {
   return _.reduce(refs, (acc, x) => {
@@ -35,8 +35,8 @@ export default class BuildMonitor {
   runBuild(ref) {
     let args = _.clone(this.cmdWithArgs).splice(1).concat([ref.object.sha]);
     let envToAdd = {
-      'SERF_SHA1': ref.object.sha,
-      'SERF_REPO': this.repo
+      'SURF_SHA1': ref.object.sha,
+      'SURF_REPO': this.repo
     };
 
     let opts = {

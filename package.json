@@ -1,12 +1,12 @@
 {
-  "name": "serf-build",
+  "name": "surf-build",
   "version": "0.2.1",
   "description": "The simplest GitHub build server",
   "bin": {
-    "serf-server": "./lib/ref-server-cli.js",
-    "serf-client": "./lib/run-on-every-ref-cli.js",
-    "serf-build": "./lib/build-project-cli.js",
-    "serf-clean": "./lib/clean-workdirs-cli.js"
+    "surf-server": "./lib/ref-server-cli.js",
+    "surf-client": "./lib/run-on-every-ref-cli.js",
+    "surf-build": "./lib/build-project-cli.js",
+    "surf-clean": "./lib/clean-workdirs-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paulcbetts/serf-build"
+    "url": "https://github.com/paulcbetts/surf-build"
   },
   "keywords": [
     "build",
@@ -24,9 +24,9 @@
   "author": "Paul Betts <paul@paulbetts.org>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/paulcbetts/serf-build/issues"
+    "url": "https://github.com/paulcbetts/surf-build/issues"
   },
-  "homepage": "https://github.com/paulcbetts/serf-build",
+  "homepage": "https://github.com/paulcbetts/surf-build",
   "dependencies": {
     "babel-polyfill": "^6.3.14",
     "debug": "^2.2.0",

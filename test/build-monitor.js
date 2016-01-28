@@ -5,7 +5,7 @@ import BuildMonitor from '../src/build-monitor';
 import {Observable, TestScheduler, Disposable, Subject} from 'rx';
 import '../src/custom-rx-operators';
 
-const d = require('debug')('serf-test:build-monitor');
+const d = require('debug')('surf-test:build-monitor');
 
 function getSeenRefs(refs) {
   return _.reduce(refs, (acc, x) => {

@@ -10,7 +10,7 @@ import { statNoException } from './promise-array';
 
 enableThreadSafety();
 
-const d = require('debug')('serf:git-api');
+const d = require('debug')('surf:git-api');
 
 export async function getHeadForRepo(targetDirname) {
   let repo = await Repository.open(targetDirname);
@@ -25,7 +25,7 @@ export async function getAllWorkdirs(repoUrl) {
 
   return _.reduce(ret, (acc, x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
-    if (!x.match(/^serf(tmp)?-/i)) return acc;
+    if (!x.match(/^surf(tmp)?-/i)) return acc;
     if (!x.indexOf(`-${nwo}-`)) return acc;
 
     acc.push(path.join(tmp, x));
@@ -39,7 +39,7 @@ export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `serf-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `surf-${nwo}-${shortSha}-${date}`);
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
@@ -50,7 +50,7 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `serft-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `surft-${nwo}-${shortSha}-${date}`);
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
@@ -59,7 +59,7 @@ export function getGistTempdir(id) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let date = toIso8601(new Date()).replace(/:/g, '.');
 
-  let ret = path.join(tmp, `serfg-${id}-${date}`);
+  let ret = path.join(tmp, `surfg-${id}-${date}`);
   return ret;
 }
 
@@ -200,8 +200,8 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
 
   d(`Writing commit to gist`);
   let now = new Date();
-  let sig = await Signature.create("Serf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
-  let sig2 = await Signature.create("Serf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
+  let sig = await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
+  let sig2 = await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
 
   d(`Creating commit`);
   await repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);

@@ -8,7 +8,7 @@ const spawnOg = require('child_process').spawn;
 const isWindows = process.platform === 'win32';
 const sfs = require('fs');
 
-const d = require('debug')('serf:promise-array');
+const d = require('debug')('surf:promise-array');
 
 export function asyncMap(array, selector, maxConcurrency=4) {
   return Observable.from(array)

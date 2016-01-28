@@ -4,7 +4,7 @@ import {fs, mkdirp} from './promisify';
 import {statNoException, readdirRecursive} from './promise-array';
 import BuildDiscoverBase from './build-discover-base';
 
-const d = require('debug')('serf:build-discover-drivers');
+const d = require('debug')('surf:build-discover-drivers');
 
 const possibleScriptPathsWin32 = [
   'script/ci.ps1',
@@ -50,10 +50,10 @@ export class BuildScriptDiscoverer extends BuildDiscoverBase {
   }
 
   async getBuildCommand() {
-    let artifactDir = path.join(this.rootDir, 'serf-artifacts');
+    let artifactDir = path.join(this.rootDir, 'surf-artifacts');
     await mkdirp(artifactDir);
 
-    process.env.SERF_ARTIFACT_DIR = artifactDir;
+    process.env.SURF_ARTIFACT_DIR = artifactDir;
     return { cmd: await this.getScriptPath(), args: [], artifactDirs: [artifactDir] };
   }
 }
