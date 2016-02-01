@@ -168,7 +168,7 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
     await fetchRepo(targetDirname, token);
     return targetDirname;
   } catch (e) {
-    console.error(`Failed to open bare repository, going to clone instead: ${e.message}`);
+    d(`Failed to open bare repository, going to clone instead: ${e.message}`);
     d(e.stack);
   }
 
