@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
+import ini from 'ini';
 
 import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
@@ -92,11 +93,16 @@ export async function checkoutSha(targetDirname, sha) {
 export async function updateRefspecToPullPRs(targetDirname) {
   let config = path.join(targetDirname, 'config');
   let contents = await fs.readFile(config, 'utf8');
+  let parsed = ini.parse(contents);
+  
+  let remoteUrl = parsed['remote "origin"'].url;
+  delete parsed['remote "origin"'];
 
-  contents += `
+  contents = ini.stringify(parsed) + `
 [remote "origin"]
-fetch = +refs/heads/*:refs/remotes/origin/*
-fetch = +refs/pull/*/head:refs/remotes/origin/pr/*`;
+url = ${remoteUrl}
+fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
+fetch = +refs/heads/*:refs/remotes/origin/*`;
 
   await fs.writeFile(config, contents);
 }
