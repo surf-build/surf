@@ -90,21 +90,8 @@ export async function checkoutSha(targetDirname, sha) {
   await Checkout.tree(repo, commit, opts);
 }
 
-export async function updateRefspecToPullPRs(targetDirname) {
-  let config = path.join(targetDirname, 'config');
-  let contents = await fs.readFile(config, 'utf8');
-  let parsed = ini.parse(contents);
-  
-  let remoteUrl = parsed['remote "origin"'].url;
-  delete parsed['remote "origin"'];
-
-  contents = ini.stringify(parsed) + `
-[remote "origin"]
-url = ${remoteUrl}
-fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
-fetch = +refs/heads/*:refs/remotes/origin/*`;
-
-  await fs.writeFile(config, contents);
+export function updateRefspecToPullPRs(repository) {
+  Remote.addFetch(repository, 'origin', '+refs/heads/*:refs/remotes/origin/*');
 }
 
 export async function cloneRepo(url, targetDirname, token=null, bare=true) {
@@ -131,9 +118,9 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   }
 
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
-  await Clone.clone(url, targetDirname, opts);
+  let repo = await Clone.clone(url, targetDirname, opts);
 
-  if (bare) updateRefspecToPullPRs(targetDirname);
+  if (bare) updateRefspecToPullPRs(repo);
 
   await fetchRepo(targetDirname, token, bare);
 }
