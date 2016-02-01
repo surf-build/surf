@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
+import ini from 'ini';
 
 import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
@@ -89,16 +90,8 @@ export async function checkoutSha(targetDirname, sha) {
   await Checkout.tree(repo, commit, opts);
 }
 
-export async function updateRefspecToPullPRs(targetDirname) {
-  let config = path.join(targetDirname, 'config');
-  let contents = await fs.readFile(config, 'utf8');
-
-  contents += `
-[remote "origin"]
-fetch = +refs/heads/*:refs/remotes/origin/*
-fetch = +refs/pull/*/head:refs/remotes/origin/pr/*`;
-
-  await fs.writeFile(config, contents);
+export function updateRefspecToPullPRs(repository) {
+  Remote.addFetch(repository, 'origin', '+refs/pull/*/head:refs/remotes/origin/pr/*');
 }
 
 export async function cloneRepo(url, targetDirname, token=null, bare=true) {
@@ -125,9 +118,9 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   }
 
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
-  await Clone.clone(url, targetDirname, opts);
+  let repo = await Clone.clone(url, targetDirname, opts);
 
-  if (bare) updateRefspecToPullPRs(targetDirname);
+  if (bare) updateRefspecToPullPRs(repo);
 
   await fetchRepo(targetDirname, token, bare);
 }
@@ -168,7 +161,7 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
     await fetchRepo(targetDirname, token);
     return targetDirname;
   } catch (e) {
-    console.error(`Failed to open bare repository, going to clone instead: ${e.message}`);
+    d(`Failed to open bare repository, going to clone instead: ${e.message}`);
     d(e.stack);
   }
 
