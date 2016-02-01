@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 
 import './babel-maybefill';
-
-import express from 'express';
-import {fetchAllRefsWithInfo} from './github-api';
-import _ from 'lodash';
+import {createRefServer} from './ref-server-api';
 
 const d = require('debug')('surf:ref-server');
-const app = express();
 
 const yargs = require('yargs')
   .usage(`Usage: surf-server owner/repo owner2/repo owner/repo3...
@@ -27,34 +23,21 @@ const argv = yargs.argv;
 
 function main() {
   const validNwos = argv._;
+  const port = argv.port || process.env.SURF_PORT || '3000';
+
   if (validNwos.length < 1) {
     console.error("ERROR: Supply a list of valid repositories in owner/repo format (i.e. 'rails/rails')\n");
     yargs.showHelp();
     process.exit(-1);
   }
 
-  app.get('/info/:owner/:name', async (req, res) => {
-    try {
-      if (!req.params.owner || !req.params.name) {
-        throw new Error("no");
-      }
-
-      let needle = `${req.params.owner}/${req.params.name}`;
-      if (!_.find(validNwos, (x) => x === needle)) {
-        throw new Error("no");
-      }
-
-      res.json(await fetchAllRefsWithInfo(needle));
-    } catch (e) {
-      d(e.message);
-      d(e.stack);
-      res.status(500).json({error: e.message});
-    }
-  });
-
-  let port = argv.port || 3000;
   console.log(`Listening on port ${port}`);
-  app.listen(port);
+  try {
+    createRefServer(validNwos, port);
+  } catch (e) {
+    console.error(`Failed to create Surf server: ${e.message}`);
+    d(e.stack);
+  }
 }
 
 main();

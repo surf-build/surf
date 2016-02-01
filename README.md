@@ -36,20 +36,50 @@ Now, try running `surf-build`, which is a command-line app that knows how to bui
 surf-build --repo https://github.com/surf-build/surf -s 805230d579cb49ffd7e33ee060023baebaf203e5
 ```
 
-Tada! You made a build. 
+Tada! You made a build.
 
-### Setting up Continuous Build
+### Testing out Surf in your own
 
-Creating a continuous build isn't much harder - first, do the following:
+Now here's how to set it up in your own project. First, write a script in the root of the project to tell Surf how to build your project. Future versions will know how to build many common projects, but for now, we have to tell it.
+
+```sh
+echo "npm install && npm test" > build.sh
+chmod +x ./build.sh
+
+git add ./build.sh && git commit -m "Create Surf build script"
+git push
+```
+
+Now, let's test it out. First, we need to get a GitHub token:
+
 
 1. Go to https://github.com/settings/tokens to get a token
 1. Make sure to check `repo` and `gist`.
 1. Generate the token and save it off
 
+
+```
+## When you don't specify parameters, we guess them from the current directory
+export GITHUB_TOKEN='<< your token >>'
+surf-build
+```
+
+Now, let's make this build on every push:
+
+```
+## Runs locally and watches the GitHub repo for changes, then invokes
+## surf-build
+
+export GITHUB_TOKEN='<< your token >>'
+surf-client
+```
+
+### Setting up multi-platform / multi-machine continuous build
+
+Creating a multi-platform continuous build isn't much harder - first, do the following:
 Open a Console tab and run:
 
 ```sh
-export GITHUB_TOKEN='<< your token >>'
 surf-server surf-build/surf
 ```
 
@@ -68,7 +98,7 @@ That's it! Every time someone pushes a PR or change to Surf, your computer will 
 
 The most straightforward way (and one of the only ways at the moment), is to have a script at the root of the repo called `build.sh` and `build.cmd/ps1` for Windows. Future versions of Surf will know how to build common project types automatically, so you won't have to do this.
 
-## How to set up builds against GitHub PRs
+## Giving your multi-platform builds separate names
 
 Surf is great at running builds to verify your PRs, which show up here on the GitHub UI:
 
