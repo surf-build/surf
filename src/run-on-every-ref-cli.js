@@ -5,6 +5,7 @@ import './babel-maybefill';
 import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getNwoFromRepoUrl} from './github-api';
+import {createRefServer} from './ref-server-api';
 import BuildMonitor from './build-monitor';
 
 const d = require('debug')('surf:run-on-every-ref');
@@ -28,9 +29,10 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provide
 
 const argv = yargs.argv;
 
-async function main(testRepo=null, testCmdWithArgs=null) {
-  const cmdWithArgs = testCmdWithArgs || argv._;
-  const repo = testRepo || argv.r;
+async function main(testServer=null, testRepo=null, testCmdWithArgs=null) {
+  let cmdWithArgs = testCmdWithArgs || argv._;
+  let repo = testRepo || argv.r;
+  let server = testServer || argv.s;
 
   if (cmdWithArgs.length < 1) {
     console.log("Command to run not specified, defaulting to 'surf-build'");
@@ -49,9 +51,18 @@ async function main(testRepo=null, testCmdWithArgs=null) {
     }
   }
 
-  if (!argv.s) {
-    yargs.showHelp();
-    process.exit(-1);
+  if (!server) {
+    console.error(```
+**** Becoming a Surf Server ****
+
+If you're only setting up a single build client, this is probably what you want.
+If you're setting up more than one, you'll want to run 'surf-server' somewhere,
+then pass '-s' to all of your build clients.```);
+
+    let nwo = getNwoFromRepoUrl(repo);
+    createRefServer([nwo]);
+
+    server = `http://localhost:${process.env.SURF_PORT || 3000}`;
   }
 
   let jobs = parseInt(argv.j || '2');
@@ -64,7 +75,7 @@ async function main(testRepo=null, testCmdWithArgs=null) {
   // Do an initial fetch to get our initial state
   let refInfo = null;
   let nwo = getNwoFromRepoUrl(repo);
-  let surfUrl = `${argv.s}/info/${nwo}`;
+  let surfUrl = `${server}/info/${nwo}`;
 
   const fetchRefs = async () => {
     try {
