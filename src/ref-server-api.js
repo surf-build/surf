@@ -5,9 +5,10 @@ import {Disposable} from 'rx';
 import {fetchAllRefsWithInfo} from './github-api';
 const d = require('debug')('surf:ref-server-api');
 
-export default function createRefServer(validNwos, port=3000) {
+export default function createRefServer(validNwos, port=null) {
   const app = express();
-
+  
+  port = port || process.env.SURF_PORT || '3000';
   app.get('/info/:owner/:name', async (req, res) => {
     try {
       if (!req.params.owner || !req.params.name) {
@@ -26,7 +27,11 @@ export default function createRefServer(validNwos, port=3000) {
       res.status(500).json({error: e.message});
     }
   });
-
+  
+  if (typeof(port) === 'string') {
+    port = parseInt(port);
+  }
+  
   let server = app.listen(port);
   return Disposable.create(() => server.close(() => {}));
 }

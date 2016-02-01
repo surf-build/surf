@@ -23,7 +23,7 @@ const argv = yargs.argv;
 
 function main() {
   const validNwos = argv._;
-  const port = argv.port || 3000;
+  const port = argv.port || process.env.SURF_PORT || '3000';
 
   if (validNwos.length < 1) {
     console.error("ERROR: Supply a list of valid repositories in owner/repo format (i.e. 'rails/rails')\n");
