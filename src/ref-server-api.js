@@ -2,6 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 import express from 'express';
 import {Disposable} from 'rx';
+import pkgJson from '../package.json';
 
 import {fetchAllRefsWithInfo} from './github-api';
 const d = require('debug')('surf:ref-server-api');
@@ -11,9 +12,17 @@ function setupRouting(app, validNwos) {
 
   app.use('/bulma', express.static(bulma));
   app.get('/', (req, res) => {
-    res.render('status', {});
+    res.render('status', {
+      version: pkgJson.version,
+      serverList: [
+        {
+          nwo: 'surf-build/surf',
+          lastChecked: (new Date()).toLocaleString()
+        }
+      ]
+    });
   });
-  
+
   app.get('/info/:owner/:name', async (req, res) => {
     try {
       if (!req.params.owner || !req.params.name) {

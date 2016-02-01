@@ -1,6 +1,37 @@
-html
+html(lang=en)
   head
     link(rel='stylesheet' type='text/css' href='/bulma/bulma.css')
-    title= 'Hello'
+    link(rel='stylesheet' type='text/css' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css')
+    title 'Surf Build Server'
+
   body
-    h1= 'Derp'
+    header.header
+      .container
+        a.header-item(href='/') Home
+
+    section.hero
+      .hero-content
+        .container
+          h1.hero.title.is-1 Build Server Status
+
+    if serverList
+      section.hero.is-primary.is-medium
+        .hero-content
+          .container.content
+            each server in serverList
+              article.media
+                .media-content.structure-item.is-structure-right
+                  p= server.nwo
+    else
+      section.hero.is-info.is-large
+        .hero-content
+          .container.content
+            p.title No build clients at the moment
+            p.subtitle See the #[a(href='https://github.com/surf-build/surf#giving-your-multi-platform-builds-separate-names') documentation] for more information on how to set up build clients
+
+    footer.footer
+      .container
+        .content.is-centered
+          p Surf #{version} is made with #[span.fa.fa-heart] by Paul Betts
+          p.icon
+            a.fa.fa-2x.fa-github(href='https://github.com/surf-build/surf')
