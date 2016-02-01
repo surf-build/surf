@@ -3,6 +3,7 @@
 import './babel-maybefill';
 
 import request from 'request-promise';
+import {getOriginForRepo} from './git-api';
 import {getNwoFromRepoUrl} from './github-api';
 import BuildMonitor from './build-monitor';
 
@@ -27,15 +28,28 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provide
 
 const argv = yargs.argv;
 
-async function main() {
-  const cmdWithArgs = argv._;
+async function main(testRepo=null, testCmdWithArgs=null) {
+  const cmdWithArgs = testCmdWithArgs || argv._;
+  const repo = testRepo || argv.r;
 
   if (cmdWithArgs.length < 1) {
-    yargs.showHelp();
-    process.exit(-1);
+    console.log("Command to run not specified, defaulting to 'surf-build'");
+    cmdWithArgs = ['surf-build', '-n', 'surf'];
   }
 
-  if (!argv.s || !argv.r) {
+  if (!repo) {
+    try {
+      repo = await getOriginForRepo('.');
+    } catch (e) {
+      console.error("Repository not specified and current directory is not a Git repo");
+      d(e.stack);
+
+      yargs.showHelp();
+      process.exit(-1);
+    }
+  }
+
+  if (!argv.s) {
     yargs.showHelp();
     process.exit(-1);
   }
@@ -49,7 +63,7 @@ async function main() {
 
   // Do an initial fetch to get our initial state
   let refInfo = null;
-  let nwo = getNwoFromRepoUrl(argv.r);
+  let nwo = getNwoFromRepoUrl(repo);
   let surfUrl = `${argv.s}/info/${nwo}`;
 
   const fetchRefs = async () => {
@@ -68,10 +82,10 @@ async function main() {
   refInfo = await fetchRefs();
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
-  console.log(`Watching ${argv.r}, will run '${cmdWithArgs.join(' ')}'\n`);
-  let buildMonitor = new BuildMonitor(cmdWithArgs, argv.r, jobs, fetchRefs, refInfo);
+  console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
+  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, fetchRefs, refInfo);
   buildMonitor.start();
-  
+
   return new Promise(() => {});
 }
 
