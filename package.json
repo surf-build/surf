@@ -1,6 +1,6 @@
 {
   "name": "surf-build",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "The simplest GitHub build server",
   "bin": {
     "surf-server": "./lib/ref-server-cli.js",
