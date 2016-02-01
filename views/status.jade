@@ -15,13 +15,20 @@ html(lang=en)
           h1.hero.title.is-1 Build Server Status
 
     if serverList
-      section.hero.is-primary.is-medium
+      section.hero.is-medium(class="#{serversAreDown ? 'is-danger' : ''}")
         .hero-content
           .container.content
             each server in serverList
               article.media
-                .media-content.structure-item.is-structure-right
-                  p= server.nwo
+                figure.media-image
+                  span
+                    i.fa.fa-3x(class="#{server.failed ? 'fa-times-circle' : 'fa-check-circle-o'}")=''
+
+                .media-content
+                  .content
+                    strong= server.nwo
+                    br
+                    p= server.lastChecked
     else
       section.hero.is-info.is-large
         .hero-content

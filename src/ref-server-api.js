@@ -14,9 +14,15 @@ function setupRouting(app, validNwos) {
   app.get('/', (req, res) => {
     res.render('status', {
       version: pkgJson.version,
+      serversAreDown: true,
       serverList: [
         {
           nwo: 'surf-build/surf',
+          lastChecked: (new Date()).toLocaleString(),
+          failed: true
+        },
+        {
+          nwo: 'rails/rails',
           lastChecked: (new Date()).toLocaleString()
         }
       ]
