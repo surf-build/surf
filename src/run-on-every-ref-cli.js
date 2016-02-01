@@ -5,7 +5,7 @@ import './babel-maybefill';
 import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getNwoFromRepoUrl} from './github-api';
-import {createRefServer} from './ref-server-api';
+import createRefServer from './ref-server-api';
 import BuildMonitor from './build-monitor';
 
 const d = require('debug')('surf:run-on-every-ref');
@@ -42,6 +42,7 @@ async function main(testServer=null, testRepo=null, testCmdWithArgs=null) {
   if (!repo) {
     try {
       repo = await getOriginForRepo('.');
+      console.error(`Repository not specified, using current directory: ${repo}`);
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
       d(e.stack);
@@ -52,12 +53,12 @@ async function main(testServer=null, testRepo=null, testCmdWithArgs=null) {
   }
 
   if (!server) {
-    console.error(```
+    console.error(`
 **** Becoming a Surf Server ****
 
 If you're only setting up a single build client, this is probably what you want.
 If you're setting up more than one, you'll want to run 'surf-server' somewhere,
-then pass '-s' to all of your build clients.```);
+then pass '-s' to all of your build clients.`);
 
     let nwo = getNwoFromRepoUrl(repo);
     createRefServer([nwo]);
