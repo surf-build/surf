@@ -13,10 +13,20 @@ enableThreadSafety();
 const d = require('debug')('surf:git-api');
 
 export async function getHeadForRepo(targetDirname) {
-  let repo = await Repository.open(targetDirname);
+  let repoDir = await Repository.discover(targetDirname, 0, '');
+
+  let repo = await Repository.open(repoDir);
   let commit = await repo.getHeadCommit();
 
   return commit.sha;
+}
+
+export async function getOriginForRepo(targetDirname) {
+  let repoDir = await Repository.discover(targetDirname, 0, '');
+
+  let repo = await Repository.open(repoDir);
+  let origin = await Remote.lookup(repo, 'origin');
+  return origin.pushurl() || origin.url();
 }
 
 export async function getAllWorkdirs(repoUrl) {
@@ -212,10 +222,10 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
 export async function pushGistRepoToMaster(targetDir, token) {
   d("Opening repo");
   let repo = await Repository.open(targetDir);
-  
+
   d("Looking up origin");
   let origin = await Remote.lookup(repo, 'origin');
-  
+
   let refspec = "refs/heads/master:refs/heads/master";
   let pushopts = {
     callbacks: {
@@ -229,7 +239,7 @@ export async function pushGistRepoToMaster(targetDir, token) {
       }
     }
   };
-  
+
   d("Pushing to Gist");
   await origin.push([refspec], pushopts);
 }
