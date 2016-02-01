@@ -18,7 +18,7 @@ export async function getHeadForRepo(targetDirname) {
   let repo = await Repository.open(repoDir);
   let commit = await repo.getHeadCommit();
 
-  return commit.sha;
+  return commit.sha();
 }
 
 export async function getOriginForRepo(targetDirname) {
