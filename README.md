@@ -33,7 +33,7 @@ npm install -g surf-build
 Now, try running `surf-build`, which is a command-line app that knows how to build different kinds of projects.
 
 ```sh
-surf-build --repo https://github.com/surf-build/surf -s 805230d579cb49ffd7e33ee060023baebaf203e5
+surf-build --repo https://github.com/surf-build/surf -s 12efc7bf3888ae4e4cc1a79f28fe6e7cef78d0b1
 ```
 
 Tada! You made a build.
