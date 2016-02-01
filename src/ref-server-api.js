@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import path from 'path';
 import express from 'express';
 import {Disposable} from 'rx';
 
@@ -6,6 +7,9 @@ import {fetchAllRefsWithInfo} from './github-api';
 const d = require('debug')('surf:ref-server-api');
 
 function setupRouting(app, validNwos) {
+  let bulma = path.resolve(__dirname, '..', 'node_modules', 'bulma', 'css');
+
+  app.use('/bulma', express.static(bulma));
   app.get('/', (req, res) => {
     res.render('status', {});
   });
