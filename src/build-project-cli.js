@@ -4,7 +4,7 @@ import './babel-maybefill';
 
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
 import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
@@ -68,6 +68,31 @@ export async function main(testSha=null, testRepo=null, testName=null) {
     name = null;
   }
 
+  if (!repo) {
+    try {
+      repo = await getOriginForRepo('.');
+    } catch (e) {
+      console.error("Repository not specified and current directory is not a Git repo");
+      d(e.stack);
+
+      yargs.showHelp();
+      process.exit(-1);
+    }
+  }
+
+  if (!sha) {
+    try {
+      sha = await getHeadForRepo('.');
+    } catch (e) {
+      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
+      d(e.stack);
+
+      yargs.showHelp();
+      process.exit(-1);
+    }
+  }
+
+
   d(`repo: ${repo}, sha: ${sha}`);
   if (!repo || !sha) {
     yargs.showHelp();
@@ -128,7 +153,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
         content: buildOutput
       }
     });
-    
+
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
     if (buildPassed) {
@@ -143,12 +168,12 @@ export async function main(testSha=null, testRepo=null, testName=null) {
         d(e.stack);
       }
     }
-        
+
     let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Surf Build Server', gistInfo.result.html_url, name);
   }
-  
+
   if (buildPassed) {
     await rimraf(tempDir);
   }
