@@ -91,7 +91,7 @@ export async function checkoutSha(targetDirname, sha) {
 }
 
 export function updateRefspecToPullPRs(repository) {
-  Remote.addFetch(repository, 'origin', '+refs/heads/*:refs/remotes/origin/*');
+  Remote.addFetch(repository, 'origin', '+refs/pull/*/head:refs/remotes/origin/pr/*');
 }
 
 export async function cloneRepo(url, targetDirname, token=null, bare=true) {
