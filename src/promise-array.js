@@ -100,11 +100,11 @@ function runDownPath(exe) {
 }
 
 export function spawnDetached(exe, params, opts=null) {
-  if (!isWindows) return spawn(exe, params, _.assign({ detached: true }, opts || {}));
+  if (!isWindows) return spawn(exe, params, _.assign({}, opts || {}, {detached: true }));
   const newParams = [exe].concat(params);
 
   let target = path.join(__dirname, '..', 'vendor', 'jobber', 'jobber.exe');
-  let options = _.assign({ detached: true, jobber: true }, opts || {});
+  let options = _.assign({}, opts || {}, { detached: true, jobber: true });
 
   d(`spawnDetached: ${target}, ${newParams}`);
   return spawn(target, newParams, options);
