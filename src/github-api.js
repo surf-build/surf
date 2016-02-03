@@ -23,6 +23,11 @@ function apiUrl(path, gist=false) {
 }
 
 export function getNwoFromRepoUrl(repoUrl) {
+  // Fix up SSH repo origins
+  if (repoUrl.match(/^git@.*:.*\.git$/i)) {
+    return repoUrl.split(':')[1].replace(/\.git$/, '');
+  }
+
   let u = url.parse(repoUrl);
   return u.path.slice(1);
 }
