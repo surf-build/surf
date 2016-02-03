@@ -29,7 +29,7 @@ export function getNwoFromRepoUrl(repoUrl) {
   }
 
   let u = url.parse(repoUrl);
-  return u.path.slice(1);
+  return u.path.slice(1).replace(/\.git$/, '');
 }
 
 export async function gitHub(uri, token=null, body=null) {
