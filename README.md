@@ -10,6 +10,20 @@ Philosophically, Surf tries to be really simple - it gives you the reusable piec
 
 > Buildbot's design allows your installation to grow with your requirements, beginning with simple processes and growing to meet your unique needs. 
 
+### The Quickest of Quick Starts
+
+```sh
+npm install -g surf-build
+
+# Write a script to build your project
+vim build.sh && chmod +x build.sh
+git add build.sh && git commit -m "Add Surf build script" && git push
+
+# Start Surf building your project for every commit
+export GITHUB_TOKEN='0123456789abcdef'   # Get from https://github.com/settings/tokens
+surf-client
+```
+
 ### Why would I use this over $ALTERNATIVE?
 
 * Surf works on every platform, really easily
