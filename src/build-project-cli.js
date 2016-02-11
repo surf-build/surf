@@ -79,22 +79,8 @@ export async function main(testSha=null, testRepo=null, testName=null) {
       process.exit(-1);
     }
   }
-
-  if (!sha) {
-    try {
-      sha = await getHeadForRepo('.');
-    } catch (e) {
-      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
-      d(e.stack);
-
-      yargs.showHelp();
-      process.exit(-1);
-    }
-  }
-
-
-  d(`repo: ${repo}, sha: ${sha}`);
-  if (!repo || !sha) {
+  
+  if (!repo) {
     yargs.showHelp();
     if (testSha || testRepo) {
       throw new Error("Would've Died");
@@ -104,7 +90,24 @@ export async function main(testSha=null, testRepo=null, testName=null) {
   }
 
   let repoDir = getRepoCloneDir();
+  
+  d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
+  let bareRepoDir = await cloneOrFetchRepo(repo, repoDir);
+  
+  if (!sha) {
+    try {
+      sha = await getHeadForRepo(bareRepoDir);
+    } catch (e) {
+      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
+      d(e.stack);
 
+      yargs.showHelp();
+      process.exit(-1);
+    }
+  }
+
+  d(`repo: ${repo}, sha: ${sha}`);
+  
   if (name) {
     d(`Posting 'pending' to GitHub status`);
 
@@ -112,10 +115,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
     await postCommitStatus(nwo, sha,
       'pending', 'Surf Build Server', null, name);
   }
-
-  d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
-  let bareRepoDir = await cloneOrFetchRepo(repo, repoDir);
-
+  
   let workDir = getWorkdirForRepoUrl(repo, sha);
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
