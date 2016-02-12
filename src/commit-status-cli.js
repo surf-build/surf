@@ -84,7 +84,11 @@ async function main(testRepo=null, testServer=null, useJson=null) {
 
   d(`Interesting Refs: ${JSON.stringify(_.map(refList, (x) => x.ref))}`);
   if (jsonOnly) {
-    let statusArr = _.map(refList, (x) => statuses[x.ref].result);
+    let statusArr = _.reduce(refList, (acc, x) => {
+      acc[x.ref] = statuses[x.ref].result;
+      delete acc[x.ref].repository;
+      return acc;
+    }, {});
     console.log(JSON.stringify(statusArr));
   } else {
     const statusToIcon = {
