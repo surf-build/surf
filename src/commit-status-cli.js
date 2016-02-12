@@ -4,6 +4,7 @@ import './babel-maybefill';
 
 import _ from 'lodash';
 import request from 'request-promise';
+import chalk from 'chalk';
 
 import {asyncMap} from './promise-array';
 import {getOriginForRepo} from './git-api';
@@ -19,6 +20,8 @@ Returns the GitHub Status for all the branches in a repo`)
   .describe('s', 'The Surf server to connect to - use this if you call surf-status repeatedly')  .help('h')
   .alias('r', 'repo')
   .describe('r', 'The URL of the repository to fetch status for. Defaults to the repo in the current directory')
+  .alias('j', 'json')
+  .describe('j', 'Dump the commit status in JSON format for machine parsing instead of human-readable format')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
@@ -32,9 +35,10 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
 
 const argv = yargs.argv;
 
-async function main(testRepo=null, testServer=null) {
+async function main(testRepo=null, testServer=null, useJson=null) {
   let repo = testRepo || argv.r || process.env.SURF_REPO;
   let server = testServer || argv.s;
+  let jsonOnly = useJson || argv.j;
 
   if (!repo) {
     try {
@@ -66,11 +70,35 @@ async function main(testRepo=null, testServer=null) {
     });
   };
 
-  let refList = _.map(await fetchRefs(), (x) => x.ref);
+  let refInfo = await fetchRefs();
+  let refList = _.map(refInfo, (x) => x.ref);
   let statuses = await asyncMap(refList, (ref) => getCommitStatusesForRef(nwo, ref));
 
-  let statusArr = _.map(refList, (x) => statuses[x]);
-  console.log(JSON.stringify(statusArr));
+  if (jsonOnly) {
+    let statusArr = _.map(refList, (x) => statuses[x].result);
+    console.log(JSON.stringify(statusArr));
+  } else {
+    const statusToIcon = {
+      'success': chalk.green('✓'),
+      'failure': chalk.red('✘'),
+      'error': chalk.red('✘'),
+      'pending': chalk.yellow('‽')
+    };
+
+    _.each(refList, (ref) => {
+      let status = statuses[ref].result;
+      if (status.total_count < 1) return;
+
+      if (status.total_count === 1) {
+        console.log(`${statusToIcon[status.state]}: ${ref} - ${status.description || '(No description)'} - ${status.target_url || '(No CI URL given)'}`);
+      } else {
+        console.log(`${statusToIcon[status.state]}: ${ref}`);
+        _.each(status.statuses, (status) => {
+          console.log(`  ${status.description} - ${status.target_url}`);
+        });
+      }
+    });
+  }
 
   killRefServer.dispose();
 }
