@@ -183,10 +183,6 @@ export async function fetchAllRefsWithInfo(nwo) {
   return refs;
 }
 
-export function getCommitStatusesForRef(nwo, ref, token=null) {
-  return gitHub(apiUrl(`repos/${nwo}/commits/${ref}/status`), token);
-}
-
 export function postCommitStatus(nwo, sha, state, description, target_url, context, token=null) {
   let body = { state, target_url, description, context };
   if (!target_url) {
