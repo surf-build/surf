@@ -5,9 +5,7 @@ import path from 'path';
 import { determineInterestingRefs } from '../src/github-api';
 import { fs } from '../src/promisify';
 
-const d = require('debug')('surf-test:github-api');
-
-describe.only('the determineInterestingRefs method', function() {
+describe('the determineInterestingRefs method', function() {
   beforeEach(async function() {
     this.refInfo = JSON.parse(await fs.readFile(path.join(__dirname, 'commit_info.example.json')));
   });
