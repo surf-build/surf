@@ -27,7 +27,7 @@ const httpsRemoteUri = /https?:\/\//i;
 
 export function getSanitizedRepoUrl(repoUrl) {
   if (repoUrl.match(httpsRemoteUri)) return repoUrl;
-  let m = repoUrl(sshRemoteUrl);
+  let m = repoUrl.match(sshRemoteUrl);
   
   if (!m) {
     d(`URL ${repoUrl} seems totally bogus`);
