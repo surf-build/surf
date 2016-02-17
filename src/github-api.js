@@ -28,12 +28,12 @@ const httpsRemoteUri = /https?:\/\//i;
 export function getSanitizedRepoUrl(repoUrl) {
   if (repoUrl.match(httpsRemoteUri)) return repoUrl;
   let m = repoUrl(sshRemoteUrl);
-
+  
   if (!m) {
     d(`URL ${repoUrl} seems totally bogus`);
     return repoUrl;
   }
-
+  
   if (m[1] === 'github.com') {
     return `https://github.com/${m[2]}`;
   } else {
@@ -44,9 +44,8 @@ export function getSanitizedRepoUrl(repoUrl) {
 
 export function getNwoFromRepoUrl(repoUrl) {
   // Fix up SSH repo origins
-  if (repoUrl.match(/^git@.*:.*\.git$/i)) {
-    return repoUrl.split(':')[1].replace(/\.git$/, '');
-  }
+  let m = repoUrl.match(sshRemoteUrl);
+  if (m) { return m[2]; }
 
   let u = url.parse(repoUrl);
   return u.path.slice(1).replace(/\.git$/, '');
