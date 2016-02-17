@@ -4,7 +4,7 @@ import './babel-maybefill';
 
 import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
-import {getNwoFromRepoUrl} from './github-api';
+import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
 import createRefServer from './ref-server-api';
 import BuildMonitor from './build-monitor';
 
@@ -41,7 +41,7 @@ async function main(testServer=null, testRepo=null, testCmdWithArgs=null) {
 
   if (!repo) {
     try {
-      repo = await getOriginForRepo('.');
+      repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
       console.error(`Repository not specified, using current directory: ${repo}`);
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
