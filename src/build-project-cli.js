@@ -5,7 +5,7 @@ import './babel-maybefill';
 import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
-import { getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
+import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 
@@ -70,7 +70,7 @@ export async function main(testSha=null, testRepo=null, testName=null) {
 
   if (!repo) {
     try {
-      repo = await getOriginForRepo('.');
+      repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
       d(e.stack);
