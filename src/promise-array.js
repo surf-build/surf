@@ -126,7 +126,12 @@ export function spawn(exe, params, opts=null) {
     let stdout = '';
     let bufHandler = (b) => {
       if (b.length < 1) return;
-      let chunk = b.toString();
+      let chunk = "<< String sent back was too long >>";
+      try {
+        chunk = b.toString();
+      } catch (e) {
+        chunk = `<< Lost chunk of process output for ${exe} - length was ${b.length}>>`;
+      }
 
       stdout += chunk;
       subj.onNext(chunk);
