@@ -10,6 +10,11 @@ export default async function main(argv, showHelp) {
   let cmdWithArgs = argv._;
   let repo = argv.r;
   let server = argv.s;
+  
+  if (argv.help) {
+    showHelp();
+    process.exit(0);
+  }
 
   if (cmdWithArgs.length < 1) {
     console.log("Command to run not specified, defaulting to 'surf-build'");

@@ -32,7 +32,7 @@ function getRepoCloneDir() {
 
 export default function main(argv, showHelp) {
   return realMain(argv, showHelp)
-    .then(() => {}, (e) => {
+    .then(() => Promise.resolve(true), (e) => {
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
         let sha = argv.sha || process.env.SURF_SHA1;
@@ -51,6 +51,11 @@ async function realMain(argv, showHelp) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
   let name = argv.name;
+  
+  if (argv.help) {
+    showHelp();
+    process.exit(0);
+  }
 
   if (name === '__test__') {
     // NB: Don't end up setting statuses in unit tests, even if argv.name is set

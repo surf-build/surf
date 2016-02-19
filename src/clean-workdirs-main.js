@@ -8,6 +8,11 @@ import request from 'request-promise';
 const d = require('debug')('surf:surf-clean');
 
 export default async function main(argv, showHelp) {
+  if (argv.help) {
+    showHelp();
+    process.exit(0);
+  }
+  
   if (!argv.s || !argv.r) {
     showHelp();
     process.exit(-1);
