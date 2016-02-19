@@ -125,6 +125,7 @@ export function spawn(exe, params, opts=null) {
 
     let stdout = '';
     let bufHandler = (b) => {
+      if (b.length < 1) return;
       let chunk = b.toString();
 
       stdout += chunk;
