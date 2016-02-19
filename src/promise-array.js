@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import path from 'path';
 import net from 'net';
-import { Observable, Disposable } from 'rx';
+import { Observable, Disposable, AsyncSubject } from 'rx';
 import { fs } from './promisify';
 
 const spawnOg = require('child_process').spawn;
@@ -122,7 +122,7 @@ export function spawn(exe, params, opts=null) {
       d(`spawning process: ${fullPath} ${params.join()}, ${JSON.stringify(opts)}`);
       proc = spawnOg(fullPath, params, _.omit(opts, 'jobber'));
     }
-
+  
     let stdout = '';
     let bufHandler = (b) => {
       if (b.length < 1) return;
@@ -131,9 +131,27 @@ export function spawn(exe, params, opts=null) {
       stdout += chunk;
       subj.onNext(chunk);
     };
-
+    
+    let stderrCompleted = null;
+    let stdoutCompleted = null;
     let noClose = false;
-    proc.stdout.on('data', bufHandler);
+    
+    if (proc.stdout) {
+      stdoutCompleted = new AsyncSubject();
+      proc.stdout.on('data', bufHandler);
+      proc.stdout.on('close', () => { stdoutCompleted.onNext(true); stdoutCompleted.onCompleted(); });
+    } else {
+      stdoutCompleted = Observable.just(true);
+    }
+    
+    if (proc.stderr) {
+      stderrCompleted = new AsyncSubject();
+      proc.stderr.on('data', bufHandler);
+      proc.stderr.on('close', () => { stderrCompleted.onNext(true); stderrCompleted.onCompleted(); });
+    } else {
+      stderrCompleted = Observable.just(true);
+    }
+    
     proc.stderr.on('data', bufHandler);
     proc.on('error', (e) => {
       noClose = true;
@@ -142,10 +160,13 @@ export function spawn(exe, params, opts=null) {
 
     proc.on('close', (code) => {
       noClose = true;
+      let pipesClosed = Observable.merge(stdoutCompleted, stderrCompleted)
+        .reduce((acc) => acc, true);
+      
       if (code === 0) {
-        subj.onCompleted();
+        pipesClosed.subscribe(() => subj.onCompleted());
       } else {
-        subj.onError(new Error(`Failed with exit code: ${code}\nOutput:\n${stdout}`));
+        pipesClosed.subscribe(() => subj.onError(new Error(`Failed with exit code: ${code}\nOutput:\n${stdout}`)));
       }
     });
 
