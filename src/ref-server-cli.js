@@ -22,6 +22,12 @@ GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 const argv = yargs.argv;
 
 function main() {
+  if (argv.help) {
+    yargs.showHelp();
+    process.exit(0);
+  }
+  
+  
   const validNwos = argv._;
   const port = argv.port || process.env.SURF_PORT || '3000';
 
