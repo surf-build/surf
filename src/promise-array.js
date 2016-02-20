@@ -190,5 +190,5 @@ export function spawn(exe, params, opts=null) {
     });
   });
 
-  return spawnObs.reduce((acc, x) => acc += x, '').publishLast().refCount();
+  return spawnObs.publish().refCount();
 }
