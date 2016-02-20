@@ -1,5 +1,5 @@
 import path from 'path';
-import {main} from '../src/build-project-cli';
+import main from '../src/build-project-main';
 import {mkdirp, rimraf} from '../src/promisify';
 
 describe('The build project CLI', function() {
@@ -35,6 +35,12 @@ describe('The build project CLI', function() {
   });
 
   it('should compile the example C# app', async function() {
-    await main('c4d85178b4c46f1e1b56dd3408bb945f6042a40b', 'https://github.com/surf-build/example-csharp', '__test__');
+    let args = {
+      sha: 'c4d85178b4c46f1e1b56dd3408bb945f6042a40b',
+      repo: 'https://github.com/surf-build/example-csharp',
+      name: '__test__'
+    };
+
+    await main(args, () => { throw new Error("Don't show help"); });
   });
 });

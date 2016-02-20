@@ -123,8 +123,10 @@ async function realMain(argv, showHelp) {
   let buildOutput = null;
 
   try {
-    buildOutput = await runBuildCommand(cmd, args, workDir, sha, tempDir).toPromise();
-    console.log(buildOutput);
+    let buildStream = runBuildCommand(cmd, args, workDir, sha, tempDir);
+    buildStream.subscribe((x) => console.log(x));
+    await buildStream.toPromise();
+    
     buildPassed = true;
   } catch (e) {
     buildOutput = e.message;
