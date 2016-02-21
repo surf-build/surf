@@ -99,7 +99,7 @@ export default class BuildMonitor {
 
     let disp = this.buildsToActuallyExecute
       .map((x) => x.catch((e) => {
-        console.log(e.message);
+        console.log(e.message.replace(/[\r\n]+$/, ''));
         d(e.stack);
 
         return Observable.empty();
