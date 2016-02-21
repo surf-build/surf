@@ -132,7 +132,10 @@ async function realMain(argv, showHelp) {
   try {
     let buildStream = runAllBuildCommands(cmds, workDir, sha, tempDir);
     buildStream.subscribe((x) => console.log(x.replace(/[\r\n]+$/, '')), () => {});
-    await buildStream.toPromise();
+    
+    buildOutput = await buildStream
+      .reduce((acc, x) => acc + x, '')
+      .toPromise();
     
     buildPassed = true;
   } catch (e) {

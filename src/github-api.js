@@ -155,6 +155,5 @@ export function postCommitStatus(nwo, sha, state, description, target_url, conte
 
 export function createGist(description, files, publicGist=false, token=null) {
   let body = { files, description, "public": publicGist };
-
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
