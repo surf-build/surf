@@ -55,7 +55,7 @@ export async function determineBuildCommands(rootPath, sha) {
 export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
   return Observable.concat(_.map(cmds, ({cmd, args}) => {
     return Observable.defer(() => runBuildCommand(cmd, args, rootDir, sha, tempDir));
-  }));
+  })).publish().refCount();
 }
 
 export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
