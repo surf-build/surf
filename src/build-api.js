@@ -1,14 +1,19 @@
 import _ from 'lodash';
+import fs from 'fs';
+import path from 'path';
 import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawnDetached } from './promise-array';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
 const d = require('debug')('surf:build-api');
-const AllBuildDiscoverers = require('./build-discover-drivers');
 
 export function createBuildDiscovers(rootPath) {
-  return _.map(Object.keys(AllBuildDiscoverers), (key) => {
-    const Klass = AllBuildDiscoverers[key];
+  let discoverClasses = fs.readdirSync(path.join(__dirname, 'build-discoverers'));
+  
+  return _.map(discoverClasses, (file) => {
+    const Klass = require(path.join(__dirname, 'build-discoverers', file)).default;
+
+    d(`Found build discoverer: ${Klass.name}`);
     return new Klass(rootPath);
   });
 }
