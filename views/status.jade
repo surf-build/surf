@@ -1,0 +1,46 @@
+html(lang=en)
+  head
+    meta(http-equiv='X-UA-Compatible' content='IE=edge')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+    link(rel='stylesheet' type='text/css' href='/bulma/bulma.css')
+    link(rel='stylesheet' type='text/css' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css')
+    title 'Surf Build Server'
+
+  body
+    header.header
+      .container
+        a.header-item(href='/') Home
+
+    section.hero
+      .hero-content
+        .container
+          h1.hero.title.is-1 Build Server Status
+
+    if serverList
+      section.hero.is-medium
+        .hero-content
+          .container.content
+            each server in serverList
+              article.media(class="#{server.failed ? 'is-danger' : ''}")
+                figure.media-image
+                  span
+                    i.fa.fa-3x(class="#{server.failed ? 'fa-times-circle is-danger' : 'fa-check-circle-o'}")=''
+
+                .media-content
+                  .content
+                    strong= server.nwo
+                    br
+                    p= 'Last seen at ' + server.lastChecked
+    else
+      section.hero.is-info.is-large
+        .hero-content
+          .container.content
+            p.title No build clients at the moment
+            p.subtitle See the #[a(href='https://github.com/surf-build/surf#giving-your-multi-platform-builds-separate-names') documentation] for more information on how to set up build clients
+
+    footer.footer
+      .container
+        .content.is-centered
+          p Surf #{version} is made with #[span.fa.fa-heart] by Paul Betts
+          p.icon
+            a.fa.fa-2x.fa-github(href='https://github.com/surf-build/surf')

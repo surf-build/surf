@@ -29,11 +29,13 @@
   "homepage": "https://github.com/paulcbetts/surf-build",
   "dependencies": {
     "babel-polyfill": "^6.3.14",
+    "bulma": "0.0.8",
     "debug": "^2.2.0",
     "express": "^4.13.4",
     "fs-extra": "^0.26.4",
     "ini": "^1.3.4",
     "iso8601": "^1.1.1",
+    "jade": "^1.11.0",
     "lodash": "^4.0.0",
     "lru-cache": "^4.0.0",
     "mkdirp": "^0.5.1",
