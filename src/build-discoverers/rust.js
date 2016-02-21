@@ -1,5 +1,4 @@
 import path from 'path';
-import {fs} from '../promisify';
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
