@@ -70,9 +70,17 @@ export async function gitHub(uri, token=null, body=null) {
     opts.method = 'POST';
   }
 
-  let ret = request(opts);
-
-  let result = await ret;
+  let ret = null;
+  let result = null;
+  try {
+    ret = request(opts);
+    result = await ret;
+  } catch (e) {
+    d(JSON.stringify(e.cause));
+    d(JSON.stringify(e.message));
+    throw e;
+  }
+  
   return { result, headers: ret.response.headers };
 }
 
@@ -141,11 +149,11 @@ export function postCommitStatus(nwo, sha, state, description, target_url, conte
     delete body.target_url;
   }
 
+  d(JSON.stringify(body));
   return gitHub(apiUrl(`repos/${nwo}/statuses/${sha}`), token, body);
 }
 
 export function createGist(description, files, publicGist=false, token=null) {
   let body = { files, description, "public": publicGist };
-
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }

@@ -123,7 +123,6 @@ export function spawn(exe, params, opts=null) {
       proc = spawnOg(fullPath, params, _.omit(opts, 'jobber'));
     }
   
-    let stdout = '';
     let bufHandler = (b) => {
       if (b.length < 1) return;
       let chunk = "<< String sent back was too long >>";
@@ -133,7 +132,6 @@ export function spawn(exe, params, opts=null) {
         chunk = `<< Lost chunk of process output for ${exe} - length was ${b.length}>>`;
       }
 
-      stdout += chunk;
       subj.onNext(chunk);
     };
     
@@ -171,7 +169,7 @@ export function spawn(exe, params, opts=null) {
       if (code === 0) {
         pipesClosed.subscribe(() => subj.onCompleted());
       } else {
-        pipesClosed.subscribe(() => subj.onError(new Error(`Failed with exit code: ${code}\nOutput:\n${stdout}`)));
+        pipesClosed.subscribe(() => subj.onError(new Error(`Failed with exit code: ${code}`)));
       }
     });
 
