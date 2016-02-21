@@ -2,7 +2,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
-import { determineBuildCommand, runBuildCommand, uploadBuildArtifacts } from './build-api';
+import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 
 const d = require('debug')('surf:surf-build');
@@ -116,14 +116,17 @@ async function realMain(argv, showHelp) {
   await checkoutSha(workDir, sha);
 
   d(`Determining command to build`);
-  let { cmd, args, artifactDirs } = await determineBuildCommand(workDir);
+  let { cmd, cmds, args, artifactDirs } = await determineBuildCommands(workDir);
+  
+  if (!cmds) {
+    cmds = [{cmd, args}];
+  }
 
-  d(`Running ${cmd} ${args.join(' ')}...`);
   let buildPassed = false;
   let buildOutput = null;
 
   try {
-    let buildStream = runBuildCommand(cmd, args, workDir, sha, tempDir);
+    let buildStream = runAllBuildCommands(cmds, workDir, sha, tempDir);
     buildStream.subscribe((x) => console.log(x.replace(/[\r\n]+$/, '')));
     await buildStream.toPromise();
     
