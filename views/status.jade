@@ -17,20 +17,20 @@ html(lang=en)
           h1.hero.title.is-1 Build Server Status
 
     if serverList
-      section.hero.is-medium(class="#{serversAreDown ? 'is-danger' : ''}")
+      section.hero.is-medium
         .hero-content
           .container.content
             each server in serverList
-              article.media
+              article.media(class="#{server.failed ? 'is-danger' : ''}")
                 figure.media-image
                   span
-                    i.fa.fa-3x(class="#{server.failed ? 'fa-times-circle' : 'fa-check-circle-o'}")=''
+                    i.fa.fa-3x(class="#{server.failed ? 'fa-times-circle is-danger' : 'fa-check-circle-o'}")=''
 
                 .media-content
                   .content
                     strong= server.nwo
                     br
-                    p= server.lastChecked
+                    p= 'Last seen at ' + server.lastChecked
     else
       section.hero.is-info.is-large
         .hero-content
