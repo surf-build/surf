@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import path from 'path';
-import {fs} from './promisify';
-import {statNoException, readdirRecursive} from './promise-array';
+import {fs} from '../promisify';
+import {statNoException, readdirRecursive} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-dotnet');

@@ -1,5 +1,5 @@
 import path from 'path';
-import {fs, mkdirp} from './promisify';
+import {fs, mkdirp} from '../promisify';
 import BuildDiscoverBase from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-drivers');
