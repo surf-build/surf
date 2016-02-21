@@ -90,6 +90,7 @@ async function realMain(argv, showHelp) {
   if (!sha) {
     try {
       sha = await getHeadForRepo(setRepoViaPwd ? '.' : bareRepoDir);
+      argv.sha = sha;
     } catch (e) {
       console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
       d(e.stack);
