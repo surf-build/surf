@@ -62,9 +62,11 @@ async function realMain(argv, showHelp) {
     name = null;
   }
 
+  let setRepoViaPwd = false;
   if (!repo) {
     try {
       repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
+      setRepoViaPwd = true;
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
       d(e.stack);
@@ -86,7 +88,7 @@ async function realMain(argv, showHelp) {
   
   if (!sha) {
     try {
-      sha = await getHeadForRepo(bareRepoDir);
+      sha = await getHeadForRepo(setRepoViaPwd ? '.' : bareRepoDir);
     } catch (e) {
       console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
       d(e.stack);
