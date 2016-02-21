@@ -127,14 +127,14 @@ async function realMain(argv, showHelp) {
 
   try {
     let buildStream = runAllBuildCommands(cmds, workDir, sha, tempDir);
-    buildStream.subscribe((x) => console.log(x.replace(/[\r\n]+$/, '')));
+    buildStream.subscribe((x) => console.log(x.replace(/[\r\n]+$/, '')), () => {});
     await buildStream.toPromise();
     
     buildPassed = true;
   } catch (e) {
     buildOutput = e.message;
 
-    console.log(`Error during build: ${e.message}`);
+    console.log(`\nError during build: ${e.message}`);
     d(e.stack);
   }
 
