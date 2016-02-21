@@ -66,6 +66,7 @@ async function realMain(argv, showHelp) {
   if (!repo) {
     try {
       repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
+      argv.repo = repo;
       setRepoViaPwd = true;
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
