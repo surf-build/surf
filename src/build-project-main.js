@@ -139,7 +139,7 @@ async function realMain(argv, showHelp) {
     
     buildPassed = true;
   } catch (e) {
-    buildOutput = e.message;
+    buildOutput += `\n${e.message}`;
 
     console.log(`\nError during build: ${e.message}`);
     d(e.stack);
