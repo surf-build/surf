@@ -123,6 +123,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   if (bare) updateRefspecToPullPRs(repo);
 
   await fetchRepo(targetDirname, token, bare);
+  return repo;
 }
 
 export async function fetchRepo(targetDirname, token=null, bare=true) {
@@ -150,15 +151,20 @@ export async function fetchRepo(targetDirname, token=null, bare=true) {
     d("GitHub token not set, only public repos will work!");
     delete fo.callbacks;
   }
+  
   await repo.fetchAll(fo);
+  return repo;
 }
 
 export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
   let dirname = crypto.createHash('sha1').update(url).digest('hex');
   let targetDirname = path.join(checkoutDir, dirname);
+  let r = null;
 
   try {
-    await fetchRepo(targetDirname, token);
+    r = await fetchRepo(targetDirname, token);
+    r.free();
+
     return targetDirname;
   } catch (e) {
     d(`Failed to open bare repository, going to clone instead: ${e.message}`);
@@ -168,7 +174,9 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
   await rimraf(targetDirname);
   await mkdirp(targetDirname);
 
-  await cloneRepo(url, targetDirname, token);
+  r = await cloneRepo(url, targetDirname, token);
+  r.free();
+
   return targetDirname;
 }
 
@@ -235,4 +243,5 @@ export async function pushGistRepoToMaster(targetDir, token) {
 
   d("Pushing to Gist");
   await origin.push([refspec], pushopts);
+  repo.free();
 }

@@ -1,3 +1,4 @@
+import {Observable} from 'rx';
 import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
@@ -60,7 +61,7 @@ then pass '-s' to all of your build clients.`);
   let nwo = getNwoFromRepoUrl(repo);
   let surfUrl = `${server}/info/${nwo}`;
 
-  const fetchRefs = async () => {
+  let fetchRefs = async () => {
     try {
       return await request({
         uri: surfUrl,
@@ -72,12 +73,15 @@ then pass '-s' to all of your build clients.`);
       process.exit(-1);
     }
   };
+  
+  let fetchRefsWithRetry = Observable.defer(() => Observable.fromPromise(fetchRefs()))
+    .retry(5);
 
-  refInfo = await fetchRefs();
+  refInfo = await fetchRefsWithRetry.toPromise();
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
   console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
-  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, fetchRefs, refInfo);
+  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
   buildMonitor.start();
 
   return new Promise(() => {});
