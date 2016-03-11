@@ -1,9 +1,11 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, 
+  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
+import { retryPromise } from './promise-array';
 
 const d = require('debug')('surf:surf-build');
 
@@ -38,7 +40,8 @@ export default function main(argv, showHelp) {
         let sha = argv.sha || process.env.SURF_SHA1;
         let nwo = getNwoFromRepoUrl(repo);
 
-        return postCommitStatus(nwo, sha, 'error', 'Surf Build Server', null, argv.name)
+        return retryPromise(() => 
+            postCommitStatus(nwo, sha, 'error', 'Surf Build Server', null, argv.name))
           .catch(() => true)
           .then(() => Promise.reject(e));
       } else {
@@ -85,7 +88,7 @@ async function realMain(argv, showHelp) {
   let repoDir = getRepoCloneDir();
   
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
-  let bareRepoDir = await cloneOrFetchRepo(repo, repoDir);
+  let bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir));
   
   if (!sha) {
     try {
@@ -106,15 +109,16 @@ async function realMain(argv, showHelp) {
     d(`Posting 'pending' to GitHub status`);
 
     let nwo = getNwoFromRepoUrl(repo);
-    await postCommitStatus(nwo, sha,
-      'pending', 'Surf Build Server', null, name);
+    await retryPromise(() => 
+      postCommitStatus(nwo, sha, 'pending', 'Surf Build Server', null, name));
   }
   
   let workDir = getWorkdirForRepoUrl(repo, sha);
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  await cloneRepo(bareRepoDir, workDir, null, false);
+  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, null, false));
+  r.free();
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);
@@ -155,11 +159,11 @@ async function realMain(argv, showHelp) {
   if (name) {
     d(`Posting 'success' to GitHub status`);
 
-    let gistInfo = await createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
+    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
       "build-output.txt": {
         content: buildOutput
       }
-    });
+    }));
 
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
@@ -168,7 +172,7 @@ async function realMain(argv, showHelp) {
 
       try {
         d(`Uploading build artifacts using token: ${token}`);
-        let targetDir = await uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, token);
+        let targetDir = await retryPromise(() => uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, token));
         await rimraf(targetDir);
       } catch (e) {
         console.error(`Failed to upload build artifacts: ${e.message}`);
