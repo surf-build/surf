@@ -61,7 +61,7 @@ then pass '-s' to all of your build clients.`);
   let nwo = getNwoFromRepoUrl(repo);
   let surfUrl = `${server}/info/${nwo}`;
 
-  const fetchRefs = async () => {
+  let fetchRefs = async () => {
     try {
       return await request({
         uri: surfUrl,
@@ -74,12 +74,10 @@ then pass '-s' to all of your build clients.`);
     }
   };
   
-  const fetchRefsWithRetry = Observable.defer(() => Observable.fromPromise(fetchRefs()))
+  let fetchRefsWithRetry = Observable.defer(() => Observable.fromPromise(fetchRefs()))
     .retry(5);
 
-  refInfo = await Observable.defer(() => Observable.fromPromise(fetchRefs()))
-    .retry(3)
-    .toPromise();
+  refInfo = await fetchRefsWithRetry.toPromise();
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
   console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
