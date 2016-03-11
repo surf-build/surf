@@ -39,6 +39,13 @@ export function delay(ms) {
   });
 }
 
+export function retryPromise(func) {
+  return Observable.defer(() => 
+      Observable.fromPromise(func()))
+    .retry(3)
+    .toPromise();
+}
+
 export async function statNoException(file) {
   try {
     return await fs.stat(file);
