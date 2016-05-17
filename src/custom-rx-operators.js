@@ -22,3 +22,11 @@ Observable.prototype.permaRefcount = function() {
     return d;
   });
 };
+
+Observable.prototype.delayFailures = function(source, delayTime) {
+  return source
+    .catch((e) => {
+      return Observable.timeout(delayTime)
+        .flatMap(() => Observable.throw(e));
+    });
+};
