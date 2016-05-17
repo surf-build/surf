@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import {spawn} from './promise-array';
 import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
+
 import './custom-rx-operators';
 
 const d = require('debug')('surf:build-monitor');
@@ -61,23 +62,23 @@ export default class BuildMonitor {
     let innerObs = this.runBuild(ref)
       .takeUntil(cs)
       .publishLast();
-      
+
     innerObs.catch(() => Observable.just(''))
       .subscribe(() => {
         d(`Removing ${ref.object.sha} from active builds`);
         delete this.currentBuilds[ref.object.sha];
       });
-      
+
     let connected = null;
     let buildObs = Observable.create((subj) => {
       this.seenCommits.add(ref.object.sha);
-      
+
       let disp = innerObs.subscribe(subj);
       if (!connected) connected = innerObs.connect();
-      
+
       return disp;
     });
-        
+
     return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
   }
 
@@ -98,7 +99,8 @@ export default class BuildMonitor {
       .flatMap(() => this.fetchRefs());
 
     let disp = this.buildsToActuallyExecute
-      .map((x) => x.catch((e) => {
+      .map((x) => x.delayFailures(4000).catch((e) => {
+      
         console.log(e.message.replace(/[\r\n]+$/, ''));
         d(e.stack);
 
