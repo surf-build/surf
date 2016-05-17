@@ -3,9 +3,15 @@ import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
 import createRefServer from './ref-server-api';
+
 import BuildMonitor from './build-monitor';
+import './custom-rx-operators';
 
 const d = require('debug')('surf:run-on-every-ref');
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 export default async function main(argv, showHelp) {
   let cmdWithArgs = argv._;
@@ -61,20 +67,16 @@ then pass '-s' to all of your build clients.`);
   let nwo = getNwoFromRepoUrl(repo);
   let surfUrl = `${server}/info/${nwo}`;
 
-  let fetchRefs = async () => {
-    try {
-      return await request({
-        uri: surfUrl,
-        json: true
-      });
-    } catch (e) {
-      console.log(`Failed to fetch from ${surfUrl}: ${e.message}`);
-      d(e.stack);
-      process.exit(-1);
-    }
+  let fetchRefs = () => {
+    return request({
+      uri: surfUrl,
+      json: true
+    });
   };
   
-  let fetchRefsWithRetry = Observable.defer(() => Observable.fromPromise(fetchRefs()))
+  let fetchRefsWithRetry = Observable.defer(() => 
+    Observable.fromPromise(fetchRefs())
+      .delayFailures(getRandomInt(1000, 6000)))
     .retry(5);
 
   refInfo = await fetchRefsWithRetry.toPromise();
