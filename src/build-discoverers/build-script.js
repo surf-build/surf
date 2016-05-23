@@ -7,12 +7,15 @@ const d = require('debug')('surf:build-discover-drivers');
 const possibleScriptPathsWin32 = [
   'script/ci.ps1',
   'script/ci.cmd',
+  'script/cibuild.ps1',
+  'script/cibuild.cmd',
   'build.ps1',
   'build.cmd'
 ];
 
 const possibleScriptPathsPosix = [
   'script/ci',
+  'script/cibuild',
   'build.sh'
 ];
 
