@@ -39,7 +39,7 @@
     "lodash": "^4.12.0",
     "lru-cache": "^4.0.1",
     "mkdirp": "^0.5.1",
-    "nodegit": "^0.13.0",
+    "nodegit": "0.13.0",
     "parse-link-header": "^0.4.1",
     "pify": "^2.3.0",
     "request-promise": "^3.0.0",
