@@ -191,7 +191,7 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
   let repo = await Repository.open(targetDir);
 
   d("Opening index");
-  let idx = repo.index;
+  let idx = await repo.index();
   await idx.read(1);
 
   d("Reading artifacts directory");
