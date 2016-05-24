@@ -14,7 +14,7 @@ function apiUrl(path, gist=false) {
   let apiRoot = gist ?
     (process.env.GIST_ENTERPRISE_URL || process.env.GITHUB_ENTERPRISE_URL) :
     process.env.GITHUB_ENTERPRISE_URL;
-    
+
   if (apiRoot) {
     return `${apiRoot}/api/v3/${path}`;
   } else {
@@ -28,12 +28,12 @@ const httpsRemoteUri = /https?:\/\//i;
 export function getSanitizedRepoUrl(repoUrl) {
   if (repoUrl.match(httpsRemoteUri)) return repoUrl;
   let m = repoUrl.match(sshRemoteUrl);
-  
+
   if (!m) {
     d(`URL ${repoUrl} seems totally bogus`);
     return repoUrl;
   }
-  
+
   if (m[1] === 'github.com') {
     return `https://github.com/${m[2]}`;
   } else {
@@ -62,7 +62,8 @@ export async function gitHub(uri, token=null, body=null) {
       'Accept': 'application/vnd.github.v3+json',
       'Authorization': `token ${tok}`
     },
-    json: true
+    json: true,
+    followAllRedirects: true
   };
 
   if (body) {
@@ -80,7 +81,7 @@ export async function gitHub(uri, token=null, body=null) {
     d(JSON.stringify(e.message));
     throw e;
   }
-  
+
   return { result, headers: ret.response.headers };
 }
 
