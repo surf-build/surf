@@ -158,3 +158,22 @@ export function createGist(description, files, publicGist=false, token=null) {
   let body = { files, description, "public": publicGist };
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
+
+export function fetchAllTags(nwo, token=null) {
+  return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60*1000);
+}
+
+export function fetchStatusesForRef(nwo, sha, token=null) {
+  return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
+}
+
+export function createRelease(nwo, tag, token=null) {
+  let body = { 
+    tag_name: tag,
+    name: `${nwo.split('/')[1]} @ ${tag}`,
+    body: 'To be written',
+    draft: true
+  };
+  
+  return gitHub(apiUrl('repos/${nwo}/releases'), token, body);
+}
