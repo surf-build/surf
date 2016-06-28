@@ -163,7 +163,7 @@ export function fetchAllTags(nwo, token=null) {
   return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60*1000);
 }
 
-export function fetchStatusesForRef(nwo, sha, token=null) {
+export function fetchStatusesForCommit(nwo, sha, token=null) {
   return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
 }
 
