@@ -86,7 +86,6 @@ export async function gitHub(uri, token=null, body=null, extraHeaders=null) {
   }
     
   if (_.isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
-    d("Deleting JSON!");
     delete opts.json;
   }
 
@@ -195,7 +194,6 @@ export function createRelease(nwo, tag, token=null) {
     draft: true
   };
   
-  d(JSON.stringify(body));
   return gitHub(apiUrl(`repos/${nwo}/releases`), token, body);
 }
 

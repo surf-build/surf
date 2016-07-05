@@ -1,33 +1,13 @@
 import fs from 'fs';
 import _ from 'lodash';
 import path from 'path';
-import mkdirp from 'mkdirp';
 
 import { getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, getIdFromGistUrl, 
   createRelease, uploadFileToRelease } from './github-api';
 import { cloneRepo, getGistTempdir } from './git-api';
-import { retryPromise, asyncMap } from './promise-array';
+import { retryPromise } from './promise-array';
 
 const d = require('debug')('surf:surf-publish');
-
-function getRootAppDir() {
-  let ret = null;
-
-  switch (process.platform) {
-  case 'win32':
-    ret = path.join(process.env.LOCALAPPDATA, 'surf');
-    break;
-  case 'darwin':
-    ret = path.join(process.env.HOME, 'Library', 'Application Support', 'surf');
-    break;
-  default:
-    ret = path.join(process.env.HOME, '.config', 'surf');
-    break;
-  }
-
-  mkdirp.sync(ret);
-  return ret;
-}
 
 async function cloneSurfBuildGist(url) {
   let targetDir = getGistTempdir(getIdFromGistUrl(url));
@@ -102,6 +82,6 @@ export default async function main(argv, showHelp) {
     }
   
     d(`Uploading ${file} as ${name}`);
-    await uploadFileToRelease(releaseInfo, file, name);
+    await retryPromise(() => uploadFileToRelease(releaseInfo, file, name), 3);
   }
 }
