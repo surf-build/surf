@@ -6,7 +6,8 @@
     "surf-server": "./lib/ref-server-cli.js",
     "surf-client": "./lib/run-on-every-ref-cli.js",
     "surf-build": "./lib/build-project-cli.js",
-    "surf-clean": "./lib/clean-workdirs-cli.js"
+    "surf-clean": "./lib/clean-workdirs-cli.js",
+    "surf-publish": "./lib/publish-tag-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",
