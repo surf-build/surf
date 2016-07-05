@@ -216,6 +216,35 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.
 ```
 
+### `surf-publish`
+
+Create a tag for a given commit that you've run `surf-build` on, and this will create a release with those binaries.
+
+```sh
+surf-build -n "my-cool-build"
+git tag -a -m "My Cool Build 0.1" 0.1 HEAD
+git push --tags
+surf-publish -r https://github.com/myname/myrepo -t 0.1
+```
+
+```
+Usage: surf-publish -r http://github.com/some/repo -t some-tag
+Creates a release for the given tag by downloading all of the build
+artifacts and reuploading them
+
+Options:
+  -r, --repo  The repository to clone
+  -t, --tag   The tag to download releases for
+
+
+  Some useful environment variables:
+
+  GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
+  provided.
+  GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build
+  Gists.
+```
+
 ### `surf-clean`
 
 Surf will leave lots of temporary directories around for work directories by-default. `surf-clean` will mop up ones that are no longer mapped to current branches.
