@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
-import ini from 'ini';
 
 import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';

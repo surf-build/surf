@@ -6,7 +6,8 @@
     "surf-server": "./lib/ref-server-cli.js",
     "surf-client": "./lib/run-on-every-ref-cli.js",
     "surf-build": "./lib/build-project-cli.js",
-    "surf-clean": "./lib/clean-workdirs-cli.js"
+    "surf-clean": "./lib/clean-workdirs-cli.js",
+    "surf-publish": "./lib/publish-tag-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",
@@ -38,6 +39,7 @@
     "jade": "^1.11.0",
     "lodash": "^4.12.0",
     "lru-cache": "^4.0.1",
+    "mime-types": "^2.1.11",
     "mkdirp": "^0.5.1",
     "nodegit": "0.13.0",
     "parse-link-header": "^0.4.1",
