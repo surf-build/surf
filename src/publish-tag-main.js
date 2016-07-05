@@ -1,8 +1,10 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
 
-import { getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit } from './github-api';
-import { retryPromise } from './promise-array';
+import { getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, getIdFromGistUrl, 
+  createRelease, uploadFileToRelease } from './github-api';
+import { cloneRepo, getGistTempdir } from './git-api';
+import { retryPromise, asyncMap } from './promise-array';
 
 const d = require('debug')('surf:surf-publish');
 
@@ -23,6 +25,15 @@ function getRootAppDir() {
 
   mkdirp.sync(ret);
   return ret;
+}
+
+async function cloneSurfBuildGist(url) {
+  let targetDir = getGistTempdir(getIdFromGistUrl(url));
+  let token = process.env['GIST_TOKEN'] || process.env['GITHUB_TOKEN'];
+  
+  d(`${url} => ${targetDir}`);
+  await cloneRepo(url, targetDir, token, false);
+  return targetDir;
 }
 
 export default async function main(argv, showHelp) {
@@ -55,5 +66,16 @@ export default async function main(argv, showHelp) {
   }
   
   let statuses = await fetchStatusesForCommit(nwo, ourTag.commit.sha);
-  console.log(JSON.stringify(statuses));
+  statuses = statuses.filter((x) => x.target_url && x.target_url.match(/^https:\/\/gist\./i));
+  
+  d(`About to download URLs: ${JSON.stringify(statuses)}`);
+  let targetDirs = [];
+  for (let status of statuses) {
+    targetDirs.push(await cloneSurfBuildGist(status.target_url));
+  }
+  
+  let releaseInfo = (await createRelease(nwo, ourTag.name)).result;
+  console.log(JSON.stringify(releaseInfo));
+  
+  await uploadFileToRelease(releaseInfo, require.resolve('./ref-server-api.js'), 'ref-server-api.js');
 }
