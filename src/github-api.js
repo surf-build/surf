@@ -189,6 +189,7 @@ export function fetchStatusesForCommit(nwo, sha, token=null) {
 export function createRelease(nwo, tag, token=null) {
   let body = { 
     tag_name: tag,
+    target_committish: tag,
     name: `${nwo.split('/')[1]} @ ${tag}`,
     body: 'To be written',
     draft: true

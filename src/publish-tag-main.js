@@ -1,3 +1,5 @@
+import fs from 'fs';
+import _ from 'lodash';
 import path from 'path';
 import mkdirp from 'mkdirp';
 
@@ -69,13 +71,37 @@ export default async function main(argv, showHelp) {
   statuses = statuses.filter((x) => x.target_url && x.target_url.match(/^https:\/\/gist\./i));
   
   d(`About to download URLs: ${JSON.stringify(statuses)}`);
-  let targetDirs = [];
+  let targetDirMap = {};
   for (let status of statuses) {
-    targetDirs.push(await cloneSurfBuildGist(status.target_url));
+    let targetDir = await cloneSurfBuildGist(status.target_url);
+    targetDirMap[targetDir] = status.context;
   }
   
-  let releaseInfo = (await createRelease(nwo, ourTag.name)).result;
-  console.log(JSON.stringify(releaseInfo));
+  let fileList = _.flatten(Object.keys(targetDirMap)
+    .map((d) => fs.readdirSync(d)
+      .filter((f) => f !== 'build-output.txt' && fs.statSync(path.join(d,f)).isFile())
+      .map((f) => path.join(d,f))));
   
-  await uploadFileToRelease(releaseInfo, require.resolve('./ref-server-api.js'), 'ref-server-api.js');
+  let dupeFileList = fileList.reduce((acc, x) => {
+    let basename = path.basename(x);
+
+    acc[basename] = acc[basename] || 0;
+    acc[basename]++;
+    return acc;
+  }, {});
+  
+  let releaseInfo = (await createRelease(nwo, ourTag.name)).result;
+  d(JSON.stringify(dupeFileList));
+  for (let file of fileList) {
+    let name = path.basename(file);
+
+    if (dupeFileList[name] > 1) {
+      let relName = targetDirMap[path.dirname(file)];
+      name = name.replace(/^([^\.]+)\./, `$1-${relName}.`);
+      d(`Detected dupe, renaming to ${name}`);
+    }
+  
+    d(`Uploading ${file} as ${name}`);
+    await uploadFileToRelease(releaseInfo, file, name);
+  }
 }
