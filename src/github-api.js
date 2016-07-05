@@ -1,5 +1,7 @@
 import './babel-maybefill';
 
+import mimeTypes from 'mime-types';
+import fs from 'fs';
 import url from 'url';
 import _ from 'lodash';
 import request from 'request-promise';
@@ -51,7 +53,15 @@ export function getNwoFromRepoUrl(repoUrl) {
   return u.path.slice(1).replace(/\.git$/, '');
 }
 
-export async function gitHub(uri, token=null, body=null) {
+export function getIdFromGistUrl(gistUrl) {
+  let u = url.parse(gistUrl);
+  let s = u.pathname.split('/');
+  
+  // NB: Anonymous Gists don't have usernames, just the token
+  return s[2] || s[1];
+}
+
+export async function gitHub(uri, token=null, body=null, extraHeaders=null) {
   let tok = token || process.env.GITHUB_TOKEN;
 
   d(`Fetching GitHub URL: ${uri}`);
@@ -69,6 +79,15 @@ export async function gitHub(uri, token=null, body=null) {
   if (body) {
     opts.body = body;
     opts.method = 'POST';
+  }
+
+  if (extraHeaders) {
+    Object.assign(opts.headers, extraHeaders);
+  }
+    
+  if (_.isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
+    d("Deleting JSON!");
+    delete opts.json;
   }
 
   let ret = null;
@@ -175,5 +194,19 @@ export function createRelease(nwo, tag, token=null) {
     draft: true
   };
   
-  return gitHub(apiUrl('repos/${nwo}/releases'), token, body);
+  d(JSON.stringify(body));
+  return gitHub(apiUrl(`repos/${nwo}/releases`), token, body);
+}
+
+export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=null) {
+  let uploadUrl = releaseInfo.upload_url.replace(/{[^}]*}/g, '');
+  uploadUrl = uploadUrl + `?name=${encodeURIComponent(fileName)}`;
+  
+  let contentType = {
+    "Content-Type": mimeTypes.lookup[fileName] || 'application/octet-stream',
+    "Content-Length": fs.statSync(targetFile).size
+  };
+
+  d(JSON.stringify(contentType));
+  return gitHub(uploadUrl, token, fs.createReadStream(targetFile), contentType);
 }

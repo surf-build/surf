@@ -38,6 +38,7 @@
     "jade": "^1.11.0",
     "lodash": "^4.12.0",
     "lru-cache": "^4.0.1",
+    "mime-types": "^2.1.11",
     "mkdirp": "^0.5.1",
     "nodegit": "0.13.0",
     "parse-link-header": "^0.4.1",
