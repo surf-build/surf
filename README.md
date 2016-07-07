@@ -245,6 +245,27 @@ Options:
   Gists.
 ```
 
+### `surf-download`
+
+Downloads all of the assets from a Release on GitHub.
+
+```
+Usage: surf-download -r http://github.com/some/repo -t some-tag
+Download all of the artifacts for a given Release
+
+Options:
+  --target    The directory to download files to
+  -r, --repo  The repository to clone
+  -t, --tag   The tag to download releases for
+
+
+Some useful environment variables:
+
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
+provided.
+```
+
+
 ### `surf-clean`
 
 Surf will leave lots of temporary directories around for work directories by-default. `surf-clean` will mop up ones that are no longer mapped to current branches.
