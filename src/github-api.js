@@ -224,3 +224,12 @@ export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=nul
   d(JSON.stringify(contentType));
   return gitHub(uploadUrl, token, fs.createReadStream(targetFile), contentType);
 }
+
+export function getReleaseByTag(nwo, tag, token=null) {
+  return gitHub(apiUrl(`repos/${nwo}/releases/tags/${tag}`), token);
+}
+
+export function downloadReleaseAsset(nwo, assetId, targetFile, token=null) {
+  let headers = { "Accept": "application/octet-stream" };
+  return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
+}
