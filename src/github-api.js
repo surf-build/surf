@@ -5,6 +5,7 @@ import fs from 'fs';
 import url from 'url';
 import _ from 'lodash';
 import request from 'request-promise';
+import requestOg from 'request';
 import parseLinkHeader from 'parse-link-header';
 import pkg from '../package.json';
 import {asyncMap} from './promise-array';
@@ -61,7 +62,7 @@ export function getIdFromGistUrl(gistUrl) {
   return s[2] || s[1];
 }
 
-export async function gitHub(uri, token=null, body=null, extraHeaders=null) {
+export async function gitHub(uri, token=null, body=null, extraHeaders=null, targetFile=null) {
   let tok = token || process.env.GITHUB_TOKEN;
 
   d(`Fetching GitHub URL: ${uri}`);
@@ -87,6 +88,20 @@ export async function gitHub(uri, token=null, body=null, extraHeaders=null) {
     
   if (_.isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
     delete opts.json;
+  }
+
+  if (targetFile) {
+    delete opts.json;
+
+    await new Promise((res,rej) => {
+      let str = requestOg(opts)
+        .pipe(fs.createWriteStream(targetFile));
+
+      str.on('finish', () => res());
+      str.on('error', (e) => rej(e));
+    });
+
+    return { result: targetFile, headers: {}};
   }
 
   let ret = null;
@@ -208,4 +223,13 @@ export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=nul
 
   d(JSON.stringify(contentType));
   return gitHub(uploadUrl, token, fs.createReadStream(targetFile), contentType);
+}
+
+export function getReleaseByTag(nwo, tag, token=null) {
+  return gitHub(apiUrl(`repos/${nwo}/releases/tags/${tag}`), token);
+}
+
+export function downloadReleaseAsset(nwo, assetId, targetFile, token=null) {
+  let headers = { "Accept": "application/octet-stream" };
+  return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
 }
