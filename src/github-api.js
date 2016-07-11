@@ -157,6 +157,14 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
   return ret;
 }
 
+export function fetchAllOpenPRs(nwo) {
+  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), null, 60*1000);
+}
+
+export function fetchSingleRef(nwo, ref) {
+  return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`));
+}
+
 export function fetchAllRefs(nwo) {
   return githubPaginate(apiUrl(`repos/${nwo}/git/refs?per_page=100`), null, 60*1000);
 }
