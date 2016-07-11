@@ -244,7 +244,7 @@ export function downloadReleaseAsset(nwo, assetId, targetFile, token=null) {
   return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
 }
 
-export async function findPRNumberForCommit(nwo, sha, token=null) {
+export async function findPRForCommit(nwo, sha, token=null) {
   // NB: Thanks pea53 for this but also this is bananas weird lol
   let result = (await gitHub(apiUrl(`search/issues?q=${sha}`), token)).result;
 
@@ -255,5 +255,5 @@ export async function findPRNumberForCommit(nwo, sha, token=null) {
     return true;
   });
   
-  return item.pull_request.url.replace(/.*pulls\/(\d+)$/, '$1');
+  return (await gitHub(item.pull_request.url)).result;
 }
