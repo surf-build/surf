@@ -265,6 +265,33 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
 provided.
 ```
 
+### `surf-status`
+
+Displays the current commit statuses for every open PR on GitHub (whether they were created by GitHub or not)
+
+```
+Usage: surf-status --repo https://github.com/owner/repo
+Returns the GitHub Status for all the branches in a repo
+
+Options:
+  -s, --server  The Surf server to connect to - use this if you call surf-status
+                repeatedly
+  -h, --help    Show help                                              [boolean]
+  -r, --repo    The URL of the repository to fetch status for. Defaults to the
+                repo in the current directory
+  -j, --json    Dump the commit status in JSON format for machine parsing
+                instead of human-readable format                       [boolean]
+
+
+Some useful environment variables:
+
+SURF_PORT - the port to serve on if not specified via -p, defaults to 3000.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
+GITHUB_TOKEN - the GitHub API token to use. Must be provided.
+
+SURF_REPO - an alternate way to specify the --repo parameter, provided
+            automatically by surf-client.
+```
 
 ### `surf-clean`
 

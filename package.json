@@ -8,7 +8,8 @@
     "surf-build": "./lib/build-project-cli.js",
     "surf-clean": "./lib/clean-workdirs-cli.js",
     "surf-publish": "./lib/publish-tag-cli.js",
-    "surf-download": "./lib/download-release-cli.js"
+    "surf-download": "./lib/download-release-cli.js",
+    "surf-status": "./lib/commit-status-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",
@@ -32,6 +33,7 @@
   "dependencies": {
     "babel-polyfill": "^6.8.0",
     "bulma": "0.0.26",
+    "chalk": "^1.1.1",
     "debug": "^2.2.0",
     "express": "^4.13.4",
     "fs-extra": "^0.30.0",

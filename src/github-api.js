@@ -206,6 +206,10 @@ export function fetchStatusesForCommit(nwo, sha, token=null) {
   return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
 }
 
+export function getCombinedStatusesForCommit(nwo, sha, token=null) {
+  return gitHub(apiUrl(`repos/${nwo}/commits/${sha}/status`), token);
+}
+
 export function createRelease(nwo, tag, token=null) {
   let body = { 
     tag_name: tag,
