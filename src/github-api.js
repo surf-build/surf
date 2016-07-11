@@ -255,5 +255,6 @@ export async function findPRForCommit(nwo, sha, token=null) {
     return true;
   });
   
+  if (!item || !item.pull_request) return null;
   return (await gitHub(item.pull_request.url)).result;
 }

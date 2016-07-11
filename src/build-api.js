@@ -29,7 +29,7 @@ export async function determineBuildCommands(rootPath, sha) {
     if (affinity < 1) return acc;
     
     if (x.shouldAlwaysRun) {
-      activeDiscoverers.push(x);
+      activeDiscoverers.push({ affinity, discoverer: x});
       return acc;
     }
 
@@ -56,15 +56,16 @@ export async function determineBuildCommands(rootPath, sha) {
   for (let {discoverer} of activeDiscoverers) {
     let thisCmd = await discoverer.getBuildCommand(sha);
     
+    d(`Discoverer returned ${JSON.stringify(thisCmd)}`);
     if (thisCmd.cmds) {
-      ret.cmds = ret.cmds.concat(
-        _.map(ret.cmds, (x) => findActualExecutable(x.cmd, x.args)));
+      let newCmds = _.map(thisCmd.cmds, (x) => findActualExecutable(x.cmd, x.args));
+      ret.cmds.push(...newCmds);
     } else {
       ret.cmds.push(findActualExecutable(thisCmd.cmd, thisCmd.args));
     }
     
     if (thisCmd.artifactDirs) {
-      ret.artifactDirs = ret.artifactDirs.concat(thisCmd.artifactDirs);
+      ret.artifactDirs.push(...thisCmd.artifactDirs);
     }
   }
   

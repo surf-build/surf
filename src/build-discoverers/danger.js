@@ -17,7 +17,7 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     let exists = await statNoException(dangerFile);
     
     if (exists) { d(`Found Dangerfile at ${dangerFile}`); }
-    return exists ? 2 : 0;
+    return exists ? 100 : 0;
   }
 
   async getBuildCommand() {
