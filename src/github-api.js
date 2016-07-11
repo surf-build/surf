@@ -45,55 +45,6 @@ export function getSanitizedRepoUrl(repoUrl) {
   }
 }
 
-export function determineInterestingRefs(refInfo) {
-  let nonBoringRefs = filterBoringRefs(refInfo);
-
-  // First determine the PR and SHA info as a lookup
-  let shaToRefs = _.reduce(nonBoringRefs, (acc, ref) => {
-    acc[ref.object.sha] = acc[ref.object.sha] || [];
-    acc[ref.object.sha].push(ref.ref);
-
-    return acc;
-  }, {});
-
-  let ret = _.reduce(nonBoringRefs, (acc, ref) => {
-    let allRefsForSha = shaToRefs[ref.object.sha];
-    if (allRefsForSha.length === 1) {
-      d(`Unique ref: ${ref.ref}`);
-      acc.push({ref: ref.ref, pr: prNumberFromRef(ref.ref) });
-      return acc;
-    }
-
-    d(`Duplicated ref ${ref.ref}: ${JSON.stringify(allRefsForSha)}`);
-
-    // If we've got a PR and a branch that also is that PR, we don't
-    // care about the PR ref
-    if (ref.ref.match(/refs\/pull/)) return acc;
-
-    let prNum = _.find(allRefsForSha, (x) => prNumberFromRef(x));
-    acc.push({ref: ref.ref, pr: prNumberFromRef(prNum) });
-    return acc;
-  }, []);
-
-  d(JSON.stringify(ret));
-
-  // Convert all the PR numbers to the pr_info data
-  _.each(ret, (x) => {
-    if (!x.pr) return;
-
-    let needle = `refs/pull/${x.pr}/head`;
-    let ref = _.find(refInfo, (x) => x.ref === needle);
-    if (!ref) {
-      d(`Couldn't find PR info but we should be able to: ${needle}`);
-      return;
-    }
-
-    x.pr = ref.object.pr_info;
-  });
-
-  return ret;
-}
-
 export function getNwoFromRepoUrl(repoUrl) {
   // Fix up SSH repo origins
   let m = repoUrl.match(sshRemoteUrl);
@@ -253,6 +204,10 @@ export function fetchAllTags(nwo, token=null) {
 
 export function fetchStatusesForCommit(nwo, sha, token=null) {
   return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
+}
+
+export function getCombinedStatusesForCommit(nwo, sha, token=null) {
+  return gitHub(apiUrl(`repos/${nwo}/commits/${sha}/status`), token);
 }
 
 export function createRelease(nwo, tag, token=null) {
