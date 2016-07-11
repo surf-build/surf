@@ -2,7 +2,8 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, 
   getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
-import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
+import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
+  findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
@@ -53,7 +54,20 @@ export default function main(argv, showHelp) {
 async function realMain(argv, showHelp) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
+  let nwo = getNwoFromRepoUrl(repo);
   let name = argv.name;
+  
+  
+  // If the current PR number isn't set, try to recreate it
+  process.env.SURF_NWO = nwo;
+  if (!process.env.SURF_PR_NUM) {
+    let pr = await findPRForCommit(nwo, sha);
+
+    if (pr) {
+      process.env.SURF_PR_NUM = pr.number;
+      process.env.SURF_REF = pr.head.ref;
+    }
+  }
   
   if (argv.help) {
     showHelp();
