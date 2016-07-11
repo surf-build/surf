@@ -170,8 +170,18 @@ export function fetchAllRefs(nwo) {
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
-  let refs = filterBoringRefs(await fetchAllRefs(nwo));
-
+  let openPRs = (await fetchAllOpenPRs(nwo));
+  let refList = openPRs.map((x) => x.head.ref);
+  
+  let refToPR = openPRs.reduce((acc, x) => {
+    acc[x.head.ref] = x;
+    return acc;
+  }, {});
+  
+  let refs = Object.values(
+    await asyncMap(refList, 
+      async (ref) => (await fetchSingleRef(nwo, ref)).result));
+  
   let commitInfo = await asyncMap(
     _.map(refs, (ref) => ref.object.url),
     async (x) => {
@@ -180,6 +190,8 @@ export async function fetchAllRefsWithInfo(nwo) {
 
   _.each(refs, (ref) => {
     ref.object.commit = commitInfo[ref.object.url];
+    console.log(ref.ref.replace(/^refs\/heads\//, ''));
+    ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
 
   return refs;
