@@ -131,15 +131,6 @@ export async function cachedGitHub(uri, token=null, maxAge=null) {
   return ret;
 }
 
-export function filterBoringRefs(refs) {
-  return _.filter(refs, (ref) => {
-    if (ref.ref.match(/__gh/)) return false;
-    if (ref.ref.match(/\/merge$/i)) return false;
-
-    return true;
-  });
-}
-
 export async function githubPaginate(uri, token=null, maxAge=null) {
   let next = uri;
   let ret = [];
@@ -162,11 +153,7 @@ export function fetchAllOpenPRs(nwo) {
 }
 
 export function fetchSingleRef(nwo, ref) {
-  return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`));
-}
-
-export function fetchAllRefs(nwo) {
-  return githubPaginate(apiUrl(`repos/${nwo}/git/refs?per_page=100`), null, 60*1000);
+  return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
