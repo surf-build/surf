@@ -131,15 +131,6 @@ export async function cachedGitHub(uri, token=null, maxAge=null) {
   return ret;
 }
 
-export function filterBoringRefs(refs) {
-  return _.filter(refs, (ref) => {
-    if (ref.ref.match(/__gh/)) return false;
-    if (ref.ref.match(/\/merge$/i)) return false;
-
-    return true;
-  });
-}
-
 export async function githubPaginate(uri, token=null, maxAge=null) {
   let next = uri;
   let ret = [];
@@ -157,13 +148,27 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
   return ret;
 }
 
-export function fetchAllRefs(nwo) {
-  return githubPaginate(apiUrl(`repos/${nwo}/git/refs?per_page=100`), null, 60*1000);
+export function fetchAllOpenPRs(nwo) {
+  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), null, 60*1000);
+}
+
+export function fetchSingleRef(nwo, ref) {
+  return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
 }
 
 export async function fetchAllRefsWithInfo(nwo) {
-  let refs = filterBoringRefs(await fetchAllRefs(nwo));
-
+  let openPRs = (await fetchAllOpenPRs(nwo));
+  let refList = openPRs.map((x) => x.head.ref);
+  
+  let refToPR = openPRs.reduce((acc, x) => {
+    acc[x.head.ref] = x;
+    return acc;
+  }, {});
+  
+  let refs = Object.values(
+    await asyncMap(refList, 
+      async (ref) => (await fetchSingleRef(nwo, ref)).result));
+  
   let commitInfo = await asyncMap(
     _.map(refs, (ref) => ref.object.url),
     async (x) => {
@@ -172,6 +177,7 @@ export async function fetchAllRefsWithInfo(nwo) {
 
   _.each(refs, (ref) => {
     ref.object.commit = commitInfo[ref.object.url];
+    ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
 
   return refs;
