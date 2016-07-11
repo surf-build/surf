@@ -169,7 +169,7 @@ async function realMain(argv, showHelp) {
   }
 
   await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
-
+  
   if (name) {
     d(`Posting 'success' to GitHub status`);
 
