@@ -22,33 +22,54 @@ export function createBuildDiscovers(rootPath) {
 
 export async function determineBuildCommands(rootPath, sha) {
   let discoverers = createBuildDiscovers(rootPath);
+  let activeDiscoverers = [];
 
-  let { discoverer } = await asyncReduce(discoverers, async (acc, x) => {
+  let mainDiscoverer = await asyncReduce(discoverers, async (acc, x) => {
     let affinity = await x.getAffinityForRootDir();
     if (affinity < 1) return acc;
+    
+    if (x.shouldAlwaysRun) {
+      activeDiscoverers.push({ affinity, discoverer: x});
+      return acc;
+    }
 
     return (acc.affinity < affinity) ?
       { affinity, discoverer: x } :
       acc;
   }, {affinity: -1, discoverer: null});
-
-  if (!discoverer) {
+  
+  if (mainDiscoverer.discoverer) {
+    activeDiscoverers.push(mainDiscoverer);
+  }
+  
+  activeDiscoverers = _.sortBy(activeDiscoverers, (x) => 0 - x.affinity);
+  
+  if (activeDiscoverers.length < 1) {
     throw new Error("We can't figure out how to build this repo automatically.");
   }
-
-  let ret = await discoverer.getBuildCommand(sha);
-  if (ret.cmds) {
-    ret.cmds = _.map(ret.cmds, (x) => findActualExecutable(x.cmd, x.args));
-  } else {
-    _.assign(ret, findActualExecutable(ret.cmd, ret.args));
+  
+  let ret = {
+    cmds: [],
+    artifactDirs: []
+  };
+  
+  for (let {discoverer} of activeDiscoverers) {
+    let thisCmd = await discoverer.getBuildCommand(sha);
+    
+    d(`Discoverer returned ${JSON.stringify(thisCmd)}`);
+    if (thisCmd.cmds) {
+      let newCmds = _.map(thisCmd.cmds, (x) => findActualExecutable(x.cmd, x.args));
+      ret.cmds.push(...newCmds);
+    } else {
+      ret.cmds.push(findActualExecutable(thisCmd.cmd, thisCmd.args));
+    }
+    
+    if (thisCmd.artifactDirs) {
+      ret.artifactDirs.push(...thisCmd.artifactDirs);
+    }
   }
-
-  if (ret.cmds) {
-    _.each(ret.cmds, (x) => d(`Actual executable to run: ${x.cmd} ${x.args.join(' ')}`));
-  } else {
-    d(`Actual executable to run: ${ret.cmd} ${ret.args.join(' ')}`);
-  }
-
+  
+  _.each(ret.cmds, (x) => d(`Actual executable to run: ${x.cmd} ${x.args.join(' ')}`));
   return ret;
 }
 

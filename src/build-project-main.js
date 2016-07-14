@@ -2,7 +2,8 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, 
   getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
-import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist } from './github-api';
+import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
+  findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
@@ -50,15 +51,33 @@ export default function main(argv, showHelp) {
     });
 }
 
+async function configureEnvironmentVariablesForChild(nwo, sha, name) {
+  process.env.SURF_NWO = nwo;
+  if (name) process.env.SURF_BUILD_NAME = name;
+  
+  // If the current PR number isn't set, try to recreate it
+  if (!process.env.SURF_PR_NUM) {
+    let pr = await findPRForCommit(nwo, sha);
+
+    if (pr) {
+      process.env.SURF_PR_NUM = pr.number;
+      process.env.SURF_REF = pr.head.ref;
+    }
+  }
+}
+
 async function realMain(argv, showHelp) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
+  let nwo = getNwoFromRepoUrl(repo);
   let name = argv.name;
-  
+
   if (argv.help) {
     showHelp();
     process.exit(0);
   }
+
+  await configureEnvironmentVariablesForChild(nwo, sha, name);
 
   if (name === '__test__') {
     // NB: Don't end up setting statuses in unit tests, even if argv.name is set
@@ -155,7 +174,7 @@ async function realMain(argv, showHelp) {
   }
 
   await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
-
+  
   if (name) {
     d(`Posting 'success' to GitHub status`);
 

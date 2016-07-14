@@ -243,3 +243,18 @@ export function downloadReleaseAsset(nwo, assetId, targetFile, token=null) {
   let headers = { "Accept": "application/octet-stream" };
   return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
 }
+
+export async function findPRForCommit(nwo, sha, token=null) {
+  // NB: Thanks pea53 for this but also this is bananas weird lol
+  let result = (await gitHub(apiUrl(`search/issues?q=${sha}`), token)).result;
+
+  let item = result.items.find((x) => {
+    if (!x.pull_request) return false;
+    if (x.pull_request.url.indexOf(`/${nwo}/`) < 0) return false;
+    
+    return true;
+  });
+  
+  if (!item || !item.pull_request) return null;
+  return (await gitHub(item.pull_request.url)).result;
+}

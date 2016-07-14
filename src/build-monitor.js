@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import {spawn} from './promise-array';
 import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
+import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
 
@@ -37,8 +38,14 @@ export default class BuildMonitor {
     let args = _.clone(this.cmdWithArgs).splice(1).concat([ref.object.sha]);
     let envToAdd = {
       'SURF_SHA1': ref.object.sha,
-      'SURF_REPO': this.repo
+      'SURF_REPO': this.repo,
+      'SURF_NWO': getNwoFromRepoUrl(this.repo),
+      'SURF_REF': ref.ref.replace(/^refs\/heads\//, '')
     };
+    
+    if (ref.object.pr) {
+      envToAdd.SURF_PR_NUM = ref.object.pr.number;
+    }
 
     let opts = {
       env: _.assign({}, envToAdd, process.env)
