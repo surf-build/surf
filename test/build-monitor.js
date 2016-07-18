@@ -36,7 +36,7 @@ describe('the build monitor', function() {
     this.fixture.dispose();
   });
   
-  it('shouldnt run builds in getOrCreateBuild until you subscribe', function() {
+  it.only('shouldnt run builds in getOrCreateBuild until you subscribe', function() {
     let buildCount = 0;
     let runBuildCount = 0;
     
