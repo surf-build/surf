@@ -1,7 +1,7 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, 
-  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo } from './git-api';
+  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
   findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
@@ -51,8 +51,9 @@ export default function main(argv, showHelp) {
     });
 }
 
-async function configureEnvironmentVariablesForChild(nwo, sha, name) {
+async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
   process.env.SURF_NWO = nwo;
+  process.env.SURF_REPO = repo;
   if (name) process.env.SURF_BUILD_NAME = name;
   
   // If the current PR number isn't set, try to recreate it
@@ -77,7 +78,7 @@ async function realMain(argv, showHelp) {
     process.exit(0);
   }
 
-  await configureEnvironmentVariablesForChild(nwo, sha, name);
+  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   if (name === '__test__') {
     // NB: Don't end up setting statuses in unit tests, even if argv.name is set
@@ -141,6 +142,9 @@ async function realMain(argv, showHelp) {
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);
+  
+  d(`Resetting remote origin to URL`);
+  await resetOriginUrl(workDir, repo);
 
   d(`Determining command to build`);
   let { cmd, cmds, args, artifactDirs } = await determineBuildCommands(workDir);

@@ -188,6 +188,11 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
   return targetDirname;
 }
 
+export async function resetOriginUrl(target, url) {
+  let repo = await Repository.open(target);
+  Remote.setUrl(repo, 'origin', url);
+}
+
 export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
   if (!(await statNoException(targetDir))) {
     d(`${targetDir} doesn't exist, cloning it`);

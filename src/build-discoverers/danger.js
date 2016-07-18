@@ -13,11 +13,10 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
   }
 
   async getAffinityForRootDir() {
-    // NB: Hax hax hax, we determine here if we would post a commit status
-    if (!process.argv.find((x) => x.match(/-n/))) return 0;
-    
     let dangerFile = path.join(this.rootDir, 'Dangerfile');
     let exists = await statNoException(dangerFile);
+
+    if (process.env.SURF_DISABLE_DANGER) return 0;
     
     if (exists) { d(`Found Dangerfile at ${dangerFile}`); }
     return exists ? 100 : 0;
@@ -27,6 +26,10 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     let cmds = [
       { cmd: 'bundle', args: ['exec', 'danger']}
     ];
+    
+    if (!process.env.SURF_BUILD_NAME) {
+      cmds[0].args.push('local');
+    }
   
     if (!process.env.DANGER_API_GITHUB_TOKEN) {
       process.env.DANGER_API_GITHUB_TOKEN = process.env.GITHUB_TOKEN;
