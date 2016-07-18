@@ -26,6 +26,10 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     let cmds = [
       { cmd: 'bundle', args: ['exec', 'danger']}
     ];
+    
+    if (!process.env.SURF_BUILD_NAME) {
+      cmds[0].args.push('local');
+    }
   
     if (!process.env.DANGER_API_GITHUB_TOKEN) {
       process.env.DANGER_API_GITHUB_TOKEN = process.env.GITHUB_TOKEN;
