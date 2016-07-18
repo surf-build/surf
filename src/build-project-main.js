@@ -204,7 +204,7 @@ async function realMain(argv, showHelp) {
       buildPassed ? 'success' : 'failure', 'Surf Build Server', gistInfo.result.html_url, name);
   }
 
-  if (buildPassed) {
+  if (buildPassed && !process.env.DEBUG) {
     await rimraf(tempDir);
   }
 }

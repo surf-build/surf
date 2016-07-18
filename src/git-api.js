@@ -6,7 +6,7 @@ import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enable
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { rimraf, mkdirp, fs } from './promisify';
-import { statNoException } from './promise-array';
+import { statNoException, statSyncNoException } from './promise-array';
 
 enableThreadSafety();
 
@@ -49,7 +49,12 @@ export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `surf-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `${nwo}-${shortSha}`);
+
+  if (statSyncNoException(ret)) {
+    ret = path.join(tmp, `${nwo}-${shortSha}-${date}`);
+  }
+
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
@@ -60,7 +65,11 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
   let date = toIso8601(new Date()).replace(/:/g, '.');
   let shortSha = sha.substr(0,6);
 
-  let ret = path.join(tmp, `surft-${nwo}-${shortSha}-${date}`);
+  let ret = path.join(tmp, `t-${nwo}-${shortSha}`);
+  if (statSyncNoException(ret)) {
+    ret = path.join(tmp, `t-${nwo}-${shortSha}-${date}`);
+  }
+
   if (!dontCreate) mkdirp.sync(ret);
   return ret;
 }
