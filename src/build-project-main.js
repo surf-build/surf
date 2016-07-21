@@ -125,6 +125,14 @@ async function realMain(argv, showHelp) {
 
   d(`repo: ${repo}, sha: ${sha}`);
   
+  if (name) {
+    d(`Posting 'pending' to GitHub status`);
+
+    let nwo = getNwoFromRepoUrl(repo);
+    await retryPromise(() => 
+      postCommitStatus(nwo, sha, 'pending', 'Surf Build Server', null, name));
+  }
+  
   let workDir = getWorkdirForRepoUrl(repo, sha);
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
