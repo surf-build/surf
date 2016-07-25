@@ -88,7 +88,10 @@ then pass '-s' to all of your build clients.`);
     let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
     buildMonitor.start();
     
-    await buildMonitor.buildMonitorCrashed.delay(5000).take(1);
+    await buildMonitor.buildMonitorCrashed
+      .delay(5000)
+      .take(1)
+      .toPromise();
   }
 
   return true;
