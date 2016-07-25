@@ -132,6 +132,7 @@ export default class BuildMonitor {
       _.each(cancellers, (x) => x());
 
       let refsToBuild = this.determineRefsToBuild(refs);
+      
       _.each(refsToBuild, (ref) =>
         this.buildsToActuallyExecute.onNext(
           this.getOrCreateBuild(ref).observable));
