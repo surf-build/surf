@@ -37,8 +37,8 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
       cmds[0].args.push('local');
     }
   
-    if (!process.env.DANGER_API_GITHUB_TOKEN) {
-      process.env.DANGER_API_GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    if (!process.env.DANGER_GITHUB_API_TOKEN) {
+      process.env.DANGER_GITHUB_API_TOKEN = process.env.GITHUB_TOKEN;
     }
   
     return {cmds};
