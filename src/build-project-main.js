@@ -117,9 +117,6 @@ async function realMain(argv, showHelp) {
     process.exit(-1);
   }
   
-  let nwo = getNwoFromRepoUrl(repo);
-  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
-
   let repoDir = getRepoCloneDir();
   
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
@@ -137,6 +134,9 @@ async function realMain(argv, showHelp) {
       process.exit(-1);
     }
   }
+  
+  let nwo = getNwoFromRepoUrl(repo);
+  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   d(`repo: ${repo}, sha: ${sha}`);
   
