@@ -83,8 +83,13 @@ then pass '-s' to all of your build clients.`);
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
   console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
-  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
-  buildMonitor.start();
+  
+  while(true) {
+    let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
+    buildMonitor.start();
+    
+    await buildMonitor.buildMonitorCrashed.delay(5000).take(1);
+  }
 
-  return new Promise(() => {});
+  return true;
 }

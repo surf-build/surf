@@ -22,6 +22,14 @@ export default class BuildMonitor {
     this.scheduler = this.scheduler || Scheduler.default;
     this.currentRunningMonitor = new SerialDisposable();
     this.buildsToActuallyExecute = new Subject();
+    this.buildMonitorCrashed = new Subject();
+    
+    this.buildMonitorCrashed.subscribe((e) => {
+      console.error(`Build Monitor crashed! ${e.message}`);
+      console.error(e.stack);
+    
+      this.dispose();
+    });
 
     if (initialRefs) {
       this.seenCommits = getSeenRefs(initialRefs);
@@ -114,7 +122,7 @@ export default class BuildMonitor {
         return Observable.empty();
       }))
       .merge(this.maxConcurrentJobs)
-      .subscribe();
+      .subscribe(() => {}, (e) => this.buildMonitorCrashed.onNext(e));
 
     let disp2 = fetchCurrentRefs.subscribe((refs) => {
       let seenRefs = getSeenRefs(refs);
@@ -136,7 +144,7 @@ export default class BuildMonitor {
       _.each(refsToBuild, (ref) =>
         this.buildsToActuallyExecute.onNext(
           this.getOrCreateBuild(ref).observable));
-    });
+    }, (e) => this.buildMonitorCrashed.onNext(e));
 
     this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));
     return disp;
