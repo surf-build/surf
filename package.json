@@ -33,6 +33,7 @@
     "babel-polyfill": "^6.8.0",
     "bulma": "0.0.26",
     "chalk": "^1.1.1",
+    "death": "^1.0.0",
     "debug": "^2.2.0",
     "express": "^4.13.4",
     "fs-extra": "^0.30.0",

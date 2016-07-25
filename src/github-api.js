@@ -166,19 +166,38 @@ export async function fetchAllRefsWithInfo(nwo) {
   }, {});
   
   let refs = Object.values(
-    await asyncMap(refList, 
-      async (ref) => (await fetchSingleRef(nwo, ref)).result));
+    await asyncMap(
+      refList, 
+      async (ref) => {
+        try {
+          return (await fetchSingleRef(nwo, ref)).result;
+        } catch (e) {
+          d(`Tried to fetch ref ${ref.ref} but it failed: ${e.message}`);
+          return null;
+        }
+      }));
+      
+  // Filter failures from when we get the ref
+  refs = refs.filter((x) => x !== null);
   
   let commitInfo = await asyncMap(
     _.map(refs, (ref) => ref.object.url),
     async (x) => {
-      return (await cachedGitHub(x)).result;
+      try {
+        return (await cachedGitHub(x)).result;
+      } catch (e) {
+        d(`Tried to fetch commit info for ${x} but failed: ${e.message}`);
+        return null;
+      }
     });
 
   _.each(refs, (ref) => {
     ref.object.commit = commitInfo[ref.object.url];
     ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
+  
+  // Filter failures from the commitInfo asyncMap above
+  refs = refs.filter((r) => r.object.commit);
 
   return refs;
 }

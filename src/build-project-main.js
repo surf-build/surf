@@ -8,6 +8,13 @@ import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } fro
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
 
+import {Observable} from 'rx';
+import ON_DEATH from 'death';
+
+const DeathPromise = new Promise((res,rej) => {
+  ON_DEATH((sig) => rej(new Error(`Signal ${sig} thrown`)));
+});
+
 const d = require('debug')('surf:surf-build');
 
 function getRootAppDir() {
@@ -34,16 +41,24 @@ function getRepoCloneDir() {
 }
 
 export default function main(argv, showHelp) {
-  return realMain(argv, showHelp)
+  let doIt = Observable.merge(
+    Observable.fromPromise(realMain(argv, showHelp)),
+    Observable.fromPromise(DeathPromise)
+  ).take(1).toPromise();
+
+  return doIt
     .then(() => Promise.resolve(true), (e) => {
+      d("Build being taken down!");
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
         let sha = argv.sha || process.env.SURF_SHA1;
         let nwo = getNwoFromRepoUrl(repo);
 
+        d(`Attempting to post error status!`);
         return retryPromise(() => 
-            postCommitStatus(nwo, sha, 'error', 'Surf Build Server', null, argv.name))
+            postCommitStatus(nwo, sha, 'error', `Build Errored: ${e.message}`, null, argv.name))
           .catch(() => true)
+          .then(() => d(`We did it!`))
           .then(() => Promise.reject(e));
       } else {
         return Promise.reject(e);
@@ -70,15 +85,12 @@ async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
 async function realMain(argv, showHelp) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
-  let nwo = getNwoFromRepoUrl(repo);
   let name = argv.name;
 
   if (argv.help) {
     showHelp();
     process.exit(0);
   }
-
-  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   if (name === '__test__') {
     // NB: Don't end up setting statuses in unit tests, even if argv.name is set
@@ -104,7 +116,7 @@ async function realMain(argv, showHelp) {
     showHelp();
     process.exit(-1);
   }
-
+  
   let repoDir = getRepoCloneDir();
   
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
@@ -122,6 +134,9 @@ async function realMain(argv, showHelp) {
       process.exit(-1);
     }
   }
+  
+  let nwo = getNwoFromRepoUrl(repo);
+  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   d(`repo: ${repo}, sha: ${sha}`);
   

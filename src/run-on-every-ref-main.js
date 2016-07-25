@@ -3,11 +3,17 @@ import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
 import createRefServer from './ref-server-api';
+import ON_DEATH from 'death';
 
 import BuildMonitor from './build-monitor';
 import './custom-rx-operators';
 
+
 const d = require('debug')('surf:run-on-every-ref');
+
+const DeathPromise = new Promise((res,rej) => {
+  ON_DEATH((sig) => rej(new Error(`Signal ${sig} thrown`)));
+});
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -83,8 +89,24 @@ then pass '-s' to all of your build clients.`);
 
   // TODO: figure out a way to trap Ctrl-C and dispose stop
   console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
-  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
-  buildMonitor.start();
+  
+  while(true) {
+    let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
+    buildMonitor.start();
+    
+    try {
+      await Observable.merge(
+        buildMonitor.buildMonitorCrashed.delay(5000).take(1),
+        Observable.fromPromise(DeathPromise),
+      ).toPromise();
+    } catch (e) {
+      // NB: This is a little weird - buildMonitorCrashed just returns an item
+      // whereas DeathPromise actually throws, so we can use it as a hint as
+      // to whether to continue or not
+      buildMonitor.dispose();
+      throw e;
+    }
+  }
 
-  return new Promise(() => {});
+  return true;
 }
