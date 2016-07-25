@@ -3,12 +3,11 @@ import request from 'request-promise';
 import {getOriginForRepo} from './git-api';
 import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
 import createRefServer from './ref-server-api';
+import ON_DEATH from 'death';
 
 import BuildMonitor from './build-monitor';
 import './custom-rx-operators';
 
-import {Observable} from 'rx';
-import ON_DEATH from 'death';
 
 const d = require('debug')('surf:run-on-every-ref');
 
