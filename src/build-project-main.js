@@ -8,6 +8,13 @@ import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } fro
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
 
+import {Observable} from 'rx';
+import ON_DEATH from 'death';
+
+const DeathPromise = new Promise((res,rej) => {
+  ON_DEATH((sig) => rej(new Error(`Signal ${sig} thrown`)));
+});
+
 const d = require('debug')('surf:surf-build');
 
 function getRootAppDir() {
@@ -34,7 +41,12 @@ function getRepoCloneDir() {
 }
 
 export default function main(argv, showHelp) {
-  return realMain(argv, showHelp)
+  let doIt = Observable.merge(
+    Observable.fromPromise(realMain(argv, showHelp)),
+    Observable.fromPromise(DeathPromise)
+  ).toPromise();
+
+  return doIt
     .then(() => Promise.resolve(true), (e) => {
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
