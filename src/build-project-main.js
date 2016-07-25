@@ -85,15 +85,12 @@ async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
 async function realMain(argv, showHelp) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
-  let nwo = getNwoFromRepoUrl(repo);
   let name = argv.name;
 
   if (argv.help) {
     showHelp();
     process.exit(0);
   }
-
-  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   if (name === '__test__') {
     // NB: Don't end up setting statuses in unit tests, even if argv.name is set
@@ -119,6 +116,9 @@ async function realMain(argv, showHelp) {
     showHelp();
     process.exit(-1);
   }
+  
+  let nwo = getNwoFromRepoUrl(repo);
+  await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   let repoDir = getRepoCloneDir();
   
