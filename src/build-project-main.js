@@ -48,14 +48,17 @@ export default function main(argv, showHelp) {
 
   return doIt
     .then(() => Promise.resolve(true), (e) => {
+      d("Build being taken down!");
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
         let sha = argv.sha || process.env.SURF_SHA1;
         let nwo = getNwoFromRepoUrl(repo);
 
+        d(`Attempting to post error status!`);
         return retryPromise(() => 
-            postCommitStatus(nwo, sha, 'error', 'Surf Build Server', null, argv.name))
+            postCommitStatus(nwo, sha, 'error', `Build Errored: ${e.message}`, null, argv.name))
           .catch(() => true)
+          .then(() => d(`We did it!`))
           .then(() => Promise.reject(e));
       } else {
         return Promise.reject(e);
