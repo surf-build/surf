@@ -97,7 +97,7 @@ then pass '-s' to all of your build clients.`);
     
     try {
       await Observable.merge(
-        Observable.fromPromise(buildMonitor.buildMonitorCrashed).delay(5000).take(1),
+        buildMonitor.buildMonitorCrashed.delay(5000).take(1),
         Observable.fromPromise(DeathPromise),
       ).toPromise();
     } catch (e) {
