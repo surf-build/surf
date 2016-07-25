@@ -44,7 +44,7 @@ export default function main(argv, showHelp) {
   let doIt = Observable.merge(
     Observable.fromPromise(realMain(argv, showHelp)),
     Observable.fromPromise(DeathPromise)
-  ).toPromise();
+  ).take(1).toPromise();
 
   return doIt
     .then(() => Promise.resolve(true), (e) => {
