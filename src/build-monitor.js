@@ -141,9 +141,13 @@ export default class BuildMonitor {
 
       let refsToBuild = this.determineRefsToBuild(refs);
       
-      _.each(refsToBuild, (ref) =>
-        this.buildsToActuallyExecute.onNext(
-          this.getOrCreateBuild(ref).observable));
+      _.each(refsToBuild, (ref) => {
+        // NB: If we don't do this, we can stack overflow if the build queue
+        // gets too deep
+        setTimeout(
+          () => this.buildsToActuallyExecute.onNext(this.getOrCreateBuild(ref).observable),
+          10);
+      });
     }, (e) => this.buildMonitorCrashed.onNext(e));
 
     this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));
