@@ -144,9 +144,8 @@ export default class BuildMonitor {
       _.each(refsToBuild, (ref) => {
         // NB: If we don't do this, we can stack overflow if the build queue
         // gets too deep
-        setTimeout(
-          () => this.buildsToActuallyExecute.onNext(this.getOrCreateBuild(ref).observable),
-          10);
+        this.scheduler.schedule(null, 
+          () => this.buildsToActuallyExecute.onNext(this.getOrCreateBuild(ref).observable));
       });
     }, (e) => this.buildMonitorCrashed.onNext(e));
 
