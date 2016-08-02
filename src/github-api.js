@@ -156,10 +156,14 @@ export function fetchSingleRef(nwo, ref) {
   return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
 }
 
+export function fetchRepoInfo(nwo) {
+  return cachedGitHub(apiUrl(`repos/${nwo}`), null, 5*60*1000);
+}
+
 export async function fetchAllRefsWithInfo(nwo) {
   let openPRs = (await fetchAllOpenPRs(nwo));
   let refList = openPRs.map((x) => x.head.ref);
-  
+
   let refToPR = openPRs.reduce((acc, x) => {
     acc[x.head.ref] = x;
     return acc;
@@ -176,6 +180,12 @@ export async function fetchAllRefsWithInfo(nwo) {
           return null;
         }
       }));
+        
+  // Monitor the default branch for the repo (usually 'master')
+  let repoInfo = await fetchRepoInfo(nwo);
+  let defaultBranch = repoInfo.result.default_branch;
+  let result = await fetchSingleRef(nwo, defaultBranch);
+  refs.push(result.result);
       
   // Filter failures from when we get the ref
   refs = refs.filter((x) => x !== null);
