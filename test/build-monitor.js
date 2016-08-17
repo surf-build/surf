@@ -2,7 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 import {fs} from '../src/promisify';
 import BuildMonitor from '../src/build-monitor';
-import {Observable, TestScheduler, Subscription, Subject} from 'rx';
+import {Observable, TestScheduler, Subscription, Subject} from 'rxjs';
 import '../src/custom-rx-operators';
 
 const d = require('debug')('surf-test:build-monitor');

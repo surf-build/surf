@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import {spawn} from 'spawn-rx';
 import {Observable, Scheduler, Subject, Subscription} from 'rxjs';
-import {SerialDisposable} from './serial-subscription';
+import SerialDisposable from './serial-subscription';
 import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
