@@ -14,7 +14,7 @@
     "compile": "babel -d lib/ src/",
     "prepublish": "npm run compile",
     "test": "mocha --compilers js:babel-register ./test/*",
-    "test-cov": "NODE_ENV=test istanbul cover ./node_modules/mocha/bin/_mocha -- ./test/* --compilers js:babel-register && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    "test-cov": "NODE_ENV=test istanbul cover ./node_modules/mocha/bin/_mocha -- ./test/* --compilers js:babel-register && cat ./coverage/lcov.info | ./node_modules/@paulcbetts/coveralls/bin/coveralls.js"
   },
   "repository": {
     "type": "git",
@@ -61,7 +61,7 @@
     "babel-register": "^6.11.6",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
-    "coveralls": "^2.11.12",
+    "@paulcbetts/coveralls": "^2.11.12",
     "eslint": "^1",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.0.2",
