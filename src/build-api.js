@@ -78,7 +78,7 @@ export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
   let toConcat = _.map(cmds, ({cmd, args}) => {
     return runBuildCommand(cmd, args, rootDir, sha, tempDir);
   });
-
+  
   return Observable.concat(...toConcat)
     .publish().refCount();
 }
