@@ -196,6 +196,7 @@ async function realMain(argv, showHelp) {
   
   if (name) {
     d(`Posting 'success' to GitHub status`);
+    let nwo = getNwoFromRepoUrl(repo);
 
     let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
       "build-output.txt": {
@@ -218,7 +219,6 @@ async function realMain(argv, showHelp) {
       }
     }
 
-    let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Surf Build Server', gistInfo.result.html_url, name);
   }
