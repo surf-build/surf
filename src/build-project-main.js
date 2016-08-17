@@ -8,7 +8,7 @@ import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } fro
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
 
-import {Observable} from 'rx';
+import {Observable} from 'rxjs';
 import ON_DEATH from 'death';
 
 const DeathPromise = new Promise((res,rej) => {

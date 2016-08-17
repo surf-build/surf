@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
-import {Observable} from 'rx';
+import {Observable} from 'rxjs';
 
 import findActualExecutable from './find-actual-executable';
 import { asyncReduce, spawnDetached } from './promise-array';

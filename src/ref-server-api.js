@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import path from 'path';
 import express from 'express';
-import {Disposable} from 'rx';
+import {Subscription} from 'rxjs';
 import pkgJson from '../package.json';
 import createLRU from 'lru-cache';
 
@@ -74,5 +74,5 @@ export default function createRefServer(validNwos, port=null) {
   }
   
   let server = app.listen(port);
-  return Disposable.create(() => server.close(() => {}));
+  return new Subscription(() => server.close(() => {}));
 }

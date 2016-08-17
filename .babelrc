@@ -1,5 +1,5 @@
 {
   "presets": ["es2016-node5"],
-  "plugins" ["transform-async-to-generator"],
+  "plugins": ["transform-async-to-generator"],
   "sourceMaps": "inline"
 }

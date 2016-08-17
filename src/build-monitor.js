@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import {spawn} from './promise-array';
-import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
+import {Observable, Scheduler, Subject, Subscription} from 'rxjs';
+import {SerialDisposable} from './serial-subscription';
 import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
@@ -19,7 +20,7 @@ export default class BuildMonitor {
     _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval, repo});
 
     this.currentBuilds = {};
-    this.scheduler = this.scheduler || Scheduler.default;
+    this.scheduler = this.scheduler || Scheduler.queue;
     this.currentRunningMonitor = new SerialDisposable();
     this.buildsToActuallyExecute = new Subject();
     this.buildMonitorCrashed = new Subject();
@@ -28,7 +29,7 @@ export default class BuildMonitor {
       console.error(`Build Monitor crashed! ${e.message}`);
       console.error(e.stack);
     
-      this.dispose();
+      this.unsubscribe();
     });
 
     if (initialRefs) {
@@ -38,8 +39,8 @@ export default class BuildMonitor {
     }
   }
 
-  dispose() {
-    this.currentRunningMonitor.dispose();
+  unsubscribe() {
+    this.currentRunningMonitor.unsubscribe();
   }
 
   runBuild(ref) {
@@ -78,7 +79,7 @@ export default class BuildMonitor {
       .takeUntil(cs)
       .publishLast();
 
-    innerObs.catch(() => Observable.just(''))
+    innerObs.catch(() => Observable.of(''))
       .subscribe(() => {
         d(`Removing ${ref.object.sha} from active builds`);
         delete this.currentBuilds[ref.object.sha];
@@ -149,7 +150,10 @@ export default class BuildMonitor {
       });
     }, (e) => this.buildMonitorCrashed.onNext(e));
 
-    this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));
-    return disp;
+    let newSub = new Subscription();
+    newSub.add(disp);  newSub.add(disp2);
+    
+    this.currentRunningMonitor.set(newSub);
+    return newSub;
   }
 }
