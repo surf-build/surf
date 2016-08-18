@@ -1,7 +1,7 @@
 import path from 'path';
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
-import findActualExecutable from '../find-actual-executable';
+import {findActualExecutable} from 'spawn-rx';
 
 const d = require('debug')('surf:build-discover-npm');
 

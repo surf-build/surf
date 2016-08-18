@@ -3,9 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import {Observable} from 'rxjs';
 
-import findActualExecutable from './find-actual-executable';
 import { asyncReduce } from './promise-array';
-import { spawnDetached } from 'spawn-rx';
+import { spawnDetached, findActualExecutable } from 'spawn-rx';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
 const d = require('debug')('surf:build-api');
