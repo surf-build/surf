@@ -11,7 +11,7 @@ export function asyncMap(array, selector, maxConcurrency=4) {
       Observable.defer(() =>
         Observable.fromPromise(selector(k))
           .map((v) => ({ k, v }))))
-    .merge(maxConcurrency)
+    .mergeAll(maxConcurrency)
     .reduce((acc, kvp) => {
       acc[kvp.k] = kvp.v;
       return acc;

@@ -73,7 +73,7 @@ export default class BuildMonitor {
 
     d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
     let cs = new Subject();
-    let cancel = () => cs.onNext(true);
+    let cancel = () => cs.next(true);
 
     let innerObs = this.runBuild(ref)
       .takeUntil(cs)
@@ -122,8 +122,8 @@ export default class BuildMonitor {
 
         return Observable.empty();
       }))
-      .merge(this.maxConcurrentJobs)
-      .subscribe(() => {}, (e) => this.buildMonitorCrashed.onNext(e));
+      .mergeAll(this.maxConcurrentJobs)
+      .subscribe(() => {}, (e) => this.buildMonitorCrashed.next(e));
 
     let disp2 = fetchCurrentRefs.subscribe((refs) => {
       let seenRefs = getSeenRefs(refs);
@@ -142,13 +142,13 @@ export default class BuildMonitor {
 
       let refsToBuild = this.determineRefsToBuild(refs);
       
-      _.each(refsToBuild, (ref) => {
-        // NB: If we don't do this, we can stack overflow if the build queue
-        // gets too deep
-        this.scheduler.schedule(null, 
-          () => this.buildsToActuallyExecute.onNext(this.getOrCreateBuild(ref).observable));
-      });
-    }, (e) => this.buildMonitorCrashed.onNext(e));
+      // NB: If we don't do this, we can stack overflow if the build queue
+      // gets too deep
+      Observable.from(refsToBuild)
+        .observeOn(this.scheduler)
+        .subscribe((x) => 
+          this.buildsToActuallyExecute.next(this.getOrCreateBuild(x).observable));
+    }, (e) => this.buildMonitorCrashed.next(e));
 
     let newSub = new Subscription();
     newSub.add(disp);  newSub.add(disp2);
