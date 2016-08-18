@@ -1,10 +1,11 @@
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
-import {Observable} from 'rx';
+import {Observable} from 'rxjs';
 
 import findActualExecutable from './find-actual-executable';
-import { asyncReduce, spawnDetached } from './promise-array';
+import { asyncReduce } from './promise-array';
+import { spawnDetached } from 'spawn-rx';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
 
 const d = require('debug')('surf:build-api');
@@ -74,9 +75,12 @@ export async function determineBuildCommands(rootPath, sha) {
 }
 
 export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
-  return Observable.concat(_.map(cmds, ({cmd, args}) => {
-    return Observable.defer(() => runBuildCommand(cmd, args, rootDir, sha, tempDir));
-  })).publish().refCount();
+  let toConcat = _.map(cmds, ({cmd, args}) => {
+    return runBuildCommand(cmd, args, rootDir, sha, tempDir);
+  });
+  
+  return Observable.concat(...toConcat)
+    .publish().refCount();
 }
 
 export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {

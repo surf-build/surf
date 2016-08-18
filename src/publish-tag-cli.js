@@ -13,6 +13,9 @@ artifacts and reuploading them`)
   .describe('repo', 'The repository to clone')
   .alias('t', 'tag')
   .describe('tag', 'The tag to download releases for')
+  .alias('v', 'version')
+  .describe('version', 'Print the current version number and exit')
+  .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
 
@@ -21,6 +24,12 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build
 `);
 
 const argv = yargs.argv;
+
+if (argv.version) {
+  let pkgJson = require('../package.json');
+  console.log(`Surf ${pkgJson.version}`);
+  process.exit(0);
+}
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))

@@ -8,7 +8,7 @@ import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } fro
 import { fs, rimraf } from './promisify';
 import { retryPromise } from './promise-array';
 
-import {Observable} from 'rx';
+import {Observable} from 'rxjs';
 import ON_DEATH from 'death';
 
 const DeathPromise = new Promise((res,rej) => {
@@ -196,6 +196,7 @@ async function realMain(argv, showHelp) {
   
   if (name) {
     d(`Posting 'success' to GitHub status`);
+    let nwo = getNwoFromRepoUrl(repo);
 
     let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
       "build-output.txt": {
@@ -218,7 +219,6 @@ async function realMain(argv, showHelp) {
       }
     }
 
-    let nwo = getNwoFromRepoUrl(repo);
     await postCommitStatus(nwo, sha,
       buildPassed ? 'success' : 'failure', 'Surf Build Server', gistInfo.result.html_url, name);
   }

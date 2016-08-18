@@ -14,6 +14,9 @@ Clones a repo from GitHub and builds the given SHA1`)
   .describe('sha', 'The sha to build')
   .alias('n', 'name')
   .describe('name', 'The name to give this build on GitHub')
+  .alias('v', 'version')
+  .describe('version', 'Print the current version number and exit')
+  .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
 
@@ -28,6 +31,12 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.`);
 
 const argv = yargs.argv;
+
+if (argv.version) {
+  let pkgJson = require('../package.json');
+  console.log(`Surf ${pkgJson.version}`);
+  process.exit(0);
+}
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))

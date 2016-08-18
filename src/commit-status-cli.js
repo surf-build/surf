@@ -15,6 +15,8 @@ Returns the GitHub Status for all the branches in a repo`)
   .boolean('j')
   .alias('j', 'json')
   .describe('j', 'Dump the commit status in JSON format for machine parsing instead of human-readable format')
+  .alias('v', 'version')
+  .describe('version', 'Print the current version number and exit')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
@@ -27,6 +29,12 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.`);
 
 const argv = yargs.argv;
+
+if (argv.version) {
+  let pkgJson = require('../package.json');
+  console.log(`Surf ${pkgJson.version}`);
+  process.exit(0);
+}
 
 main(argv.r, argv.s, argv.j, () => yargs.showHelp())
   .then(() => process.exit(0))

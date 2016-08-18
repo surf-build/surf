@@ -1,6 +1,7 @@
 import _ from 'lodash';
-import {spawn} from './promise-array';
-import {Observable, Scheduler, CompositeDisposable, SerialDisposable, Subject} from 'rx';
+import {spawn} from 'spawn-rx';
+import {Observable, Scheduler, Subject, Subscription} from 'rxjs';
+import SerialDisposable from './serial-subscription';
 import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
@@ -19,7 +20,7 @@ export default class BuildMonitor {
     _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval, repo});
 
     this.currentBuilds = {};
-    this.scheduler = this.scheduler || Scheduler.default;
+    this.scheduler = this.scheduler || Scheduler.queue;
     this.currentRunningMonitor = new SerialDisposable();
     this.buildsToActuallyExecute = new Subject();
     this.buildMonitorCrashed = new Subject();
@@ -28,7 +29,7 @@ export default class BuildMonitor {
       console.error(`Build Monitor crashed! ${e.message}`);
       console.error(e.stack);
     
-      this.dispose();
+      this.unsubscribe();
     });
 
     if (initialRefs) {
@@ -38,8 +39,8 @@ export default class BuildMonitor {
     }
   }
 
-  dispose() {
-    this.currentRunningMonitor.dispose();
+  unsubscribe() {
+    this.currentRunningMonitor.unsubscribe();
   }
 
   runBuild(ref) {
@@ -72,13 +73,13 @@ export default class BuildMonitor {
 
     d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
     let cs = new Subject();
-    let cancel = () => cs.onNext(true);
+    let cancel = () => cs.next(true);
 
     let innerObs = this.runBuild(ref)
       .takeUntil(cs)
       .publishLast();
 
-    innerObs.catch(() => Observable.just(''))
+    innerObs.catch(() => Observable.of(''))
       .subscribe(() => {
         d(`Removing ${ref.object.sha} from active builds`);
         delete this.currentBuilds[ref.object.sha];
@@ -121,8 +122,8 @@ export default class BuildMonitor {
 
         return Observable.empty();
       }))
-      .merge(this.maxConcurrentJobs)
-      .subscribe(() => {}, (e) => this.buildMonitorCrashed.onNext(e));
+      .mergeAll(this.maxConcurrentJobs)
+      .subscribe(() => {}, (e) => this.buildMonitorCrashed.next(e));
 
     let disp2 = fetchCurrentRefs.subscribe((refs) => {
       let seenRefs = getSeenRefs(refs);
@@ -141,15 +142,18 @@ export default class BuildMonitor {
 
       let refsToBuild = this.determineRefsToBuild(refs);
       
-      _.each(refsToBuild, (ref) => {
-        // NB: If we don't do this, we can stack overflow if the build queue
-        // gets too deep
-        this.scheduler.schedule(null, 
-          () => this.buildsToActuallyExecute.onNext(this.getOrCreateBuild(ref).observable));
-      });
-    }, (e) => this.buildMonitorCrashed.onNext(e));
+      // NB: If we don't do this, we can stack overflow if the build queue
+      // gets too deep
+      Observable.from(refsToBuild)
+        .observeOn(this.scheduler)
+        .subscribe((x) => 
+          this.buildsToActuallyExecute.next(this.getOrCreateBuild(x).observable));
+    }, (e) => this.buildMonitorCrashed.next(e));
 
-    this.currentRunningMonitor.setDisposable(new CompositeDisposable(disp, disp2));
-    return disp;
+    let newSub = new Subscription();
+    newSub.add(disp);  newSub.add(disp2);
+    
+    this.currentRunningMonitor.set(newSub);
+    return newSub;
   }
 }

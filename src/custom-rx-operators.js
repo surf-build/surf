@@ -1,13 +1,13 @@
-import {Observable, Disposable} from 'rx';
+import {Observable, Subscription} from 'rxjs';
 
 Observable.prototype.subUnsub = function(onSub=null, onUnsub=null) { 
   return Observable.create((subj) => {
     if (onSub) onSub();
     let d = this.subscribe(subj);
     
-    return Disposable.create(() => {
+    return new Subscription(() => {
       if (onUnsub) onUnsub();
-      d.dispose();
+      d.unsubscribe();
     });
   });
 };
