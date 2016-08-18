@@ -13,6 +13,9 @@ Download all of the artifacts for a given Release`)
   .alias('t', 'tag')
   .describe('tag', 'The tag to download releases for')
   .describe('target', 'The directory to download files to')
+  .alias('v', 'version')
+  .describe('version', 'Print the current version number and exit')
+  .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
 

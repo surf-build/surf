@@ -11,6 +11,8 @@ Runs a web service to monitor GitHub commits and provide them to Surf clients`)
   .help('h')
   .alias('p', 'port')
   .describe('p', 'The port to start the server on')
+  .alias('v', 'version')
+  .describe('version', 'Print the current version number and exit')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
@@ -20,6 +22,12 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.`);
 
 const argv = yargs.argv;
+
+if (argv.version) {
+  let pkgJson = require('../package.json');
+  console.log(`Surf ${pkgJson.version}`);
+  process.exit(0);
+}
 
 function main() {
   if (argv.help) {
