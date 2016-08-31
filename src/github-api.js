@@ -158,6 +158,10 @@ export function fetchRepoInfo(nwo) {
   return cachedGitHub(apiUrl(`repos/${nwo}`), null, 5*60*1000);
 }
 
+function objectValues(obj) {
+  return Object.keys(obj).map((x) => obj[x]);
+}
+
 export async function fetchAllRefsWithInfo(nwo) {
   let openPRs = (await fetchAllOpenPRs(nwo));
   let refList = openPRs.map((x) => x.head.ref);
@@ -167,7 +171,7 @@ export async function fetchAllRefsWithInfo(nwo) {
     return acc;
   }, {});
   
-  let refs = Object.values(
+  let refs = objectValues(
     await asyncMap(
       refList, 
       async (ref) => {
