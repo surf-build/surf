@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
 import createRefServer from './ref-server-api';
 
 const d = require('debug')('surf:ref-server');

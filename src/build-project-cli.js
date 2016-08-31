@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
 import main from './build-project-main';
 
 const d = require('debug')('surf:surf-build');

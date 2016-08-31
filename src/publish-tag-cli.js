@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
 import main from './publish-tag-main';
 
 const d = require('debug')('surf:surf-publish');

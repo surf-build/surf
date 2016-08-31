@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
 import main from './run-on-every-ref-main';
 
 const d = require('debug')('surf:run-on-every-ref');

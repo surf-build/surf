@@ -1,5 +1,3 @@
-import './babel-maybefill';
-
 import mimeTypes from 'mime-types';
 import fs from 'fs';
 import url from 'url';

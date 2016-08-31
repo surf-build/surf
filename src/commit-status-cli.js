@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
-import main from './commit-status-main';
-
 const d = require('debug')('surf:surf-publish');
 
 const yargs = require('yargs')

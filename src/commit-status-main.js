@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
-
 import _ from 'lodash';
 import request from 'request-promise'; import chalk from 'chalk';
 

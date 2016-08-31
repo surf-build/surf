@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import './babel-maybefill';
 import main from './download-release-main';
 
 const d = require('debug')('surf:surf-download');
