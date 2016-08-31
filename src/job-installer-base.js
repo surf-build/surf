@@ -1,12 +1,24 @@
+const interestingEnvVars = [
+  /^GITHUB_TOKEN$/,
+  /^GITHUB_ENTERPRISE_URL$/,
+  /^GIST_ENTERPRISE_URL$/,
+  /^SURF_/
+];
+
 export default class JobInstallerBase {
   constructor() {
+  }
+
+  getInterestingEnvVars() {
+    return Object.keys(process.env)
+      .filter((x) => interestingEnvVars.find((re) => x.match(re)));
   }
 
   async getAffinityForJob(name, command) {
     throw new Error("Implement me!");
   }
 
-  async installJob(name, command) {
+  async installJob(name, command, returnContent=false) {
     throw new Error("Implement me!");
   }
 }

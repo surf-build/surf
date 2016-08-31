@@ -1,0 +1,11 @@
+[Unit]
+Description=surf-<%= name %>
+
+[Service]
+<% print(envs.map((x) => `Environment="${x}"`).join('\n')) %>
+ExecStart=<%= command %>
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
