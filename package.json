@@ -61,7 +61,7 @@
     "babel-register": "^6.11.6",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
-    "@paulcbetts/coveralls": "^2.11.12",
+    "@paulcbetts/coveralls": "^2.11.13",
     "eslint": "^1",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.0.2",
