@@ -7,18 +7,19 @@ const d = require('debug')('surf:surf-install');
 const yargs = require('yargs')
   .usage(`Usage: surf-install -n my-cool-job -c "surf-client ..."
 Creates a system service with the given command (probably surf-client) as its
-executable. Run using sudo.
+executable. Run using sudo. 
 
-Surf-specific environment variables (e.g. GITHUB_TOKEN) will be captured
+Surf-specific environment variables (e.g. GITHUB_TOKEN) will be captured 
 automatically, but others can be explicitly specified at the command line`)
   .alias('n', 'name')
   .describe('name', 'The name given to the OS of the service to create')
   .alias('c', 'command')
   .describe('command', 'The command to run, usually surf-client')
+  .describe('environment', 'A comma-separated list of environment variables to include in the service')
+  .describe('dry-run', 'Instead of creating a service, display the configuration file and exit')
   .alias('v', 'version')
   .describe('version', 'Print the current version number and exit')
   .alias('e', 'environment')
-  .describe('environment', 'A comma-separated list of environment variables to include in the service')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
