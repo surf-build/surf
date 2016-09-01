@@ -8,7 +8,8 @@
     "surf-build": "./lib/build-project-cli.js",
     "surf-publish": "./lib/publish-tag-cli.js",
     "surf-download": "./lib/download-release-cli.js",
-    "surf-status": "./lib/commit-status-cli.js"
+    "surf-status": "./lib/commit-status-cli.js",
+    "surf-install": "./lib/job-installer-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",

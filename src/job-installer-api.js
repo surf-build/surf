@@ -17,6 +17,7 @@ export function createJobInstallers() {
 export function installJob(name, command, returnContent=false) {
   let {installer} = createJobInstallers().reduce((acc, installer) => {
     let affinity = installer.getAffinityForJob(name, command);
+
     if (affinity < 1) return acc;
     if (!acc) return { affinity, installer };
 
