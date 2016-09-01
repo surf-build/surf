@@ -20,7 +20,8 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     if (process.env.SURF_DISABLE_DANGER) return 0;
     
     // If we can't find Ruby or Bundler in PATH, bail
-    if (!['ruby', 'bundler'].find((x) => findActualExecutable(x, []).cmd === x)) {
+    if (!['ruby', 'bundler'].find((x) => findActualExecutable(x, []).cmd !== x)) {
+      d(`Can't find Ruby and Bundler in PATH, bailing`);
       return 0;
     }
     
