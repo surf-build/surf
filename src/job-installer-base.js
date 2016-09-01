@@ -1,5 +1,6 @@
 const interestingEnvVars = [
   /^GITHUB_TOKEN$/,
+  /^GIST_TOKEN$/,
   /^GITHUB_ENTERPRISE_URL$/,
   /^GIST_ENTERPRISE_URL$/,
   /^SURF_/
