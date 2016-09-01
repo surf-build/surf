@@ -1,5 +1,6 @@
 import './support';
 import SystemdInstaller from '../src/job-installers/systemd';
+import {installJob} from '../src/job-installer-api';
 
 const d = require('debug')('surf-test:job-installers');
 
@@ -34,5 +35,17 @@ describe('systemd job installer', function() {
 
     let execStartLine = result.split('\n').find((l) => l.match(/ExecStart/));
     expect(execStartLine.indexOf(this.sampleCommand) > 0).to.be.ok;
+  });
+});
+
+describe('Job installer API', function() {
+  beforeEach(function() {
+    this.sampleName = 'example-csharp';
+    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
+  });
+
+  it('should return some content', async function() {
+    let result = await installJob(this.sampleName, this.sampleCommand, true);
+    expect(result.split('\n').length > 2).to.be.ok;
   });
 });
