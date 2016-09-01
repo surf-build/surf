@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import fs from 'fs';
+import path from 'path';
 import temp from 'temp';
 
 import JobInstallerBase from '../job-installer-base';
@@ -37,12 +38,12 @@ export default class DockerInstaller extends JobInstallerBase {
     if (returnContent) {
       return makeDockerfile(opts);
     } else {
-      let {path, fd} = temp.open('surf');
-      fs.writeSync(fd, makeDockerfile(opts), 0, 'utf8');
-      fs.closeSync(fd);
+      let dir = temp.mkdirSync('surf');
+      let target = path.join(dir, 'Dockerfile');
+      fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
       
       console.error(`Building Docker image, this will take a bit...`);
-      await spawnPromise('docker', ['build', '-t', name, '-f', path]);
+      await spawnPromise('docker', ['build', '-t', name, dir]);
       
       spawnPromiseDetached('docker', ['run', name])
         .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));

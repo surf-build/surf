@@ -12,4 +12,4 @@ RUN useradd -ms /bin/bash surf
 ENV HOME=/home/surf
 USER surf
 
-CMD <%= command.replace(name, '$BUILD_NAME') %>
+CMD <%= command %>
