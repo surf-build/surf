@@ -1,0 +1,15 @@
+# Base docker image
+FROM node:6.5.0
+
+<% print(envs.map((x) => `ENV ${x}`).join('\n')) %>
+ENV BUILD_NAME=<%= name %>
+
+RUN npm install -g surf-build@<%= pkgJson.version %>
+
+## NB: npm post-install hates running as root :-/
+RUN useradd -ms /bin/bash surf
+
+ENV HOME=/home/surf
+USER surf
+
+CMD <%= command.replace(name, '$BUILD_NAME') %>
