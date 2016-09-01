@@ -14,6 +14,10 @@ export default class JobInstallerBase {
     return Object.keys(process.env)
       .filter((x) => interestingEnvVars.find((re) => x.match(re)));
   }
+  
+  getName() {
+    throw new Error("Implement me!");
+  }
 
   async getAffinityForJob(name, command) {
     throw new Error("Implement me!");
