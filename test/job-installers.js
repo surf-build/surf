@@ -36,6 +36,15 @@ describe('systemd job installer', function() {
     let execStartLine = result.split('\n').find((l) => l.match(/ExecStart/));
     expect(execStartLine.indexOf(this.sampleCommand) > 0).to.be.ok;
   });
+
+  it('should ensure that absolute paths are rooted', async function() {
+    expect((await this.fixture.getAffinityForJob(this.sampleName, this.sampleCommand)) > 0).to.be.ok;
+
+    let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
+
+    let execStartLine = result.split('\n').find((l) => l.match(/ExecStart/));
+    expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
+  });
 });
 
 describe('Job installer API', function() {
