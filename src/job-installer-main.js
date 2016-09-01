@@ -8,6 +8,6 @@ export default async function main(argv, showHelp) {
     process.exit(-1);
   }
   
-  let result = await installJob(argv.name, argv.command, argv['dry-run']);
+  let result = await installJob(argv.name, argv.command, argv['dry-run'], argv.type);
   console.log(result);
 }

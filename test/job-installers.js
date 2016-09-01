@@ -81,4 +81,13 @@ describe('Job installer API', function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true);
     expect(result.split('\n').length > 2).to.be.ok;
   });
+
+  it('should allow us to explicitly select the Docker API', async function() {
+    let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker');
+
+    let lines = result.split('\n');
+    expect(lines.length > 2).to.be.ok;
+    expect(lines.find((x) => x.match(/^CMD /))).to.be.ok;
+    expect(lines.find((x) => x.match(/^ExecPath/))).not.to.be.ok;
+  });
 });
