@@ -23,7 +23,7 @@ export default class DockerInstaller extends JobInstallerBase {
       d(`Can't find docker in PATH, assuming not installed`);
       return 0;
     }
-    
+
     // Let local daemons trump docker
     return 3;
   }
@@ -36,7 +36,7 @@ export default class DockerInstaller extends JobInstallerBase {
     };
     
     if (returnContent) {
-      return makeDockerfile(opts);
+      return { "Dockerfile" : makeDockerfile(opts) };
     } else {
       let dir = temp.mkdirSync('surf');
       let target = path.join(dir, 'Dockerfile');

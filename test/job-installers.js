@@ -21,7 +21,7 @@ describe('systemd job installer', function() {
     d(result);
 
     expect(
-      result.split('\n')
+      result[`${this.sampleName}.service`].split('\n')
         .find((l) => l.match(/Environment.*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
@@ -29,14 +29,15 @@ describe('systemd job installer', function() {
   it('should have the command as ExecPath', async function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result.split('\n').find((l) => l.match(/ExecStart/));
+    let execStartLine = result[`${this.sampleName}.service`].split('\n')
+      .find((l) => l.match(/ExecStart/));
     expect(execStartLine.indexOf(this.sampleCommand) > 0).to.be.ok;
   });
 
   it('should ensure that absolute paths are rooted', async function() {
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
-    let execStartLine = result.split('\n').find((l) => l.match(/ExecStart/));
+    let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
     expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
   });
 });
@@ -56,7 +57,7 @@ describe('docker job installer', function() {
     d(result);
 
     expect(
-      result.split('\n')
+      result['Dockerfile'].split('\n')
         .find((l) => l.match(/ENV .*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
@@ -66,7 +67,7 @@ describe('docker job installer', function() {
 
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result.split('\n').find((l) => l.match(/CMD/));
+    let execStartLine = result['Dockerfile'].split('\n').find((l) => l.match(/CMD/));
     expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
   });
 });
@@ -79,13 +80,15 @@ describe('Job installer API', function() {
 
   it('should return some content', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true);
-    expect(result.split('\n').length > 2).to.be.ok;
+    let keys = Object.keys(result);
+    expect(result[keys[0]].split('\n').length > 2).to.be.ok;
   });
 
   it('should allow us to explicitly select the Docker API', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker');
 
-    let lines = result.split('\n');
+    let lines = result['Dockerfile'].split('\n');
+    
     expect(lines.length > 2).to.be.ok;
     expect(lines.find((x) => x.match(/^CMD /))).to.be.ok;
     expect(lines.find((x) => x.match(/^ExecPath/))).not.to.be.ok;

@@ -9,5 +9,13 @@ export default async function main(argv, showHelp) {
   }
   
   let result = await installJob(argv.name, argv.command, argv['dry-run'], argv.type);
-  console.log(result);
+  
+  if (Object.keys(result) < 2) {
+    for (let file in result) { console.log(result[file]); }
+  } else {
+    for (let file in result) {
+      console.log(`${file}:\n`);
+      console.log(result[file]);
+    }
+  }
 }

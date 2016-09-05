@@ -41,7 +41,9 @@ export default class SystemdInstaller extends JobInstallerBase {
     let target = `/etc/systemd/system/${name}.service`;
     
     if (returnContent) {
-      return makeSystemdService(opts);
+      let ret = {};
+      ret[`${name}.service`] = makeSystemdService(opts);
+      return ret;
     } else {
       fs.writeFileSync(target, makeSystemdService(opts));
       await spawnPromise('systemctl', ['daemon-reload']);
