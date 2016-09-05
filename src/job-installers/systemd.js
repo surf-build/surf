@@ -9,7 +9,7 @@ const d = require('debug')('surf:systemd');
 
 // NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
 const makeSystemdService = 
-  _.template(fs.readFileSync(require.resolve('../../src/job-installers/systemd.in'), 'utf8'));
+  _.template(fs.readFileSync(require.resolve('../../src/job-installers/systemd.service.in'), 'utf8'));
 
 export default class SystemdInstaller extends JobInstallerBase {
   getName() {
