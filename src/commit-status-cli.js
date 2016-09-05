@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-const d = require('debug')('surf:surf-publish');
+const d = require('debug')('surf:surf-status');
+
+import main from './commit-status-main';
 
 const yargs = require('yargs')
   .usage(`Usage: surf-status --repo https://github.com/owner/repo

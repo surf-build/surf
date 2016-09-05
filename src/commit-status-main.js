@@ -98,5 +98,5 @@ export default async function main(repo, server, jsonOnly, showHelp) {
     }
   }
 
-  killRefServer.unsubscribe();
+  if (killRefServer) killRefServer.unsubscribe();
 }
