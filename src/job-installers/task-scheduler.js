@@ -17,7 +17,7 @@ const makeTaskSchedulerXml =
 const makeTaskSchedulerCmd = 
   _.template(fs.readFileSync(require.resolve('../../src/job-installers/task-scheduler.cmd.in'), 'utf8'));
 
-export default class DockerInstaller extends JobInstallerBase {
+export default class TaskSchedulerInstaller extends JobInstallerBase {
   getName() {
     return 'docker';
   }

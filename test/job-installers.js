@@ -2,6 +2,7 @@ import './support';
 
 import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';
+import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
 import {installJob} from '../src/job-installer-api';
 
 const d = require('debug')('surf-test:job-installers');
@@ -69,6 +70,39 @@ describe('docker job installer', function() {
 
     let execStartLine = result['Dockerfile'].split('\n').find((l) => l.match(/CMD/));
     expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
+  });
+});
+
+describe('Task scheduler job installer', function() {
+  if (process.platform !== 'win32') return;
+  
+  beforeEach(function() {
+    this.fixture = new TaskSchedulerInstaller();
+    this.sampleName = 'example-csharp';
+    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
+  });
+  
+  it('should capture Surf environment variables', async function() {
+    process.env.SURF_TEST_ENV_VAR = 'hello';
+    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+    delete process.env.SURF_TEST_ENV_VAR;
+
+    d(result);
+
+    expect(
+      result[`${name}.cmd`].split('\n')
+        .find((l) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
+    ).to.be.ok;
+  });
+
+  it('should have the command', async function() {
+    expect((await this.fixture.getAffinityForJob(this.sampleName, this.sampleCommand)) > 0).to.be.ok;
+
+    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+
+    let execStartLine = result[`${name}.cmd`].split('\n')
+      .find((l) => l.match(/surf-build/));
+    expect(execStartLine).to.be.ok;
   });
 });
 
