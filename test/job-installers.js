@@ -90,7 +90,7 @@ describe('Task scheduler job installer', function() {
     d(result);
 
     expect(
-      result[`${name}.cmd`].split('\n')
+      result[`${this.sampleName}.cmd`].split('\n')
         .find((l) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
@@ -100,7 +100,7 @@ describe('Task scheduler job installer', function() {
 
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result[`${name}.cmd`].split('\n')
+    let execStartLine = result[`${this.sampleName}.cmd`].split('\n')
       .find((l) => l.match(/surf-build/));
     expect(execStartLine).to.be.ok;
   });
