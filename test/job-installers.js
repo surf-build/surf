@@ -87,7 +87,7 @@ describe('Task scheduler job installer', function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
     delete process.env.SURF_TEST_ENV_VAR;
 
-    d(result);
+    d(JSON.stringify(result));
 
     expect(
       result[`${this.sampleName}.cmd`].split('\n')
