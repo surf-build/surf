@@ -3,10 +3,9 @@ import fs from 'fs';
 import os from 'os';
 import mkdirp from 'mkdirp';
 import path from 'path';
-import temp from 'temp';
 
 import JobInstallerBase from '../job-installer-base';
-import {findActualExecutable, spawnPromise} from 'spawn-rx';
+import {spawnPromise} from 'spawn-rx';
 import runas from 'runas';
 
 const d = require('debug')('surf:task-scheduler');
@@ -19,7 +18,7 @@ const makeTaskSchedulerCmd =
 
 export default class TaskSchedulerInstaller extends JobInstallerBase {
   getName() {
-    return 'docker';
+    return 'task-scheduler';
   }
   
   async getAffinityForJob(name, command) {
