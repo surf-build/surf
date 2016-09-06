@@ -75,7 +75,7 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
     fs.writeFileSync(shimCmdPath, makeTaskSchedulerCmd(cmdOpts), 'utf8');
     
     let info = temp.openSync();
-    fs.writeSync(info.fd, makeTaskSchedulerXml(xmlOpts), 'utf16');
+    fs.writeSync(info.fd, makeTaskSchedulerXml(xmlOpts), 0, 'ucs2');
     fs.closeSync(info.fd);
     
     d(`About to run schtasks, XML path is ${info.path}`);
