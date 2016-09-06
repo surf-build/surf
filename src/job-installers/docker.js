@@ -37,17 +37,16 @@ export default class DockerInstaller extends JobInstallerBase {
     
     if (returnContent) {
       return { "Dockerfile" : makeDockerfile(opts) };
-    } else {
-      let dir = temp.mkdirSync('surf');
-      let target = path.join(dir, 'Dockerfile');
-      fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
-      
-      console.error(`Building Docker image, this will take a bit...`);
-      await spawnPromise('docker', ['build', '-t', name, dir]);
-      
-      spawnPromiseDetached('docker', ['run', name])
-        .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
-    }
+    } 
+    let dir = temp.mkdirSync('surf');
+    let target = path.join(dir, 'Dockerfile');
+    fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
+    
+    console.error(`Building Docker image, this will take a bit...`);
+    await spawnPromise('docker', ['build', '-t', name, dir]);
+    
+    spawnPromiseDetached('docker', ['run', name])
+      .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
     
     return `Created new docker image: ${name}
   

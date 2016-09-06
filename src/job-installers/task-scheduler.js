@@ -3,6 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import mkdirp from 'mkdirp';
 import path from 'path';
+import temp from 'temp';
 
 import JobInstallerBase from '../job-installer-base';
 import {spawnPromise} from 'spawn-rx';
@@ -61,9 +62,21 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
       ret[`${name}.cmd`] = makeTaskSchedulerCmd(cmdOpts);
     
       return ret;
-    } else {
-      mkdirp.sync(path.dirname(shimCmdPath));
+    } 
+    
+    mkdirp.sync(path.dirname(shimCmdPath));
+    
+    fs.writeFileSync(shimCmdPath, makeTaskSchedulerCmd(cmdOpts), 'utf8');
+    
+    let info = temp.openSync();
+    fs.writeSync(info.fd, makeTaskSchedulerXml(xmlOpts), 'utf16');
+    fs.closeSync(info.fd);
+    
+    let {exitCode, stdout, stderr}= runas('schtasks', '/Create', '/Xml', info.path, {admin: true, catchOutput: true});
+    if (exitCode !== 0) {
+      throw new Error(`Failed to run schtasks\n${stdout}${stderr}`);
     }
     
+    return `Created new Scheduled Task ${name}, with script ${shimCmdPath}`;
   }
 }
