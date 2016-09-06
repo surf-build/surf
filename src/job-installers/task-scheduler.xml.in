@@ -10,13 +10,6 @@
       <Enabled>true</Enabled>
     </LogonTrigger>
   </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <UserId><%= userSid %></UserId>
-      <LogonType>Password</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
@@ -44,7 +37,8 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command><%= shimCmdPath %></Command>
+      <Command><%= jobberDotExe %></Command>
+      <Arguments><%= shimCmdPath %></Arguments>
       <WorkingDirectory><%= workingDirectory %></WorkingDirectory>
     </Exec>
   </Actions>

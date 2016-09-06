@@ -26,6 +26,11 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
     return process.platform === 'win32' ? 5 : 0;
   }
 
+  getPathToJobber() {
+    let spawnRx = path.dirname(require.resolve('spawn-rx/package.json'));
+    return path.join(spawnRx, 'vendor', 'jobber', 'jobber.exe');
+  }
+
   async installJob(name, command, returnContent=false) {
     // NB: Because Task Scheduler sucks, we need to find a bunch of obscure
     // information first.
@@ -48,6 +53,7 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
       currentDate: (new Date()).toISOString(),
       userSid: sidInfo.Sid.Value,
       workingDirectory: path.resolve('./'),
+      jobberDotExe: this.getPathToJobber(),
       shimCmdPath, username, hostname, name 
     };
     

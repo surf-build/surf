@@ -3,7 +3,8 @@ const interestingEnvVars = [
   /^GIST_TOKEN$/,
   /^GITHUB_ENTERPRISE_URL$/,
   /^GIST_ENTERPRISE_URL$/,
-  /^SURF_/
+  /^SURF_/,
+  /^PATH$/
 ];
 
 export default class JobInstallerBase {
