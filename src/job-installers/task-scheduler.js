@@ -72,9 +72,10 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
     fs.writeSync(info.fd, makeTaskSchedulerXml(xmlOpts), 'utf16');
     fs.closeSync(info.fd);
     
-    let {exitCode, stdout, stderr}= runas('schtasks', '/Create', '/Xml', info.path, {admin: true, catchOutput: true});
+    d(`About to run schtasks, XML path is ${info.path}`);
+    let {exitCode} = runas('schtasks', ['/Create', '/Xml', info.path], {admin: true, catchOutput: true});
     if (exitCode !== 0) {
-      throw new Error(`Failed to run schtasks\n${stdout}${stderr}`);
+      throw new Error(`Failed to run schtasks, exited with ${exitCode}`);
     }
     
     return `Created new Scheduled Task ${name}, with script ${shimCmdPath}`;
