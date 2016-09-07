@@ -1,17 +1,10 @@
 language: node_js
 dist: trusty
 node_js:
-  - "6"
+  - "6.3.0"
+compiler:
+  - clang
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-4.9
-      - g++-4.9
-      - lcov
- 
 os:
   - linux
   - osx
