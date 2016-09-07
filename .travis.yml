@@ -1,5 +1,6 @@
 node_js:
   - "6"
+dist: trusty
 
 addons:
   apt:
@@ -14,5 +15,7 @@ os:
   - linux
   - osx
 
+install:
+  - npm install -g surf-build@1.0.0-beta.3 
 script:
-  - npm install -g surf-build@1.0.0-beta.3 && surf-build -n "surf-travis-$TRAVIS_OS_NAME"
+  - surf-build -n "surf-travis-$TRAVIS_OS_NAME"
