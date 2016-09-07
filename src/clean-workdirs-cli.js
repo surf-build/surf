@@ -8,8 +8,6 @@ const yargs = require('yargs')
   .usage(`Usage: surf-clean -s http://some.server -r https://github.com/owner/repo
 Cleans builds that no longer correspond to any active ref`)
   .help('h')
-  .alias('s', 'server')
-  .describe('s', 'The Surf server to connect to')
   .boolean('dry-run')
   .describe('dry-run', 'If set, report the directories we would delete')
   .alias('r', 'repo')

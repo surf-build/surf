@@ -3,7 +3,7 @@ import main from '../src/build-project-main';
 import {mkdirp, rimraf} from '../src/promisify';
 
 describe('The build project CLI', function() {
-  this.timeout(60*1000);
+  this.timeout(15*1000);
 
   let testCount = 0;
   beforeEach(async function() {
@@ -34,7 +34,7 @@ describe('The build project CLI', function() {
     await main('f6db5b824c6d23a5b620d22bb9df7fcc3ee9f2ac', 'https://github.com/surf-build/surf', '__test__');
   });
 
-  it.only('should compile the example C# app', async function() {
+  it('should compile the example C# app', async function() {
     let args = {
       sha: 'c4d85178b4c46f1e1b56dd3408bb945f6042a40b',
       repo: 'https://github.com/surf-build/example-csharp',

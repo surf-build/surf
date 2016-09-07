@@ -8,7 +8,7 @@ const d = require('debug')('surf-test:git-api');
 
 let count = 0;
 
-describe('The node-git helper methods', function() {
+describe.only('The node-git helper methods', function() {
   this.timeout(20*1000);
 
   beforeEach(async function() {
@@ -22,7 +22,8 @@ describe('The node-git helper methods', function() {
   });
 
   it('should clone a public repo with cloneRepo', async function() {
-    await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
+    let r = await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
+    r.free();
 
     let result = await fs.stat(path.join(this.targetDir, 'HEAD'));
     expect(result).to.be.ok;

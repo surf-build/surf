@@ -5,7 +5,7 @@ import request from 'request-promise'; import chalk from 'chalk';
 
 import {asyncMap} from './promise-array';
 import {getOriginForRepo} from './git-api';
-import {getNwoFromRepoUrl, getCombinedStatusesForCommit} from './github-api';
+import {fetchAllRefsWithInfo, getNwoFromRepoUrl, getCombinedStatusesForCommit} from './github-api';
 import createRefServer from './ref-server-api';
 
 const d = require('debug')('surf:commit-status-main');
@@ -25,25 +25,10 @@ export default async function main(repo, server, jsonOnly, showHelp) {
     }
   }
 
-  let killRefServer = null;
-  if (!server) {
-    let nwo = getNwoFromRepoUrl(repo);
-    killRefServer = createRefServer([nwo]);
-    server = `http://localhost:${process.env.SURF_PORT || 3000}`;
-  }
-
   d(`Getting nwo for ${repo}`);
   let nwo = getNwoFromRepoUrl(repo);
-  let surfUrl = `${server}/info/${nwo}`;
 
-  const fetchRefs = async () => {
-    return await request({
-      uri: surfUrl,
-      json: true
-    });
-  };
-
-  let refList = await fetchRefs();
+  let refList = await fetchAllRefsWithInfo(nwo);
   let refToObject = refList.reduce((acc,x) => {
     acc[x.ref] = x.object;
     return acc;
@@ -97,6 +82,4 @@ export default async function main(repo, server, jsonOnly, showHelp) {
       });
     }
   }
-
-  if (killRefServer) killRefServer.unsubscribe();
 }

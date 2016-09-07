@@ -2,7 +2,7 @@ import request from 'request-promise';
 import {Observable} from 'rxjs';
 
 import {getOriginForRepo} from './git-api';
-import {getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
+import {fetchAllRefsWithInfo, getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
 import createRefServer from './ref-server-api';
 import ON_DEATH from 'death';
 
@@ -47,20 +47,6 @@ export default async function main(argv, showHelp) {
     }
   }
 
-  if (!server) {
-    console.error(`
-**** Becoming a Surf Server ****
-
-If you're only setting up a single build client, this is probably what you want.
-If you're setting up more than one, you'll want to run 'surf-server' somewhere,
-then pass '-s' to all of your build clients.`);
-
-    let nwo = getNwoFromRepoUrl(repo);
-    createRefServer([nwo]);
-
-    server = `http://localhost:${process.env.SURF_PORT || 3000}`;
-  }
-
   let jobs = parseInt(argv.j || '2');
   if (argv.j && (jobs < 1 || jobs > 64)) {
     console.error("--jobs must be an integer");
@@ -70,15 +56,7 @@ then pass '-s' to all of your build clients.`);
 
   // Do an initial fetch to get our initial state
   let refInfo = null;
-  let nwo = getNwoFromRepoUrl(repo);
-  let surfUrl = `${server}/info/${nwo}`;
-
-  let fetchRefs = () => {
-    return request({
-      uri: surfUrl,
-      json: true
-    });
-  };
+  let fetchRefs = () => fetchAllRefsWithInfo(getNwoFromRepoUrl(repo));
   
   let fetchRefsWithRetry = Observable.defer(() => 
     Observable.fromPromise(fetchRefs())
@@ -87,8 +65,8 @@ then pass '-s' to all of your build clients.`);
 
   refInfo = await fetchRefsWithRetry.toPromise();
   
-  console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
   while(true) {
+    console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
     let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
     buildMonitor.start();
     

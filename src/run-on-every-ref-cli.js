@@ -2,14 +2,12 @@
 
 import main from './run-on-every-ref-main';
 
-const d = require('debug')('surf:run-on-every-ref');
+const d = require('debug')('surf:surf');
 
 const yargs = require('yargs')
-  .usage(`Usage: surf-client -r https://github.com/some/repo -- command arg1 arg2 arg3...
+  .usage(`Usage: surf-run -r https://github.com/some/repo -- command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .help('h')
-  .alias('s', 'server')
-  .describe('s', 'The Surf server to connect to for multi-machine builds')
   .alias('r', 'repo')
   .describe('r', 'The URL of the repository to monitor. Defaults to the repo in the current directory')
   .alias('j', 'jobs')
