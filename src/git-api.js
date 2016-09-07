@@ -12,21 +12,34 @@ enableThreadSafety();
 
 const d = require('debug')('surf:git-api');
 
+function using(block) {
+  let toFree = [];
+  
+  try {
+    return block((f) => { toFree.push(f); return f; });
+  } finally {
+    toFree.reverse().forEach((f) => f.free());
+  }
+}
+
 export async function getHeadForRepo(targetDirname) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
-
-  let repo = await Repository.open(repoDir);
-  let commit = await repo.getHeadCommit();
-
-  return commit.sha();
+  
+  return await using(async (ds) => {
+    let repo = ds(await Repository.open(repoDir));
+    return repo.getHeadCommit().sha;
+  });
 }
 
 export async function getOriginForRepo(targetDirname) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
-
-  let repo = await Repository.open(repoDir);
-  let origin = await Remote.lookup(repo, 'origin');
-  return origin.pushurl() || origin.url();
+  
+  return await using(async (ds) => {
+    let repo = ds(await Repository.open(repoDir));
+    let origin = ds(await Remote.lookup(repo, 'origin'));
+    
+    return origin.pushurl() || origin.url();
+  });
 }
 
 export async function getAllWorkdirs(repoUrl) {
@@ -83,19 +96,21 @@ export function getGistTempdir(id) {
 }
 
 export async function checkoutSha(targetDirname, sha) {
-  let repo = await Repository.open(targetDirname);
-  let commit = await repo.getCommit(sha);
+  return await using(async (ds) => {
+    let repo = ds(await Repository.open(targetDirname));
+    let commit = ds(await repo.getCommit(sha));
 
-  let opts = {};
+    let opts = {};
 
-  // Equivalent of `git reset --hard HEAD && git clean -xdf`
-  d(`Found commit: ${targetDirname}:${commit.sha()}`);
-  opts.checkoutStrategy = Checkout.STRATEGY.FORCE |
-    Checkout.STRATEGY.RECREATE_MISSING |
-    Checkout.STRATEGY.REMOVE_UNTRACKED |
-    Checkout.STRATEGY.USE_THEIRS;
+    // Equivalent of `git reset --hard HEAD && git clean -xdf`
+    d(`Found commit: ${targetDirname}:${commit.sha()}`);
+    opts.checkoutStrategy = Checkout.STRATEGY.FORCE |
+      Checkout.STRATEGY.RECREATE_MISSING |
+      Checkout.STRATEGY.REMOVE_UNTRACKED |
+      Checkout.STRATEGY.USE_THEIRS;
 
-  await Checkout.tree(repo, commit, opts);
+    await Checkout.tree(repo, commit, opts);  
+  });
 }
 
 export function updateRefspecToPullPRs(repository) {
@@ -126,12 +141,14 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   }
 
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
-  let repo = await Clone.clone(url, targetDirname, opts);
+  return await using(async (ds) => {
+    let repo = await Clone.clone(url, targetDirname, opts);
 
-  if (bare) updateRefspecToPullPRs(repo);
+    if (bare) updateRefspecToPullPRs(repo);
 
-  await fetchRepo(targetDirname, token, bare);
-  return repo;
+    ds(await fetchRepo(targetDirname, token, bare));
+    return repo;
+  });
 }
 
 export async function fetchRepo(targetDirname, token=null, bare=true) {
@@ -189,72 +206,77 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
 }
 
 export async function resetOriginUrl(target, url) {
-  let repo = await Repository.open(target);
-  Remote.setUrl(repo, 'origin', url);
+  await using(async (ds) => {
+    let repo = ds(await Repository.open(target));
+    Remote.setUrl(repo, 'origin', url);
+  });
 }
 
 export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
-  if (!(await statNoException(targetDir))) {
-    d(`${targetDir} doesn't exist, cloning it`);
-    await mkdirp(targetDir);
-    await cloneRepo(repoUrl, targetDir, token, false);
-  }
+  return await using(async (ds) => {
+    if (!(await statNoException(targetDir))) {
+      d(`${targetDir} doesn't exist, cloning it`);
+      await mkdirp(targetDir);
+      ds(await cloneRepo(repoUrl, targetDir, token, false));
+    }
 
-  d("Opening repo");
-  let repo = await Repository.open(targetDir);
+    d("Opening repo");
+    let repo = ds(await Repository.open(targetDir));
 
-  d("Opening index");
-  let idx = await repo.index();
-  await idx.read(1);
+    d("Opening index");
+    let idx = ds(await repo.index());
+    await idx.read(1);
 
-  d("Reading artifacts directory");
-  let artifacts = await fs.readdir(artifactDir);
-  for (let entry of artifacts) {
-    let tgt = path.join(targetDir, entry);
-    fs.copySync(path.join(artifactDir, entry), tgt);
+    d("Reading artifacts directory");
+    let artifacts = await fs.readdir(artifactDir);
+    for (let entry of artifacts) {
+      let tgt = path.join(targetDir, entry);
+      fs.copySync(path.join(artifactDir, entry), tgt);
 
-    d(`Adding artifact: ${tgt}`);
-    await idx.addByPath(entry);
-  }
+      d(`Adding artifact: ${tgt}`);
+      await idx.addByPath(entry);
+    }
 
-  await idx.write();
-  let oid = await idx.writeTree();
-  let head = await Reference.nameToId(repo, "HEAD");
-  let parent = await repo.getCommit(head);
+    await idx.write();
+    let oid = await idx.writeTree();
+    let head = await Reference.nameToId(repo, "HEAD");
+    let parent = ds(await repo.getCommit(head));
 
-  d(`Writing commit to gist`);
-  let now = new Date();
-  let sig = await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
-  let sig2 = await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset());
+    d(`Writing commit to gist`);
+    let now = new Date();
+    let sig = ds(await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset()));
+    let sig2 = ds(await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset()));
 
-  d(`Creating commit`);
-  await repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);
+    d(`Creating commit`);
+    await ds(repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]));
 
-  return targetDir;
+    return targetDir;
+  });
 }
 
 export async function pushGistRepoToMaster(targetDir, token) {
-  d("Opening repo");
-  let repo = await Repository.open(targetDir);
+  return await using(async (ds) => {
+    d("Opening repo");
+    let repo = ds(await Repository.open(targetDir));
 
-  d("Looking up origin");
-  let origin = await Remote.lookup(repo, 'origin');
+    d("Looking up origin");
+    let origin = await Remote.lookup(repo, 'origin');
 
-  let refspec = "refs/heads/master:refs/heads/master";
-  let pushopts = {
-    callbacks: {
-      credentials: () => {
-        d(`Returning ${token} for authentication token`);
-        return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
-      },
-      certificateCheck: () => {
-        // Yolo
-        return 1;
+    let refspec = "refs/heads/master:refs/heads/master";
+    let pushopts = {
+      callbacks: {
+        credentials: () => {
+          d(`Returning ${token} for authentication token`);
+          return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+        },
+        certificateCheck: () => {
+          // Yolo
+          return 1;
+        }
       }
-    }
-  };
+    };
 
-  d("Pushing to Gist");
-  await origin.push([refspec], pushopts);
-  repo.free();
+    d("Pushing to Gist");
+    await origin.push([refspec], pushopts);
+  });
 }
