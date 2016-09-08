@@ -5,8 +5,7 @@
 		<key>Label</key>
 		<string>local.<%= name %></string>
 	
-		<key>Program</key>
-		<string><%= commandWithoutArgs %></string>
+		<key>Program</key><string><%= commandWithoutArgs %></string>
 		
 		<key>RunAtLoad</key>
 		<true/>

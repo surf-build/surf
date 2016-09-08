@@ -3,6 +3,7 @@ import './support';
 import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';
 import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
+import LaunchdInstaller from '../src/job-installers/launchd';
 import {installJob} from '../src/job-installer-api';
 
 const d = require('debug')('surf-test:job-installers');
@@ -36,6 +37,8 @@ describe('systemd job installer', function() {
   });
 
   it('should ensure that absolute paths are rooted', async function() {
+    if (process.platform === 'win32') return;
+  
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
     let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
@@ -103,6 +106,44 @@ describe('Task scheduler job installer', function() {
     let execStartLine = result[`${this.sampleName}.cmd`].split('\n')
       .find((l) => l.match(/surf-build/));
     expect(execStartLine).to.be.ok;
+  });
+});
+
+describe('launchd job installer', function() {
+  beforeEach(function() {
+    this.fixture = new LaunchdInstaller();
+    this.sampleName = 'example-csharp';
+    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
+  });
+
+  it('should capture Surf environment variables', async function() {
+    process.env.SURF_TEST_ENV_VAR = 'hello';
+    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+    delete process.env.SURF_TEST_ENV_VAR;
+
+    d(result);
+
+    expect(
+      result[`local.${this.sampleName}.plist`].split('\n')
+        .find((l) => l.match(/key.*SURF_TEST_ENV_VAR.*string.*hello/))
+    ).to.be.ok;
+  });
+
+  it('should have the command', async function() {
+    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+
+    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n')
+      .find((l) => l.match(/Program/));
+    expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
+  });
+
+  it('should ensure that absolute paths are rooted', async function() {
+    if (process.platform === 'win32') return;
+  
+    let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
+
+    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l) => l.match(/Program/));
+    expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
   });
 });
 
