@@ -148,7 +148,7 @@ describe('launchd job installer', function() {
     let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l) => l.match(/Program/));
     
     d(`execStartLine: ${execStartLine}`);
-    expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
+    expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
   });
 });
 
