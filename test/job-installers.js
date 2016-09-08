@@ -42,6 +42,8 @@ describe('systemd job installer', function() {
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
     let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
+    
+    d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
   });
 });
@@ -72,6 +74,7 @@ describe('docker job installer', function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
     let execStartLine = result['Dockerfile'].split('\n').find((l) => l.match(/CMD/));
+    d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
   });
 });
@@ -143,6 +146,8 @@ describe('launchd job installer', function() {
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
     let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l) => l.match(/Program/));
+    
+    d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
   });
 });

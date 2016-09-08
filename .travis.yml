@@ -8,6 +8,9 @@ compiler:
 os:
   - linux
   - osx
+
+env:
+  - DEBUG="*,-babel"
   
 addons:
   apt:
