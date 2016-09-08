@@ -7,7 +7,7 @@ import temp from 'temp';
 
 import JobInstallerBase from '../job-installer-base';
 import {spawnPromise} from 'spawn-rx';
-import runas from 'runas';
+import xmlescape from 'xml-escape';
 
 const d = require('debug')('surf:task-scheduler');
 
@@ -82,6 +82,11 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
       shimCmdPath, username, hostname, name 
     };
     
+    xmlOpts = Object.keys(xmlOpts).reduce((acc, x) => {
+      acc[x] = xmlescape(xmlOpts[x]);
+      return acc;
+    }, {});
+    
     let cmdOpts = {
       envs: this.getInterestingEnvVars().map((x) => `${x}=${process.env[x]}`),
       command
@@ -104,7 +109,8 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
     fs.closeSync(info.fd);
     
     d(`About to run schtasks, XML path is ${info.path}`);
-    let {exitCode} = runas('schtasks', ['/Create', '/Tn', name, '/Xml', info.path], {admin: true, catchOutput: true});
+    let {exitCode} = await runAsAdministrator('schtasks', ['/Create', '/Tn', name, '/Xml', info.path]);
+    
     if (exitCode !== 0) {
       throw new Error(`Failed to run schtasks, exited with ${exitCode}`);
     }
