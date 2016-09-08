@@ -19,16 +19,21 @@ const d = require('debug')('surf:surf-build');
 
 function getRootAppDir() {
   let ret = null;
+  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
 
   switch (process.platform) {
   case 'win32':
     ret = path.join(process.env.LOCALAPPDATA, 'surf');
     break;
   case 'darwin':
-    ret = path.join(process.env.HOME, 'Library', 'Application Support', 'surf');
+    ret = process.env.HOME ?
+      path.join(process.env.HOME, 'Library', 'Application Support', 'surf') :
+      path.join(tmp, 'surf-repos');
     break;
   default:
-    ret = path.join(process.env.HOME, '.config', 'surf');
+    ret = process.env.HOME ?
+      path.join(process.env.HOME, '.config', 'surf') :
+      path.join(tmp, 'surf-repos');
     break;
   }
 

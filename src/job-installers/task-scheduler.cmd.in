@@ -1,0 +1,2 @@
+<% print(envs.map((x) => `SET ${x}`).join('\n')) %>
+<%= command %>

@@ -3,7 +3,7 @@ import main from '../src/build-project-main';
 import {mkdirp, rimraf} from '../src/promisify';
 
 describe('The build project CLI', function() {
-  this.timeout(60*1000);
+  this.timeout(15*1000);
 
   let testCount = 0;
   beforeEach(async function() {

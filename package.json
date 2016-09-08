@@ -3,12 +3,12 @@
   "version": "1.0.0-beta.3",
   "description": "The simplest GitHub build server",
   "bin": {
-    "surf-server": "./lib/ref-server-cli.js",
-    "surf-client": "./lib/run-on-every-ref-cli.js",
+    "surf-run": "./lib/run-on-every-ref-cli.js",
     "surf-build": "./lib/build-project-cli.js",
     "surf-publish": "./lib/publish-tag-cli.js",
     "surf-download": "./lib/download-release-cli.js",
-    "surf-status": "./lib/commit-status-cli.js"
+    "surf-status": "./lib/commit-status-cli.js",
+    "surf-install": "./lib/job-installer-cli.js"
   },
   "scripts": {
     "compile": "babel -d lib/ src/",
@@ -31,15 +31,12 @@
   },
   "homepage": "https://github.com/paulcbetts/surf-build",
   "dependencies": {
-    "bulma": "0.1.2",
     "chalk": "^1.1.3",
     "death": "^1.0.0",
     "debug": "^2.2.0",
-    "express": "^4.14.0",
     "fs-extra": "^0.30.0",
     "ini": "^1.3.4",
     "iso8601": "^1.1.1",
-    "jade": "^1.11.0",
     "lodash": "^4.15.0",
     "lru-cache": "^4.0.1",
     "mime-types": "^2.1.11",
@@ -51,7 +48,13 @@
     "rimraf": "^2.5.4",
     "rxjs": "^5.0.0-beta.11",
     "spawn-rx": "^2.0.1",
+    "string-argv": "0.0.2",
+    "temp": "^0.8.3",
+    "xml-escape": "^1.1.0",
     "yargs": "^4.8.1"
+  },
+  "optionalDependencies": {
+    "runas": "^3.1.1"
   },
   "devDependencies": {
     "babel-cli": "^6.11.4",
@@ -61,7 +64,7 @@
     "babel-register": "^6.11.6",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
-    "@paulcbetts/coveralls": "^2.11.12",
+    "@paulcbetts/coveralls": "^2.11.13",
     "eslint": "^1",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.0.2",

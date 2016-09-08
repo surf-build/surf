@@ -2,8 +2,7 @@ import _ from 'lodash';
 import { asyncMap } from './promise-array';
 import { rimraf } from './promisify';
 import { getAllWorkdirs } from './git-api';
-import { getNwoFromRepoUrl } from './github-api';
-import request from 'request-promise';
+import { fetchAllRefsWithInfo, getNwoFromRepoUrl } from './github-api';
 
 const d = require('debug')('surf:surf-clean');
 
@@ -20,15 +19,11 @@ export default async function main(argv, showHelp) {
   
   // Do an initial fetch to get our initial state
   let refInfo = null;
-  let surfUrl = `${argv.s}/info/${getNwoFromRepoUrl(argv.r)}`;
 
   try {
-    refInfo = await request({
-      uri: surfUrl,
-      json: true
-    });
+    refInfo = await fetchAllRefsWithInfo(getNwoFromRepoUrl(argv.r));
   } catch (e) {
-    console.log(`Failed to fetch from ${surfUrl}: ${e.message}`);
+    console.log(`Failed to fetch from ${argv.r}: ${e.message}`);
     d(e.stack);
     process.exit(-1);
   }
