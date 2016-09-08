@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>Label</key>
+		<string>local.<%= name %></string>
+	
+		<key>Program</key>
+		<string><%= commandWithoutArgs %></string>
+		
+		<key>RunAtLoad</key>
+		<true/>
+		
+		<key>KeepAlive</key>
+		<dict>
+			<key>NetworkState</key>
+			<true/>
+		</dict>
+		
+		<key>ThrottleInterval</key>
+		<integer>10</integer>	
+		
+		<key>ProgramArguments</key>
+		<array>
+		  <% print(argList.map((x) => `      <string>${x}</string>`)) %>
+		</array>
+		
+		<key>EnvironmentVariables</key>
+		<dict>
+		  <% print(envs.map(([k,v]) => `      <key>${k}</key><string>${v}</string>`)) %>
+		</dict>
+		
+		<key>StandardOutPath</key>
+		<string>/tmp/<%= name %>-stdout.log</string>
+		<key>StandardErrorPath</key>
+		<string>/tmp/<%= name %>-stderr.log</string>
+	</dict>
+</plist>
