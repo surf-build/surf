@@ -8,7 +8,7 @@ const d = require('debug')('surf-test:git-api');
 
 let count = 0;
 
-describe.only('The node-git helper methods', function() {
+describe('The node-git helper methods', function() {
   this.timeout(20*1000);
 
   beforeEach(async function() {
