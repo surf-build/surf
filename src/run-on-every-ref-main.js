@@ -65,24 +65,19 @@ export default async function main(argv, showHelp) {
 
   refInfo = await fetchRefsWithRetry.toPromise();
   
-  while(true) {
-    console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
-    let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
-    buildMonitor.start();
-    
-    try {
-      await (Observable.merge(
-        buildMonitor.buildMonitorCrashed.delay(5000).take(1),
-        Observable.fromPromise(DeathPromise)
-      ).toPromise());
-    } catch (e) {
-      // NB: This is a little weird - buildMonitorCrashed just returns an item
-      // whereas DeathPromise actually throws, so we can use it as a hint as
-      // to whether to continue or not
-      buildMonitor.unsubscribe();
-      throw e;
-    }
-  }
-
+  console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
+  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
+  buildMonitor.start();
+  
+  // NB: This is a little weird - buildMonitorCrashed just returns an item
+  // whereas DeathPromise actually throws
+  let ex = await (Observable.merge(
+    buildMonitor.buildMonitorCrashed.delay(5000).take(1),
+    Observable.fromPromise(DeathPromise)
+  ).toPromise());
+  
+  if (ex) throw ex;
+  
+  // NB: We will never get here in normal operation
   return true;
 }
