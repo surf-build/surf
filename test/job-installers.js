@@ -44,7 +44,7 @@ describe('systemd job installer', function() {
     let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
     
     d(`execStartLine: ${execStartLine}`);
-    expect(execStartLine.indexOf('/usr/bin/ls') > 0).to.be.ok;
+    expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
   });
 });
 
@@ -69,8 +69,6 @@ describe('docker job installer', function() {
   });
 
   it('should have the command as CMD', async function() {
-    expect((await this.fixture.getAffinityForJob(this.sampleName, this.sampleCommand)) > 0).to.be.ok;
-
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
     let execStartLine = result['Dockerfile'].split('\n').find((l) => l.match(/CMD/));
