@@ -8,7 +8,9 @@ export default async function main(argv, showHelp) {
     process.exit(-1);
   }
   
-  let result = await installJob(argv.name, argv.command, argv['dry-run'], argv.type);
+  let extraEnvs = argv.environment ? argv.environment.split(',') : null;
+  let result = await installJob(argv.name, argv.command, argv['dry-run'], argv.type, extraEnvs);
+  
   if (!argv['dry-run']) {
     console.log(result);
     return;

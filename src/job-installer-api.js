@@ -14,7 +14,7 @@ export function createJobInstallers() {
   });
 }
 
-export function installJob(name, command, returnContent=false, explicitType=null) {
+export function installJob(name, command, returnContent=false, explicitType=null, extraEnvVars=null) {
   let installer = null;
   
   if (explicitType) {
@@ -42,5 +42,6 @@ export function installJob(name, command, returnContent=false, explicitType=null
     }
   }
 
+  if (extraEnvVars) installer.setExtraEnvVars(extraEnvVars);
   return installer.installJob(name, command, returnContent);
 }

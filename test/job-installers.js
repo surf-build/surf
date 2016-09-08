@@ -158,10 +158,22 @@ describe('Job installer API', function() {
     let keys = Object.keys(result);
     expect(result[keys[0]].split('\n').length > 2).to.be.ok;
   });
+  
+  it('should capture extra env vars', async function() {
+    process.env.__FOOBAR = 'baz';
+    process.env.__BAMF = 'baz';
+    let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker', ['__FOOBAR', '__BAMF']);
+    delete process.env.__BAMF;
+    delete process.env.__FOOBAR;
+    
+    let lines = result['Dockerfile'].split('\n');
+    expect(lines.length > 2).to.be.ok;
+    expect(lines.find((x) => x.match(/^ENV.*FOOBAR.*baz/))).to.be.ok;
+    expect(lines.find((x) => x.match(/^ENV.*BAMF.*baz/))).to.be.ok;
+  });
 
   it('should allow us to explicitly select the Docker API', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker');
-
     let lines = result['Dockerfile'].split('\n');
     
     expect(lines.length > 2).to.be.ok;

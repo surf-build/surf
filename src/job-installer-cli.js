@@ -19,9 +19,10 @@ automatically, but others can be explicitly specified at the command line`)
   .describe('dry-run', 'Instead of creating a service, display the configuration file and exit')
   .alias('t', 'type')
   .describe('type', 'Explicitly choose the type of service to create, usually "-t docker" for Docker')
+  .alias('e', 'environment')
+  .describe('environment', 'A comma-separated list of custom environment variables to capture')
   .alias('v', 'version')
   .describe('version', 'Print the current version number and exit')
-  .alias('e', 'environment')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:

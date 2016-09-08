@@ -13,7 +13,12 @@ export default class JobInstallerBase {
 
   getInterestingEnvVars() {
     return Object.keys(process.env)
-      .filter((x) => interestingEnvVars.find((re) => x.match(re)));
+      .filter((x) => interestingEnvVars.find((re) => x.match(re)))
+      .concat(this.extraEnvVars || []);
+  }
+  
+  setExtraEnvVars(vars) {
+    this.extraEnvVars = vars;
   }
   
   getName() {
