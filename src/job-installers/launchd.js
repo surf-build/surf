@@ -25,16 +25,21 @@ export default class LaunchdInstaller extends JobInstallerBase {
   async installJob(name, command, returnContent=false) {
     // NB: launchd requires commands to be have absolute paths
     let [, cmd, params] = command.match(/^(\S+)(.*)/);
-    command = findActualExecutable(cmd, []).cmd + params;
+    command = findActualExecutable(cmd, []).cmd;
     
     let opts = {
       commandWithoutArgs: command,
-      argList: stringArgv(params),
-      envs: this.getInterestingEnvVars().map((x) => [x, process.env[x]]),
+      argList: stringArgv(params).map((x) => xmlescape(x)),
+      envs: this.getInterestingEnvVars().map((x) => [xmlescape(x), xmlescape(process.env[x])]),
       name
     };
         
     opts = Object.keys(opts).reduce((acc, x) => {
+      if (x === 'envs' || x === 'argList') {
+        acc[x] = opts[x];
+        return acc;
+      }
+      
       acc[x] = xmlescape(opts[x]);
       return acc;
     }, {});
@@ -48,7 +53,7 @@ export default class LaunchdInstaller extends JobInstallerBase {
     let target = `${process.env.HOME}/Library/LaunchAgents/local.${name}.plist`;
     
     fs.writeFileSync(target, makeLaunchdService(opts));
-    fs.chmodSync(target, 0644);
+    fs.chmodSync(target, 0o644);
     
     await spawnPromise('systemctl', ['daemon-reload']);
     await spawnPromise('systemctl', ['start', name]);
