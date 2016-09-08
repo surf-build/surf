@@ -11,6 +11,31 @@ import runas from 'runas';
 
 const d = require('debug')('surf:task-scheduler');
 
+let runAsAdministrator = (cmd, params) => {
+  return spawnPromise(cmd, params)
+    .then(() => 0)
+    .catch((e) => {
+      console.error(e.message);
+      return -1;
+    });
+};
+
+(function() {
+  try {
+    // NB: runas seems to have trouble compiling in various places :-/
+    const runas = require('runas');
+    
+    runAsAdministrator = (cmd, params) => {
+      let {exitCode} = runas(cmd, params, {admin: true, catchOutput: true});
+      return Promise.resolve(exitCode);
+    };
+  } catch (e) {
+    if (process.platform === 'win32') {
+      console.error("Can't load runas, if this fails try re-running as Elevated Admin");
+    }
+  }
+})();
+
 // NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
 const makeTaskSchedulerXml = 
   _.template(fs.readFileSync(require.resolve('../../src/job-installers/task-scheduler.xml.in'), 'utf8'));
