@@ -1,11 +1,12 @@
 import fs from 'fs';
+import path from 'path';
 import _ from 'lodash';
 
 import JobInstallerBase from '../job-installer-base';
-import {statNoException} from '../promise-array';
-import {findActualExecutable, spawnPromise} from 'spawn-rx';
+import {findActualExecutable} from 'spawn-rx';
 import stringArgv from 'string-argv';
 import xmlescape from 'xml-escape';
+import mkdirp from 'mkdirp';
 
 const d = require('debug')('surf:launchd');
 
@@ -52,11 +53,9 @@ export default class LaunchdInstaller extends JobInstallerBase {
     
     let target = `${process.env.HOME}/Library/LaunchAgents/local.${name}.plist`;
     
+    mkdirp.sync(path.dirname(target));
     fs.writeFileSync(target, makeLaunchdService(opts));
     fs.chmodSync(target, 0o644);
-    
-    await spawnPromise('systemctl', ['daemon-reload']);
-    await spawnPromise('systemctl', ['start', name]);
     
     return `launchd agent written to '${target}
   
