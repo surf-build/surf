@@ -41,7 +41,7 @@
     "lru-cache": "^4.0.1",
     "mime-types": "^2.1.11",
     "mkdirp": "^0.5.1",
-    "nodegit": "0.14.1",
+    "nodegit": "^0.16.0",
     "parse-link-header": "^0.4.1",
     "pify": "^2.3.0",
     "request-promise": "^4.1.1",
