@@ -57,6 +57,8 @@
     "runas": "^3.1.1"
   },
   "devDependencies": {
+    "@kwonoj/rxjs-testscheduler-compat": "0.0.4",
+    "@paulcbetts/coveralls": "^2.11.13",
     "babel-cli": "^6.11.4",
     "babel-eslint": "^5",
     "babel-plugin-__coverage__": "^11.0.0",
@@ -64,7 +66,6 @@
     "babel-register": "^6.11.6",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
-    "@paulcbetts/coveralls": "^2.11.13",
     "eslint": "^1",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.0.2",

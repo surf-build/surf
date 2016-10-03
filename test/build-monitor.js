@@ -2,7 +2,9 @@ import _ from 'lodash';
 import path from 'path';
 import {fs} from '../src/promisify';
 import BuildMonitor from '../src/build-monitor';
-import {Observable, TestScheduler, Subscription, Subject} from 'rxjs';
+import {Observable, Subscription, Subject} from 'rxjs';
+import {TestScheduler} from '@kwonoj/rxjs-testscheduler-compat';
+
 import '../src/custom-rx-operators';
 
 const d = require('debug')('surf-test:build-monitor');
@@ -14,7 +16,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe.skip('the build monitor', function() {
+describe.only('the build monitor', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -31,57 +33,58 @@ describe.skip('the build monitor', function() {
     this.sched = new TestScheduler();
     this.fixture = new BuildMonitor(null, null, 2, null, null, this.sched);
   });
-  
+
   afterEach(function() {
     this.fixture.unsubscribe();
   });
-  
+
   it('shouldnt run builds in getOrCreateBuild until you subscribe', function() {
     let buildCount = 0;
     let runBuildCount = 0;
-    
+
     // Scheduling is live
-    this.sched.start();
-    
+    this.sched.advanceBy(1000);
+
     let buildSubject = new Subject();
     this.fixture.runBuild = () => {
       runBuildCount++;
       return buildSubject.subUnsub(() => buildCount++);
     };
-    
+
     d('Initial getOrCreateBuild');
     let ref = this.refExamples['refs1.json'][1];
     let result = this.fixture.getOrCreateBuild(ref);
-    this.sched.start();
+    this.sched.advanceBy(1000);
     expect(buildCount).to.equal(0);
     expect(runBuildCount).to.equal(1);
-    
+
     d('Subscribing 1x');
     result.observable.subscribe();
-    this.sched.start();
+    this.sched.advanceBy(1000);
     expect(buildCount).to.equal(1);
-    
+
     // Double subscribes do nothing
     d('Subscribing 2x');
     result.observable.subscribe();
-    this.sched.start();
+    this.sched.advanceBy(1000);
     expect(buildCount).to.equal(1);
-    
+
     d('Second getOrCreateBuild');
     result = this.fixture.getOrCreateBuild(ref);
     result.observable.subscribe();
-    this.sched.start();
+    this.sched.advanceBy(1000);
     expect(buildCount).to.equal(1);
     expect(runBuildCount).to.equal(1);
-    
+
     d('Complete the build');
-    buildSubject.onNext('');  
-    buildSubject.onCompleted();
-      
+    buildSubject.next('');
+    buildSubject.complete();
+
     d('Third getOrCreateBuild');
     result = this.fixture.getOrCreateBuild(ref);
     result.observable.subscribe();
-    this.sched.start();
+    this.sched.advanceBy(1000);
+
     expect(buildCount).to.equal(2);
     expect(runBuildCount).to.equal(2);
   });
@@ -257,7 +260,7 @@ describe.skip('the build monitor', function() {
     };
 
     this.fixture.seenCommits = getSeenRefs(this.refExamples['refs1.json']);
-    
+
     this.fixture.fetchRefs = () =>
       Observable.of(this.refExamples['refs3.json']);
 
@@ -321,27 +324,27 @@ describe.skip('the build monitor', function() {
     this.sched.advanceBy(this.fixture.pollInterval + 1000);
     expect(liveBuilds).to.equal(2);
   });
-  
+
   it('shouldnt die when builds fail', function() {
     this.fixture.runBuild = () => Observable.throw(new Error("no"));
-    
+
     this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);  
+      Observable.of(this.refExamples['refs1.json']);
 
     this.fixture.start();
     this.sched.advanceBy(this.fixture.pollInterval + 1);
-    
+
     let ranBuild = false;
     this.fixture.runBuild = () => {
       ranBuild = true;
       return Observable.of('');
     };
-    
+
     this.fixture.fetchRefs = () =>
       Observable.of(this.refExamples['refs2.json']);
-      
+
     this.sched.advanceBy(this.fixture.pollInterval);
-    
+
     expect(ranBuild).to.be.ok;
   });
 });
