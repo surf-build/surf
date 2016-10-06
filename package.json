@@ -47,6 +47,7 @@
     "request-promise": "^4.1.1",
     "rimraf": "^2.5.4",
     "rxjs": "^5.0.0-beta.11",
+    "rxjs-serial-subscription": "^0.1.0",
     "spawn-rx": "^2.0.1",
     "string-argv": "0.0.2",
     "temp": "^0.8.3",

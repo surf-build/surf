@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import {spawn} from 'spawn-rx';
 import {Observable, Scheduler, Subject, Subscription} from 'rxjs';
-import SerialDisposable from './serial-subscription';
+import SerialSubscription from 'rxjs-serial-subscription';
+
 import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
@@ -21,14 +22,14 @@ export default class BuildMonitor {
 
     this.currentBuilds = {};
     this.scheduler = this.scheduler || Scheduler.queue;
-    this.currentRunningMonitor = new SerialDisposable();
+    this.currentRunningMonitor = new SerialSubscription();
     this.buildsToActuallyExecute = new Subject();
     this.buildMonitorCrashed = new Subject();
-    
+
     this.buildMonitorCrashed.subscribe((e) => {
       console.error(`Build Monitor crashed! ${e.message}`);
       console.error(e.stack);
-    
+
       this.unsubscribe();
     });
 
@@ -51,7 +52,7 @@ export default class BuildMonitor {
       'SURF_NWO': getNwoFromRepoUrl(this.repo),
       'SURF_REF': ref.ref.replace(/^refs\/heads\//, '')
     };
-    
+
     if (ref.object.pr) {
       envToAdd.SURF_PR_NUM = ref.object.pr.number;
     }
@@ -116,7 +117,7 @@ export default class BuildMonitor {
 
     let disp = this.buildsToActuallyExecute
       .map((x) => x.delayFailures(4000).catch((e) => {
-      
+
         console.log(e.message.replace(/[\r\n]+$/, ''));
         d(e.stack);
 
@@ -141,19 +142,19 @@ export default class BuildMonitor {
       _.each(cancellers, (x) => x());
 
       let refsToBuild = this.determineRefsToBuild(refs);
-      
+
       // NB: If we don't do this, we can stack overflow if the build queue
       // gets too deep
       Observable.from(refsToBuild)
         .observeOn(this.scheduler)
-        .subscribe((x) => 
+        .subscribe((x) =>
           this.buildsToActuallyExecute.next(this.getOrCreateBuild(x).observable));
     }, (e) => this.buildMonitorCrashed.next(e));
 
     let newSub = new Subscription();
     newSub.add(disp);  newSub.add(disp2);
-    
-    this.currentRunningMonitor.set(newSub);
+
+    this.currentRunningMonitor.add(newSub);
     return newSub;
   }
 }
