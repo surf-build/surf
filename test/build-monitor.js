@@ -16,7 +16,7 @@ function getSeenRefs(refs) {
   }, new Set());
 }
 
-describe.only('the build monitor', function() {
+describe('the build monitor', function() {
   beforeEach(async function() {
     let acc = {};
     let fixturesDir = path.join(__dirname, '..', 'fixtures');
