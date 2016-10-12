@@ -175,10 +175,11 @@ export async function fetchAllRefsWithInfo(nwo) {
     await asyncMap(
       refList, 
       async (ref) => {
+        let repoName = refToPR[ref].head.repo.full_name;
         try {
-          return (await fetchSingleRef(nwo, ref)).result;
+          return (await fetchSingleRef(repoName, ref)).result;
         } catch (e) {
-          d(`Tried to fetch ref ${ref.ref} but it failed: ${e.message}`);
+          d(`Tried to fetch ref ${repoName}:${ref} but it failed: ${e.message}`);
           return null;
         }
       }));
