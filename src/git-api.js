@@ -49,7 +49,7 @@ export async function getAllWorkdirs(repoUrl) {
   return _.reduce(ret, (acc, x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
     if (!x.match(/-[a-f0-9A-F]{6}/i)) return acc;
-    if (!x.indexOf(`${nwo}-`)) return acc;
+    if (x.indexOf(`${nwo}-`) < 0) return acc;
 
     acc.push(path.join(tmp, x));
     return acc;

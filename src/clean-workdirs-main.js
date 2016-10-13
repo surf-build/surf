@@ -26,17 +26,17 @@ export default async function main(argv, showHelp) {
   let refInfo = null;
 
   try {
-    refInfo = await fetchAllRefsWithInfo(getNwoFromRepoUrl(argv.r));
+    refInfo = await fetchAllRefsWithInfo(getNwoFromRepoUrl(repo));
   } catch (e) {
     console.log(`Failed to fetch from ${argv.r}: ${e.message}`);
     d(e.stack);
     process.exit(-1);
   }
 
-  let safeShas = _.map(refInfo, (ref) => `-${ref.object.sha.substr(0,6)}-`);
+  let safeShas = _.map(refInfo, (ref) => `-${ref.object.sha.substr(0,6)}`);
 
   d(`safeShas: ${Array.from(safeShas).join()}`);
-  let allDirs = await getAllWorkdirs(argv.r);
+  let allDirs = await getAllWorkdirs(repo);
   let toDelete = _.filter(
     allDirs,
     (x) => !_.find(safeShas, (sha) => x.indexOf(sha) > 0));
