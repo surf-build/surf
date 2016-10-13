@@ -4,7 +4,7 @@ import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';
 import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
 import LaunchdInstaller from '../src/job-installers/launchd';
-import {installJob} from '../src/job-installer-api';
+import {installJob, getDefaultJobInstallerForPlatform} from '../src/job-installer-api';
 
 const d = require('debug')('surf-test:job-installers');
 
@@ -38,11 +38,11 @@ describe('systemd job installer', function() {
 
   it('should ensure that absolute paths are rooted', async function() {
     if (process.platform === 'win32') return;
-  
+
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
     let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
-    
+
     d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
   });
@@ -54,7 +54,7 @@ describe('docker job installer', function() {
     this.sampleName = 'example-csharp';
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
   });
-  
+
   it('should capture Surf environment variables', async function() {
     process.env.SURF_TEST_ENV_VAR = 'hello';
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
@@ -79,13 +79,16 @@ describe('docker job installer', function() {
 
 describe('Task scheduler job installer', function() {
   if (process.platform !== 'win32') return;
-  
+
+  // NB: This has to spawn PowerShell to get the user list :-/
+  this.timeout(10*1000);
+
   beforeEach(function() {
     this.fixture = new TaskSchedulerInstaller();
     this.sampleName = 'example-csharp';
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
   });
-  
+
   it('should capture Surf environment variables', async function() {
     process.env.SURF_TEST_ENV_VAR = 'hello';
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
@@ -140,11 +143,11 @@ describe('launchd job installer', function() {
 
   it('should ensure that absolute paths are rooted', async function() {
     if (process.platform === 'win32') return;
-  
+
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
     let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l) => l.match(/Program/));
-    
+
     d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
   });
@@ -156,19 +159,30 @@ describe('Job installer API', function() {
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
   });
 
+  it('should select the correct installer per-platform', async function() {
+    let expected = {
+      'win32': 'task-scheduler',
+      'darwin': 'launchd',
+      'linux': 'systemd'
+    };
+
+    let result = await getDefaultJobInstallerForPlatform(this.sampleName, this.sampleCommand);
+    expect(result.getName()).to.equal(expected[process.platform]);
+  });
+
   it('should return some content', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true);
     let keys = Object.keys(result);
     expect(result[keys[0]].split('\n').length > 2).to.be.ok;
   });
-  
+
   it('should capture extra env vars', async function() {
     process.env.__FOOBAR = 'baz';
     process.env.__BAMF = 'baz';
     let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker', ['__FOOBAR', '__BAMF']);
     delete process.env.__BAMF;
     delete process.env.__FOOBAR;
-    
+
     let lines = result['Dockerfile'].split('\n');
     expect(lines.length > 2).to.be.ok;
     expect(lines.find((x) => x.match(/^ENV.*FOOBAR.*baz/))).to.be.ok;
@@ -178,7 +192,7 @@ describe('Job installer API', function() {
   it('should allow us to explicitly select the Docker API', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker');
     let lines = result['Dockerfile'].split('\n');
-    
+
     expect(lines.length > 2).to.be.ok;
     expect(lines.find((x) => x.match(/^CMD /))).to.be.ok;
     expect(lines.find((x) => x.match(/^ExecPath/))).not.to.be.ok;
