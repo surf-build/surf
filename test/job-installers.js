@@ -154,6 +154,8 @@ describe('launchd job installer', function() {
 });
 
 describe('Job installer API', function() {
+  this.timeout(10*1000);
+
   beforeEach(function() {
     this.sampleName = 'example-csharp';
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
