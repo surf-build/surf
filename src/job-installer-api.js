@@ -16,14 +16,16 @@ export function createJobInstallers() {
 }
 
 export async function getDefaultJobInstallerForPlatform(name, command) {
-  let installer = (await asyncReduce(createJobInstallers(), async (acc, installer) => {
+  let ret = (await asyncReduce(createJobInstallers(), async (acc, installer) => {
     let affinity = await installer.getAffinityForJob(name, command);
 
     if (affinity < 1) return acc;
     if (!acc) return { affinity, installer };
 
     return acc.affinity >= affinity ? acc : { affinity, installer };
-  }, null)).installer;
+  }, null));
+
+  let installer = ret ? ret.installer : null;
 
   if (!installer) {
     let names = createJobInstallers().map((x) => x.getName());
