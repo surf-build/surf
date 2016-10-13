@@ -14,7 +14,7 @@ const d = require('debug')('surf:git-api');
 
 function using(block) {
   let toFree = [];
-  
+
   try {
     return block((f) => { toFree.push(f); return f; });
   } finally {
@@ -24,7 +24,7 @@ function using(block) {
 
 export async function getHeadForRepo(targetDirname) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
-  
+
   return await using(async (ds) => {
     let repo = ds(await Repository.open(repoDir));
     return repo.getHeadCommit().sha;
@@ -33,11 +33,11 @@ export async function getHeadForRepo(targetDirname) {
 
 export async function getOriginForRepo(targetDirname) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
-  
+
   return await using(async (ds) => {
     let repo = ds(await Repository.open(repoDir));
     let origin = ds(await Remote.lookup(repo, 'origin'));
-    
+
     return origin.pushurl() || origin.url();
   });
 }
@@ -48,8 +48,8 @@ export async function getAllWorkdirs(repoUrl) {
 
   return _.reduce(ret, (acc, x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
-    if (!x.match(/^surf(tmp)?-/i)) return acc;
-    if (!x.indexOf(`-${nwo}-`)) return acc;
+    if (!x.match(/-[a-f0-9A-F]{6}/i)) return acc;
+    if (!x.indexOf(`${nwo}-`)) return acc;
 
     acc.push(path.join(tmp, x));
     return acc;
@@ -109,7 +109,7 @@ export async function checkoutSha(targetDirname, sha) {
       Checkout.STRATEGY.REMOVE_UNTRACKED |
       Checkout.STRATEGY.USE_THEIRS;
 
-    await Checkout.tree(repo, commit, opts);  
+    await Checkout.tree(repo, commit, opts);
   });
 }
 
@@ -176,7 +176,7 @@ export async function fetchRepo(targetDirname, token=null, bare=true) {
     d("GitHub token not set, only public repos will work!");
     delete fo.callbacks;
   }
-  
+
   await repo.fetchAll(fo);
   return repo;
 }
