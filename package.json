@@ -8,6 +8,7 @@
     "surf-publish": "./lib/publish-tag-cli.js",
     "surf-download": "./lib/download-release-cli.js",
     "surf-status": "./lib/commit-status-cli.js",
+    "surf-clean": "./lib/clean-workdirs-cli.js",
     "surf-install": "./lib/job-installer-cli.js"
   },
   "scripts": {
