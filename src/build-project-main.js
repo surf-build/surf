@@ -196,8 +196,6 @@ async function realMain(argv, showHelp) {
     buildPassed = true;
   } catch (e) {
     buildOutput += `\n${e.message}`;
-
-    console.log(`\nError during build: ${e.message}`);
     d(e.stack);
   }
 
@@ -234,5 +232,9 @@ async function realMain(argv, showHelp) {
 
   if (buildPassed && !process.env.DEBUG) {
     await rimraf(tempDir);
+  }
+
+  if (!buildPassed) {
+    throw new Error(buildOutput);
   }
 }
