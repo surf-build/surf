@@ -1,6 +1,6 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl, 
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
   getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
   findPRForCommit } from './github-api';
@@ -60,7 +60,7 @@ export default function main(argv, showHelp) {
         let nwo = getNwoFromRepoUrl(repo);
 
         d(`Attempting to post error status!`);
-        return retryPromise(() => 
+        return retryPromise(() =>
             postCommitStatus(nwo, sha, 'error', `Build Errored: ${e.message}`, null, argv.name))
           .catch(() => true)
           .then(() => d(`We did it!`))
@@ -75,7 +75,7 @@ async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
   process.env.SURF_NWO = nwo;
   process.env.SURF_REPO = repo;
   if (name) process.env.SURF_BUILD_NAME = name;
-  
+
   // If the current PR number isn't set, try to recreate it
   try {
     if (!process.env.SURF_PR_NUM) {
@@ -106,12 +106,10 @@ async function realMain(argv, showHelp) {
     name = null;
   }
 
-  let setRepoViaPwd = false;
   if (!repo) {
     try {
       repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
       argv.repo = repo;
-      setRepoViaPwd = true;
     } catch (e) {
       console.error("Repository not specified and current directory is not a Git repo");
       d(e.stack);
@@ -120,21 +118,23 @@ async function realMain(argv, showHelp) {
       process.exit(-1);
     }
   }
-  
+
   if (!repo) {
     showHelp();
     process.exit(-1);
   }
-  
+
   let repoDir = getRepoCloneDir();
-  
+
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`);
   let bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir));
-  
+
   if (!sha) {
+    d(`SHA1 not specified, trying to retrieve default branch`);
     try {
-      sha = await getHeadForRepo(setRepoViaPwd ? '.' : bareRepoDir);
+      sha = await getHeadForRepo(bareRepoDir);
       argv.sha = sha;
+      d(`Default branch is ${sha}`);
     } catch (e) {
       console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
       d(e.stack);
@@ -143,20 +143,20 @@ async function realMain(argv, showHelp) {
       process.exit(-1);
     }
   }
-  
+
   let nwo = getNwoFromRepoUrl(repo);
   await configureEnvironmentVariablesForChild(nwo, sha, name, repo);
 
   d(`repo: ${repo}, sha: ${sha}`);
-  
+
   if (name) {
     d(`Posting 'pending' to GitHub status`);
 
     let nwo = getNwoFromRepoUrl(repo);
-    await retryPromise(() => 
+    await retryPromise(() =>
       postCommitStatus(nwo, sha, 'pending', 'Surf Build Server', null, name));
   }
-  
+
   let workDir = getWorkdirForRepoUrl(repo, sha);
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
@@ -166,13 +166,13 @@ async function realMain(argv, showHelp) {
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);
-  
+
   d(`Resetting remote origin to URL`);
   await resetOriginUrl(workDir, repo);
 
   d(`Determining command to build`);
   let { cmd, cmds, args, artifactDirs } = await determineBuildCommands(workDir);
-  
+
   if (!cmds) {
     cmds = [{cmd, args}];
   }
@@ -182,17 +182,17 @@ async function realMain(argv, showHelp) {
 
   try {
     let buildStream = runAllBuildCommands(cmds, workDir, sha, tempDir);
-  
+
     buildOutput = '';
     buildStream.subscribe((x) => {
       buildOutput += x;
       console.log(x.replace(/[\r\n]+$/, ''));
     }, () => {});
-    
+
     await buildStream
       .reduce(() => null)
       .toPromise();
-    
+
     buildPassed = true;
   } catch (e) {
     buildOutput += `\n${e.message}`;
@@ -202,7 +202,7 @@ async function realMain(argv, showHelp) {
   }
 
   await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
-  
+
   if (name) {
     d(`Posting 'success' to GitHub status`);
     let nwo = getNwoFromRepoUrl(repo);
