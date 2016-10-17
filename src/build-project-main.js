@@ -77,13 +77,17 @@ async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
   if (name) process.env.SURF_BUILD_NAME = name;
   
   // If the current PR number isn't set, try to recreate it
-  if (!process.env.SURF_PR_NUM) {
-    let pr = await findPRForCommit(nwo, sha);
+  try {
+    if (!process.env.SURF_PR_NUM) {
+      let pr = await findPRForCommit(nwo, sha);
 
-    if (pr) {
-      process.env.SURF_PR_NUM = pr.number;
-      process.env.SURF_REF = pr.head.ref;
+      if (pr) {
+        process.env.SURF_PR_NUM = pr.number;
+        process.env.SURF_REF = pr.head.ref;
+      }
     }
+  } catch (e) {
+    d(`Couldn't fetch PR for commit: ${e.message}`);
   }
 }
 
