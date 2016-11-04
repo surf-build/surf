@@ -37,7 +37,7 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     ];
 
     if (!process.env.SURF_BUILD_NAME) {
-      cmds[0].args.push('local');
+      cmds[1].args.push('local');
     }
 
     if (!process.env.DANGER_GITHUB_API_TOKEN) {
