@@ -32,17 +32,18 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
 
   async getBuildCommand() {
     let cmds = [
+      { cmd: 'bundle', args: ['install']},
       { cmd: 'bundle', args: ['exec', 'danger']}
     ];
-    
+
     if (!process.env.SURF_BUILD_NAME) {
       cmds[0].args.push('local');
     }
-  
+
     if (!process.env.DANGER_GITHUB_API_TOKEN) {
       process.env.DANGER_GITHUB_API_TOKEN = process.env.GITHUB_TOKEN;
     }
-  
+
     return {cmds};
   }
 }
