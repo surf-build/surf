@@ -63,9 +63,12 @@ export default function main(argv, showHelp) {
         let sha = argv.sha || process.env.SURF_SHA1;
         let nwo = getNwoFromRepoUrl(repo);
 
+        console.error(`Build Errored: ${e.message}`);
+
         d(`Attempting to post error status!`);
-        return retryPromise(() =>
-            postCommitStatus(nwo, sha, 'error', `Build Errored: ${truncateErrorMessage(e.message)}`, null, argv.name))
+        return retryPromise(() => {
+          return postCommitStatus(nwo, sha, 'error', `Build Errored: ${truncateErrorMessage(e.message)}`, null, argv.name);
+        })
           .catch(() => true)
           .then(() => d(`We did it!`))
           .then(() => Promise.reject(e));
