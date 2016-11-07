@@ -45,6 +45,10 @@ function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
 
+function truncateErrorMessage(errorMessage) {
+  return (errorMessage.split('\n')[0]).substr(0, 256);
+}
+
 export default function main(argv, showHelp) {
   let doIt = Observable.merge(
     Observable.fromPromise(realMain(argv, showHelp)),
@@ -61,7 +65,7 @@ export default function main(argv, showHelp) {
 
         d(`Attempting to post error status!`);
         return retryPromise(() =>
-            postCommitStatus(nwo, sha, 'error', `Build Errored: ${e.message}`, null, argv.name))
+            postCommitStatus(nwo, sha, 'error', `Build Errored: ${truncateErrorMessage(e.message)}`, null, argv.name))
           .catch(() => true)
           .then(() => d(`We did it!`))
           .then(() => Promise.reject(e));
