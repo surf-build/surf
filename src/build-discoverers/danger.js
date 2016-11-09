@@ -14,20 +14,20 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
   }
 
   async getAffinityForRootDir() {
-    let dangerFile = path.join(this.rootDir, 'Dangerfile');
-    let exists = await statNoException(dangerFile);
+    const bailedAffinity = 0;
+    const dangerFile = path.join(this.rootDir, 'Dangerfile');
+    const exists = await statNoException(dangerFile);
 
-    if (process.env.SURF_DISABLE_DANGER) return 0;
-    if (!exists) return;
+    if (process.env.SURF_DISABLE_DANGER || !exists) return bailedAffinity;
 
     // If we can't find Bundler in PATH, bail
     if (findActualExecutable('bundle').cmd === 'bundle') {
       console.log(`A Dangerfile exists but can't find Ruby and Bundler in PATH, skipping`);
-      return 0;
+      return bailedAffinity;
     }
 
     d(`Found Dangerfile at ${dangerFile}`);
-    return exists ? 100 : 0;
+    return exists ? 100 : bailedAffinity;
   }
 
   async getBuildCommand() {
