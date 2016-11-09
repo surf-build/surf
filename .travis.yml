@@ -11,15 +11,16 @@ os:
 
 env:
   - DEBUG="*,-babel"
-  
+
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - libstdc++-4.9-dev
+      - gcc-4.9
+      - libstdc++6
 
 install:
-  - npm install -g surf-build@1.0.0-beta.3 
+  - npm install -g surf-build@1.0.0-beta.3
 script:
   - surf-build -n "surf-travis-$TRAVIS_OS_NAME"
