@@ -21,7 +21,7 @@ git add build.sh && git commit -m "Add Surf build script" && git push
 
 # Start Surf building your project for every commit
 export GITHUB_TOKEN='0123456789abcdef'   # Get from https://github.com/settings/tokens
-surf-client
+surf
 ```
 
 ### Why would I use this over $ALTERNATIVE?
@@ -85,7 +85,7 @@ Now, let's make this build on every push:
 ## surf-build
 
 export GITHUB_TOKEN='<< your token >>'
-surf-client
+surf-run
 ```
 
 ### Setting up multi-platform / multi-machine continuous build
@@ -103,7 +103,7 @@ Now, open up another tab and set up a client that will run builds for us:
 
 ```sh
 export GITHUB_TOKEN='<< your token >>'
-surf-client -s http://localhost:3000 -r https://github.com/surf-build/surf -- surf-build
+surf-run -s http://localhost:3000 -r https://github.com/surf-build/surf -- surf-build
 ```
 
 That's it! Every time someone pushes a PR or change to Surf, your computer will clean-build the project. Since you (probably) don't have write permission on the Surf repo, you can't save the results to GitHub. 
@@ -123,7 +123,7 @@ To set this up, all we need to do is pass `-n` to `surf-build` - here's an examp
 ```sh
 $env:GITHUB_TOKEN="<< your token >>"
 
-surf-client -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-win32-x64'
+surf-run -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-win32-x64'
 ```
 
 Pass a descriptive name as your parameter to `-n`, usually the platform / architecture that you're building on. The build output will be a link on the checkmark, and posted to your account as a GitHub Gist. Check out an example: https://gist.github.com/paulcbetts/b6ab52eeb43d0c551516.
@@ -136,7 +136,7 @@ Surf uses the really great [debug module](https://github.com/visionmedia/debug) 
 export GITHUB_TOKEN='<< your token >>'
 export DEBUG='*,-babel'
 
-surf-client -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-debian-ia32'
+surf-run -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-debian-ia32'
 ```
 
 ## Available Commands
@@ -160,12 +160,12 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 ```
 
-### `surf-client`
+### `surf-run`
 
 Monitors a GitHub repo and runs a command on every changed ref, constrained to a certain number of processes in parallel.
 
 ```
-sage: surf-client -s http://some.server -r https://github.com/some/repo --
+sage: surf-run -s http://some.server -r https://github.com/some/repo --
 command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.
 
@@ -182,7 +182,7 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
 provided.
 ```
 
-`surf-client` will set a few useful environment variables to the command that it runs for every changed branch:
+`surf-run` will set a few useful environment variables to the command that it runs for every changed branch:
 
 * `SURF_REPO` - the repository URL to use
 * `SURF_SHA1` - the commit to build
@@ -211,9 +211,9 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the
 build output Gist.
 
 SURF_SHA1 - an alternate way to specify the --sha parameter, provided
-            automatically by surf-client.
+            automatically by surf-run.
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf-client.
+            automatically by surf-run.
 ```
 
 ### `surf-publish`
@@ -290,7 +290,7 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf-client.
+            automatically by surf-run.
 ```
 
 ### `surf-clean`
