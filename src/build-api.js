@@ -11,7 +11,7 @@ const d = require('debug')('surf:build-api');
 
 export function createBuildDiscovers(rootPath) {
   let discoverClasses = fs.readdirSync(path.join(__dirname, 'build-discoverers'));
-  
+
   return _.map(discoverClasses, (file) => {
     const Klass = require(path.join(__dirname, 'build-discoverers', file)).default;
 
@@ -26,8 +26,8 @@ export async function determineBuildCommands(rootPath, sha) {
 
   let mainDiscoverer = await asyncReduce(discoverers, async (acc, x) => {
     let affinity = await x.getAffinityForRootDir();
-    if (affinity < 1) return acc;
-    
+    if (affinity && affinity < 1) return acc;
+
     if (x.shouldAlwaysRun) {
       activeDiscoverers.push({ affinity, discoverer: x});
       return acc;
@@ -37,25 +37,25 @@ export async function determineBuildCommands(rootPath, sha) {
       { affinity, discoverer: x } :
       acc;
   }, {affinity: -1, discoverer: null});
-  
+
   if (mainDiscoverer.discoverer) {
     activeDiscoverers.push(mainDiscoverer);
   }
-  
+
   activeDiscoverers = _.sortBy(activeDiscoverers, (x) => 0 - x.affinity);
-  
+
   if (activeDiscoverers.length < 1) {
     throw new Error("We can't figure out how to build this repo automatically.");
   }
-  
+
   let ret = {
     cmds: [],
     artifactDirs: []
   };
-  
+
   for (let {discoverer} of activeDiscoverers) {
     let thisCmd = await discoverer.getBuildCommand(sha);
-    
+
     d(`Discoverer returned ${JSON.stringify(thisCmd)}`);
     if (thisCmd.cmds) {
       let newCmds = _.map(thisCmd.cmds, (x) => findActualExecutable(x.cmd, x.args));
@@ -63,12 +63,12 @@ export async function determineBuildCommands(rootPath, sha) {
     } else {
       ret.cmds.push(findActualExecutable(thisCmd.cmd, thisCmd.args));
     }
-    
+
     if (thisCmd.artifactDirs) {
       ret.artifactDirs.push(...thisCmd.artifactDirs);
     }
   }
-  
+
   _.each(ret.cmds, (x) => d(`Actual executable to run: ${x.cmd} ${x.args.join(' ')}`));
   return ret;
 }
@@ -77,7 +77,7 @@ export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
   let toConcat = _.map(cmds, ({cmd, args}) => {
     return runBuildCommand(cmd, args, rootDir, sha, tempDir);
   });
-  
+
   return Observable.concat(...toConcat)
     .publish().refCount();
 }
