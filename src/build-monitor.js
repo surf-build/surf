@@ -99,21 +99,9 @@ export default class BuildMonitor {
     return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
   }
 
-  determineRefsToBuild(refInfo) {
-    let dedupe = new Set();
-
-    return _.filter(refInfo, (ref) => {
-      if (this.seenCommits.has(ref.object.sha)) return false;
-      if (dedupe.has(ref.object.sha)) return false;
-
-      dedupe.add(ref.object.sha);
-      return true;
-    });
-  }
-
   start() {
     let fetchCurrentRefs = Observable.interval(this.pollInterval, this.scheduler)
-      .flatMap(() => this.fetchRefs());
+      .switchMap(() => this.fetchRefs());
 
     let disp = this.buildsToActuallyExecute
       .map((x) => x.delayFailures(4000).catch((e) => {
@@ -156,5 +144,17 @@ export default class BuildMonitor {
 
     this.currentRunningMonitor.add(newSub);
     return newSub;
+  }
+  
+  determineRefsToBuild(refInfo) {
+    let dedupe = new Set();
+
+    return _.filter(refInfo, (ref) => {
+      if (this.seenCommits.has(ref.object.sha)) return false;
+      if (dedupe.has(ref.object.sha)) return false;
+
+      dedupe.add(ref.object.sha);
+      return true;
+    });
   }
 }
