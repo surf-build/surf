@@ -114,7 +114,7 @@ To set this up, all we need to do is pass `-n` to `surf-build` - here's an examp
 ```sh
 $env:GITHUB_TOKEN="<< your token >>"
 
-surf-run -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-win32-x64'
+surf-run -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-win32-x64'
 ```
 
 Pass a descriptive name as your parameter to `-n`, usually the platform / architecture that you're building on. The build output will be a link on the checkmark, and posted to your account as a GitHub Gist. Check out an example: https://gist.github.com/paulcbetts/b6ab52eeb43d0c551516.
@@ -127,7 +127,7 @@ Surf uses the really great [debug module](https://github.com/visionmedia/debug) 
 export GITHUB_TOKEN='<< your token >>'
 export DEBUG='*,-babel'
 
-surf-run -s http://localhost:3000 -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-debian-ia32'
+surf-run -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-debian-ia32'
 ```
 
 ## Available Commands
