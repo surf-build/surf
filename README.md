@@ -80,7 +80,7 @@ surf-build
 
 Now, let's make this build on every push:
 
-```
+```sh
 ## Runs locally and watches the GitHub repo for changes, then invokes
 ## surf-build
 
@@ -90,20 +90,11 @@ surf-run
 
 ### Setting up multi-platform / multi-machine continuous build
 
-Creating a multi-platform continuous build isn't much harder - first, do the following:
-Open a Console tab and run:
-
-```sh
-surf-server surf-build/surf
-```
-
-This is the equivalent of a Jenkins Master, but really only exists so that you won't run out of GitHub API calls per-hour.
-
-Now, open up another tab and set up a client that will run builds for us:
+Creating a multi-platform continuous build isn't much harder. Open up a Console and set up a client that will run builds for us:
 
 ```sh
 export GITHUB_TOKEN='<< your token >>'
-surf-run -s http://localhost:3000 -r https://github.com/surf-build/surf -- surf-build
+surf-run -r https://github.com/surf-build/surf -- surf-build
 ```
 
 That's it! Every time someone pushes a PR or change to Surf, your computer will clean-build the project. Since you (probably) don't have write permission on the Surf repo, you can't save the results to GitHub. 
@@ -141,37 +132,17 @@ surf-run -s http://localhost:3000 -r https://github.com/surf-build/example-cshar
 
 ## Available Commands
 
-### `surf-server`
-
-Sets up a build server which allows clients to query GitHub without running out of API calls. In the future, this will also run a small status page.
-
-```
-Usage: surf-server owner/repo owner2/repo owner/repo3...
-Runs a web service to monitor GitHub commits and provide them to Surf clients
-
-Options:
-  -h, --help  Show help                                                [boolean]
-  -p, --port  The port to start the server on
-
-Some useful environment variables:
-
-SURF_PORT - the port to serve on if not specified via -p, defaults to 3000.
-GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
-GITHUB_TOKEN - the GitHub API token to use. Must be provided.
-```
-
 ### `surf-run`
 
 Monitors a GitHub repo and runs a command on every changed ref, constrained to a certain number of processes in parallel.
 
 ```
-sage: surf-run -s http://some.server -r https://github.com/some/repo --
+Usage: surf-run -r https://github.com/some/repo --
 command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.
 
 Options:
   -h, --help    Show help                                              [boolean]
-  -s, --server  The Surf server to connect to
   -r, --repo    The URL of the repository to monitor
   -j, --jobs    The number of concurrent jobs to run. Defaults to 2
 
@@ -303,7 +274,6 @@ Cleans builds that no longer correspond to any active ref
 
 Options:
   -h, --help        Show help                                          [boolean]
-  -s, --server      The Surf server to connect to
   --dry-run         If set, report the directories we would delete     [boolean]
   -r, --repo        The repository URL to remove old builds for
 ```
