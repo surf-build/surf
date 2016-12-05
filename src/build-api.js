@@ -25,8 +25,8 @@ export async function determineBuildCommands(rootPath, sha) {
   let activeDiscoverers = [];
 
   let mainDiscoverer = await asyncReduce(discoverers, async (acc, x) => {
-    let affinity = await x.getAffinityForRootDir();
-    if (affinity && affinity < 1) return acc;
+    let affinity = await x.getAffinityForRootDir() || 0;
+    if (affinity < 1) return acc;
 
     if (x.shouldAlwaysRun) {
       activeDiscoverers.push({ affinity, discoverer: x});
