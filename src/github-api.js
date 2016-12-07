@@ -162,7 +162,7 @@ export async function fetchSingleRef(nwo, ref, shaHint=null) {
   }
 
   ret = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
-  refCache.set(shaHint, ret);
+  refCache.set(ret.result.object.sha, ret);
   return ret;
 }
 
