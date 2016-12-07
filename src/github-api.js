@@ -120,12 +120,13 @@ const githubCache = createLRU({
   max: 1000
 });
 
-export async function cachedGitHub(uri, token=null, maxAge=null) {
+export async function cachedGitHub(uri, token=null, maxAge=undefined) {
   let ret = githubCache.get(uri);
   if (ret) return ret;
 
   ret = await gitHub(uri, token);
   githubCache.set(uri, ret, maxAge);
+
   return ret;
 }
 
@@ -150,8 +151,19 @@ export function fetchAllOpenPRs(nwo) {
   return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), null, 60*1000);
 }
 
-export function fetchSingleRef(nwo, ref) {
-  return cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
+const refCache = createLRU({
+  max: 1000
+});
+
+export async function fetchSingleRef(nwo, ref, shaHint=null) {
+  let ret = shaHint ? refCache.get(shaHint) : null;
+  if (ret) { 
+    return ret;
+  }
+
+  ret = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
+  refCache.set(shaHint, ret);
+  return ret;
 }
 
 export function fetchRepoInfo(nwo) {
@@ -176,8 +188,9 @@ export async function fetchAllRefsWithInfo(nwo) {
       refList, 
       async (ref) => {
         let repoName = refToPR[ref].head.repo.full_name;
+        let shaHint = refToPR[ref].head.sha;
         try {
-          return (await fetchSingleRef(repoName, ref)).result;
+          return (await fetchSingleRef(repoName, ref, shaHint)).result;
         } catch (e) {
           d(`Tried to fetch ref ${repoName}:${ref} but it failed: ${e.message}`);
           return null;
