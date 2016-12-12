@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import { asyncMap } from './promise-array';
 import { rimraf } from './promisify';
-import { getAllWorkdirs, getOriginForRepo } from './git-api';
+import { getAllWorkdirs } from './workdir-api';
+import { getOriginForRepo } from './git-api';
 import { fetchAllRefsWithInfo, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api';
 
 const d = require('debug')('surf:surf-clean');

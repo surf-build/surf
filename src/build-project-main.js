@@ -1,7 +1,8 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
-  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getOriginForRepo, 
+  getHeadForRepo, resetOriginUrl } from './git-api';
+import { getWorkdirForRepoUrl, getTempdirForRepoUrl } from './workdir-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
   findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
@@ -168,8 +169,7 @@ async function realMain(argv, showHelp) {
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, null, false));
-  r.free();
+  await retryPromise(() => cloneRepo(bareRepoDir, workDir, null, false));
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);

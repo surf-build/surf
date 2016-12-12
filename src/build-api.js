@@ -5,7 +5,8 @@ import {Observable} from 'rxjs';
 
 import { asyncReduce } from './promise-array';
 import { spawnDetached, findActualExecutable } from 'spawn-rx';
-import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
+import { addFilesToGist, pushGistRepoToMaster } from './git-api';
+import { getGistTempdir } from './workdir-api';
 
 const d = require('debug')('surf:build-api');
 
