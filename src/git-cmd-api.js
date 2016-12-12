@@ -1,8 +1,10 @@
 import path from 'path';
+import crypto from 'crypto';
 
 import {spawnPromise} from 'spawn-rx';
-import {statNoException} from './promise-array';
-import { fs } from './promisify';
+import { rimraf, mkdirp, fs } from './promisify';
+
+const d = require('debug')('surf:git-api');
 
 async function git(cwd, ...params) {
   return spawnPromise('git', params, { cwd });
@@ -14,6 +16,7 @@ async function gitRemote(cwd, token, ...params) {
     'THE_PASSWORD': token || ''
   }, process.env);
 
+  d(`Spawning git ${params.join(' ')}`);
   return spawnPromise('git', params, { cwd, env });
 }
 
@@ -39,7 +42,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   if (bare) {
     await gitRemote('.', token, 'clone', '--bare', url, targetDirname);
   } else {
-    await git('.', token, 'clone', url, targetDirname);
+    await gitRemote('.', token, 'clone', url, targetDirname);
   }
 
   // Extra fetch to get PRs
@@ -54,11 +57,23 @@ export async function fetchRepo(targetDirname, token=null) {
 }
 
 export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
-  if (await statNoException(checkoutDir) && await statNoException(path.join(checkoutDir, '.git'))) {
-    return await fetchRepo(checkoutDir, token, false);
-  } else {
-    return await cloneRepo(url, checkoutDir, token);
+  let dirname = crypto.createHash('sha1').update(url).digest('hex');
+  let targetDirname = path.join(checkoutDir, dirname);
+
+  try {
+    await fetchRepo(targetDirname, token);
+
+    return targetDirname;
+  } catch (e) {
+    d(`Failed to open bare repository, going to clone instead: ${e.message}`);
+    d(e.stack);
   }
+
+  await rimraf(targetDirname);
+  await mkdirp(targetDirname);
+
+  await cloneRepo(url, targetDirname, token);
+  return targetDirname;
 }
 
 export function resetOriginUrl(target, url) {

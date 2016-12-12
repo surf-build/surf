@@ -21,7 +21,7 @@ describe('The node-git helper methods', function() {
     await rimraf(this.targetDir);
   });
 
-  it.only('should clone a public repo with cloneRepo', async function() {
+  it('should clone a public repo with cloneRepo', async function() {
     await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
 
     let result = await fs.stat(path.join(this.targetDir, 'HEAD'));
