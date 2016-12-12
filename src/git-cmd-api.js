@@ -1,7 +1,7 @@
 import path from 'path';
 
 import {spawnPromise} from 'spawn-rx';
-import {statNoException} from '../promise-array';
+import {statNoException} from './promise-array';
 import { fs } from './promisify';
 
 async function git(cwd, ...params) {
@@ -44,7 +44,9 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
 
   // Extra fetch to get PRs
   await fetchRepo(targetDirname, token);
-  await gitRemote(targetDirname, token, 'submodule', 'update', '--init', '--recursive');
+  if (!bare) {
+    await gitRemote(targetDirname, token, 'submodule', 'update', '--init', '--recursive');
+  }
 }
 
 export async function fetchRepo(targetDirname, token=null) {
