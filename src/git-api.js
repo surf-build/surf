@@ -4,7 +4,7 @@ const d = require('debug')('surf:git-api');
 
 const shouldUseGitExe = process.env.SURF_FORCE_GIT_EXECUTABLE || findActualExecutable('git', []).cmd !== 'git';
 
-if (shouldUseGitExe && !process.env.SURF_FORCE_NODE_GIT) {
+if (true) {
   d('Using git executable');
   module.exports = require('./git-cmd-api');
 } else {

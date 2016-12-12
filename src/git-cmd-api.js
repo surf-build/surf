@@ -3,6 +3,7 @@ import crypto from 'crypto';
 
 import {spawnPromise} from 'spawn-rx';
 import { rimraf, mkdirp, fs } from './promisify';
+import { statNoException } from './promise-array';
 
 const d = require('debug')('surf:git-api');
 
@@ -80,7 +81,13 @@ export function resetOriginUrl(target, url) {
   return git(target, 'remote', 'set-url', 'origin', url);
 }
 
-export async function addFilesToGist(repoUrl, targetDir, artifactDir) {
+export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
+  if (!(await statNoException(targetDir))) {
+    d(`${targetDir} doesn't exist, cloning it`);
+    await mkdirp(targetDir);
+    await cloneRepo(repoUrl, targetDir, token, false);
+  }
+
   let artifacts = await fs.readdir(artifactDir);
 
   for (let entry of artifacts) {

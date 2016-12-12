@@ -4,7 +4,8 @@ import path from 'path';
 
 import { getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, getIdFromGistUrl, 
   createRelease, uploadFileToRelease } from './github-api';
-import { cloneRepo, getGistTempdir } from './git-api';
+import { cloneRepo } from './git-api';
+import { getGistTempdir } from './workdir-api';
 import { retryPromise } from './promise-array';
 
 const d = require('debug')('surf:surf-publish');
