@@ -20,12 +20,12 @@ async function gitRemote(cwd, token, ...params) {
   return spawnPromise('git', params, { cwd, env });
 }
 
-export function getHeadForRepo(targetDirname) {
-  return git(targetDirname, 'rev-parse', 'HEAD');
+export async function getHeadForRepo(targetDirname) {
+  return (await git(targetDirname, 'rev-parse', '--verify', '--quiet', 'HEAD')).trim();
 }
 
-export function getOriginForRepo(targetDirname) {
-  return git(targetDirname, 'remote', 'get-url', 'origin');
+export async function getOriginForRepo(targetDirname) {
+  return (await git(targetDirname, 'remote', 'get-url', 'origin')).trim();
 }
 
 export async function checkoutSha(targetDirname, sha, token=null) {
