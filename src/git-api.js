@@ -44,7 +44,7 @@ export async function getOriginForRepo(targetDirname) {
 }
 
 export async function getAllWorkdirs(repoUrl) {
-  let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
+  let tmp = process.env.SURF_ORIGINAL_TMPDIR || process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
 
   return _.reduce(ret, (acc, x) => {
