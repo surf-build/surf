@@ -1,7 +1,8 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
-  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
+import { cloneOrFetchRepo, cloneRepo, checkoutSha, getOriginForRepo, 
+  getHeadForRepo, resetOriginUrl } from './git-api';
+import { getWorkdirForRepoUrl, getTempdirForRepoUrl } from './workdir-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
   findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
