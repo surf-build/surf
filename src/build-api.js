@@ -85,6 +85,7 @@ export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
 export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   let envToAdd = {
     'SURF_SHA1': sha,
+    'SURF_ORIGINAL_TMPDIR': process.env.TMPDIR || process.env.TEMP || '/tmp',
     'TMPDIR': tempDir,
     'TEMP': tempDir,
     'TMP': tempDir
