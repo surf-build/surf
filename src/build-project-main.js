@@ -240,8 +240,4 @@ async function realMain(argv, showHelp) {
   if (buildPassed && !process.env.DEBUG) {
     await rimraf(tempDir);
   }
-
-  if (!buildPassed) {
-    throw new Error(buildOutput);
-  }
 }
