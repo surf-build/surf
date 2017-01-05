@@ -212,10 +212,12 @@ async function realMain(argv, showHelp) {
   }
 
   if (name) {
-    d(`Posting 'success' to GitHub status`);
+    d(`Posting to GitHub status`);
     let nwo = getNwoFromRepoUrl(repo);
 
-    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, { }));
+    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, { 
+      "README.md": `## Build for ${nwo} ${buildPassed ? 'succeeded' : 'failed'} on ${Date.now()}`
+    }));
 
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
