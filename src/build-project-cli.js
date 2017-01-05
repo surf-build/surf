@@ -38,7 +38,7 @@ if (argv.version) {
 }
 
 main(argv, () => yargs.showHelp())
-  .then(() => process.exit(0))
+  .then((x) => process.exit(x))
   .catch((e) => {
     console.log(`Fatal Error: ${e.message}`);
     d(e.stack);

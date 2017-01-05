@@ -1,5 +1,7 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
+import sfs from 'fs';
+
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
   getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
@@ -56,7 +58,7 @@ export default function main(argv, showHelp) {
   ).take(1).toPromise();
 
   return doIt
-    .then(() => Promise.resolve(true), (e) => {
+    .then((x) => Promise.resolve(x), (e) => {
       d("Build being taken down!");
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
@@ -184,39 +186,36 @@ async function realMain(argv, showHelp) {
     cmds = [{cmd, args}];
   }
 
-  let buildPassed = false;
-  let buildOutput = null;
+  let buildPassed = true;
+  let buildLog = path.join(workDir, 'build-output.log');
+  let fd = await fs.open(buildLog, 'w');
 
   try {
     let buildStream = runAllBuildCommands(cmds, workDir, sha, tempDir);
 
-    buildOutput = '';
-    buildStream.subscribe((x) => {
-      buildOutput += x;
+    buildStream.concatMap((x) => {
       console.log(x.replace(/[\r\n]+$/, ''));
-    }, () => {});
+      return Observable.fromPromise(fs.write(fd, x, null, 'utf8'));
+    }).subscribe(() => {}, (e) => {
+      console.error(e.message);
+      sfs.writeSync(fd, `${e.message}\n`, null, 'utf8');
+    });
 
     await buildStream
       .reduce(() => null)
       .toPromise();
-
-    buildPassed = true;
-  } catch (e) {
-    buildOutput += `\n${e.message}`;
-    d(e.stack);
+  } catch (_) {
+    // NB: We log this in the subscribe statement above
+    buildPassed = false;
+  } finally {
+    sfs.closeSync(fd);
   }
-
-  await fs.writeFile(path.join(workDir, 'build-output.log'), buildOutput);
 
   if (name) {
     d(`Posting 'success' to GitHub status`);
     let nwo = getNwoFromRepoUrl(repo);
 
-    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
-      "build-output.txt": {
-        content: buildOutput
-      }
-    }));
+    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, { }));
 
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
@@ -241,7 +240,5 @@ async function realMain(argv, showHelp) {
     await rimraf(tempDir);
   }
 
-  if (!buildPassed) {
-    throw new Error(buildOutput);
-  }
+  return buildPassed ? 0 : -1;
 }
