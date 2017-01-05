@@ -221,18 +221,16 @@ async function realMain(argv, showHelp) {
 
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
-    if (buildPassed) {
-      let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
+    let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
 
-      try {
-        d(`Uploading build artifacts using token: ${token}`);
-        let targetDir = await retryPromise(() => 
-          uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, buildLog, token));
-        await rimraf(targetDir);
-      } catch (e) {
-        console.error(`Failed to upload build artifacts: ${e.message}`);
-        d(e.stack);
-      }
+    try {
+      d(`Uploading build artifacts using token: ${token}`);
+      let targetDir = await retryPromise(() => 
+        uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, buildLog, token));
+      await rimraf(targetDir);
+    } catch (e) {
+      console.error(`Failed to upload build artifacts: ${e.message}`);
+      d(e.stack);
     }
 
     await postCommitStatus(nwo, sha,
