@@ -216,7 +216,7 @@ async function realMain(argv, showHelp) {
     let nwo = getNwoFromRepoUrl(repo);
 
     let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, { 
-      "README.md": { content: `## Build for ${nwo} ${buildPassed ? 'succeeded' : 'failed'} on ${Date.now()}` }
+      "README.md": { content: `## Build for ${nwo} ${buildPassed ? 'succeeded' : 'failed'} on ${new Date()}` }
     }));
 
     d(`Gist result: ${gistInfo.result.html_url}`);
