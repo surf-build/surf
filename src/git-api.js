@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
+import sfs from 'fs';
 
 import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
@@ -49,6 +50,18 @@ export async function getAllWorkdirs(repoUrl) {
 
   return _.reduce(ret, (acc, x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
+    if (x.match(/^surfg-/i)) {
+      let tgt = path.join(tmp, x);
+      let stats = fs.statSync(tgt);
+      let now = new Date();
+
+      if (now - stats.mtime > 1000 * 60 * 60 * 2) {
+        acc.push(path.join(tmp, x));
+      }
+
+      return acc;
+    }
+
     if (!x.match(/-[a-f0-9A-F]{6}/i)) return acc;
     if (x.indexOf(`${nwo}-`) < 0) return acc;
 
@@ -213,7 +226,7 @@ export async function resetOriginUrl(target, url) {
   });
 }
 
-export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
+export async function addFilesToGist(repoUrl, targetDir, artifactDirOrFile, token=null) {
   return await using(async (ds) => {
     if (!(await statNoException(targetDir))) {
       d(`${targetDir} doesn't exist, cloning it`);
@@ -228,14 +241,24 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
     let idx = ds(await repo.index());
     await idx.read(1);
 
-    d("Reading artifacts directory");
-    let artifacts = await fs.readdir(artifactDir);
-    for (let entry of artifacts) {
-      let tgt = path.join(targetDir, entry);
-      fs.copySync(path.join(artifactDir, entry), tgt);
+    let stat = await fs.stat(artifactDirOrFile);
+    if (stat.isFile()) {
+      d(`Adding artifact directly as file: ${artifactDirOrFile}}`);
+      let tgt = path.join(targetDir, path.basename(artifactDirOrFile));
+      fs.copySync(artifactDirOrFile, tgt);
 
       d(`Adding artifact: ${tgt}`);
-      await idx.addByPath(entry);
+      await idx.addByPath(path.basename(artifactDirOrFile));
+    } else {
+      d("Reading artifacts directory");
+      let artifacts = await fs.readdir(artifactDirOrFile);
+      for (let entry of artifacts) {
+        let tgt = path.join(targetDir, entry);
+        fs.copySync(path.join(artifactDirOrFile, entry), tgt);
+
+        d(`Adding artifact: ${tgt}`);
+        await idx.addByPath(entry);
+      }
     }
 
     await idx.write();
