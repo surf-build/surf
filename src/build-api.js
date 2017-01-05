@@ -100,8 +100,11 @@ export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
   return spawnDetached(cmd, args, opts);
 }
 
-export async function uploadBuildArtifacts(gistId, gistCloneUrl, artifactDirs, token) {
+export async function uploadBuildArtifacts(gistId, gistCloneUrl, artifactDirs, buildLog, token) {
   let targetDir = getGistTempdir(gistId);
+
+  // Add the build log even though it isn't an artifact
+  await addFilesToGist(gistCloneUrl, targetDir, buildLog, token);
 
   for (let artifactDir of artifactDirs) {
     await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token);

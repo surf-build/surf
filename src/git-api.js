@@ -213,7 +213,7 @@ export async function resetOriginUrl(target, url) {
   });
 }
 
-export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null) {
+export async function addFilesToGist(repoUrl, targetDir, artifactDirOrFile, token=null) {
   return await using(async (ds) => {
     if (!(await statNoException(targetDir))) {
       d(`${targetDir} doesn't exist, cloning it`);
@@ -228,14 +228,24 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDir, token=null
     let idx = ds(await repo.index());
     await idx.read(1);
 
-    d("Reading artifacts directory");
-    let artifacts = await fs.readdir(artifactDir);
-    for (let entry of artifacts) {
-      let tgt = path.join(targetDir, entry);
-      fs.copySync(path.join(artifactDir, entry), tgt);
+    let stat = await fs.stat(artifactDirOrFile);
+    if (stat.isFile()) {
+      d(`Adding artifact directly as file: ${artifactDirOrFile}}`);
+      let tgt = path.join(targetDir, path.basename(artifactDirOrFile));
+      fs.copySync(artifactDirOrFile, tgt);
 
       d(`Adding artifact: ${tgt}`);
-      await idx.addByPath(entry);
+      await idx.addByPath(path.basename(artifactDirOrFile));
+    } else {
+      d("Reading artifacts directory");
+      let artifacts = await fs.readdir(artifactDirOrFile);
+      for (let entry of artifacts) {
+        let tgt = path.join(targetDir, entry);
+        fs.copySync(path.join(artifactDirOrFile, entry), tgt);
+
+        d(`Adding artifact: ${tgt}`);
+        await idx.addByPath(entry);
+      }
     }
 
     await idx.write();
