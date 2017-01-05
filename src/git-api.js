@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import path from 'path';
 import _ from 'lodash';
+import sfs from 'fs';
 
 import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
@@ -49,6 +50,18 @@ export async function getAllWorkdirs(repoUrl) {
 
   return _.reduce(ret, (acc, x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
+    if (x.match(/^surfg-/i)) {
+      let tgt = path.join(tmp, x);
+      let stats = fs.statSync(tgt);
+      let now = new Date();
+
+      if (now - stats.mtime > 1000 * 60 * 60 * 2) {
+        acc.push(path.join(tmp, x));
+      }
+
+      return acc;
+    }
+
     if (!x.match(/-[a-f0-9A-F]{6}/i)) return acc;
     if (x.indexOf(`${nwo}-`) < 0) return acc;
 
