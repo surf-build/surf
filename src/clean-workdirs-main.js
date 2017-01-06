@@ -46,7 +46,9 @@ export default async function main(argv, showHelp) {
   } else {
     await asyncMap(toDelete, (x) => {
       d(`Burninating path '${x}'`);
-      return rimraf(x);
+
+      return rimraf(x)
+        .catch((e) => console.error(`Tried to burn ${x} but failed: ${e.message}`));
     });
   }
 }
