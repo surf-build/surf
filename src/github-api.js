@@ -55,12 +55,12 @@ export function getNwoFromRepoUrl(repoUrl) {
 export function getIdFromGistUrl(gistUrl) {
   let u = url.parse(gistUrl);
   let s = u.pathname.split('/');
-  
+
   // NB: Anonymous Gists don't have usernames, just the token
   return s[2] || s[1];
 }
 
-export async function gitHub(uri, token=null, body=null, extraHeaders=null, targetFile=null) {
+export async function gitHub(uri, token=null, body=null, extraHeaders=null, targetFile=null, method=null) {
   let tok = token || process.env.GITHUB_TOKEN;
 
   d(`Fetching GitHub URL: ${uri}`);
@@ -83,7 +83,11 @@ export async function gitHub(uri, token=null, body=null, extraHeaders=null, targ
   if (extraHeaders) {
     Object.assign(opts.headers, extraHeaders);
   }
-    
+
+  if (method) {
+    opts.method = method;
+  }
+
   if (_.isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
     delete opts.json;
   }
@@ -185,7 +189,7 @@ export async function fetchAllRefsWithInfo(nwo) {
   
   let refs = objectValues(
     await asyncMap(
-      refList, 
+      refList,
       async (ref) => {
         let repoName = refToPR[ref].head.repo.full_name;
         let shaHint = refToPR[ref].head.sha;
@@ -205,7 +209,7 @@ export async function fetchAllRefsWithInfo(nwo) {
       
   // Filter failures from when we get the ref
   refs = refs.filter((x) => x !== null);
-  
+
   let commitInfo = await asyncMap(
     _.map(refs, (ref) => ref.object.url),
     async (x) => {
@@ -221,7 +225,7 @@ export async function fetchAllRefsWithInfo(nwo) {
     ref.object.commit = commitInfo[ref.object.url];
     ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
-  
+
   // Filter failures from the commitInfo asyncMap above
   refs = refs.filter((r) => r.object.commit);
 
@@ -243,6 +247,14 @@ export function createGist(description, files, publicGist=false, token=null) {
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
 
+export function deleteGist(gist, token=null) {
+  return gitHub(apiUrl(`gists/${gist.id}`, true), token || process.env.GIST_TOKEN, null, null, null, 'delete');
+}
+
+export function getAllGists(token=null) {
+  return githubPaginate(apiUrl('gists', true), token || process.env.GIST_TOKEN, 60*1000);
+}
+
 export function fetchAllTags(nwo, token=null) {
   return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60*1000);
 }
@@ -256,21 +268,21 @@ export function getCombinedStatusesForCommit(nwo, sha, token=null) {
 }
 
 export function createRelease(nwo, tag, token=null) {
-  let body = { 
+  let body = {
     tag_name: tag,
     target_committish: tag,
     name: `${nwo.split('/')[1]} @ ${tag}`,
     body: 'To be written',
     draft: true
   };
-  
+
   return gitHub(apiUrl(`repos/${nwo}/releases`), token, body);
 }
 
 export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=null) {
   let uploadUrl = releaseInfo.upload_url.replace(/{[^}]*}/g, '');
   uploadUrl = uploadUrl + `?name=${encodeURIComponent(fileName)}`;
-  
+
   let contentType = {
     "Content-Type": mimeTypes.lookup[fileName] || 'application/octet-stream',
     "Content-Length": fs.statSync(targetFile).size
@@ -296,10 +308,10 @@ export async function findPRForCommit(nwo, sha, token=null) {
   let item = result.items.find((x) => {
     if (!x.pull_request) return false;
     if (x.pull_request.url.indexOf(`/${nwo}/`) < 0) return false;
-    
+
     return true;
   });
-  
+
   if (!item || !item.pull_request) return null;
   return (await gitHub(item.pull_request.url)).result;
 }
