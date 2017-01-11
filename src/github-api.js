@@ -9,6 +9,8 @@ import pkg from '../package.json';
 import {asyncMap} from './promise-array';
 import createLRU from 'lru-cache';
 
+import {Observable} from 'rxjs';
+
 const d = require('debug')('surf:github-api');
 
 function apiUrl(path, gist=false) {
@@ -137,6 +139,7 @@ export async function cachedGitHub(uri, token=null, maxAge=undefined) {
 export async function githubPaginate(uri, token=null, maxAge=null) {
   let next = uri;
   let ret = [];
+  let count = 0;
 
   do {
     let {headers, result} = await cachedGitHub(next, token, maxAge);
@@ -146,9 +149,23 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
 
     let links = parseLinkHeader(headers['link']);
     next = 'next' in links ? links.next.url : null;
-  } while (next);
+  } while (next && ++count < 5);
 
   return ret;
+}
+
+export function githubPaginateLazy(uri, token=null, maxAge=null) {
+  return Observable.defer(async () => {
+    let {headers, result} = await cachedGitHub(uri, token, maxAge);
+
+    let next = Observable.empty();
+    if (headers['link']) {
+      let links = parseLinkHeader(headers['link']);
+      if ('next' in links) next = githubPaginateLazy(links.next.url, token, maxAge);
+    }
+
+    return { current: result, next };
+  });
 }
 
 export function fetchAllOpenPRs(nwo) {
@@ -252,7 +269,11 @@ export function deleteGist(gist, token=null) {
 }
 
 export function getAllGists(token=null) {
-  return githubPaginate(apiUrl('gists', true), token || process.env.GIST_TOKEN, 60*1000);
+  return githubPaginate(apiUrl('gists?per_page=100', true), token || process.env.GIST_TOKEN, 60*1000);
+}
+
+export function getAllGistsLazy(token=null) {
+  return githubPaginateLazy(apiUrl('gists?per_page=100', true), token || process.env.GIST_TOKEN, 60*1000);
 }
 
 export function fetchAllTags(nwo, token=null) {
