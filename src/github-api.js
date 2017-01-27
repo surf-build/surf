@@ -156,7 +156,8 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
 
 export function githubPaginateLazy(uri, token=null, maxAge=null) {
   return Observable.defer(async () => {
-    let {headers, result} = await cachedGitHub(uri, token, maxAge);
+    let {headers, result} = await 
+      Observable.defer(() => gitHub(uri, token)).retry(5).toPromise();
 
     let next = Observable.empty();
     if (headers['link']) {
@@ -273,7 +274,7 @@ export function getAllGists(token=null) {
 }
 
 export function getAllGistsLazy(token=null) {
-  return githubPaginateLazy(apiUrl('gists?per_page=100', true), token || process.env.GIST_TOKEN, 60*1000);
+  return githubPaginateLazy(apiUrl('gists?per_page=64', true), token || process.env.GIST_TOKEN, 1);
 }
 
 export function fetchAllTags(nwo, token=null) {
