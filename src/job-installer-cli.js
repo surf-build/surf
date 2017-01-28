@@ -6,10 +6,11 @@ const d = require('debug')('surf:surf-install');
 
 const yargs = require('yargs')
   .usage(`Usage: surf-install -n my-cool-job -c "surf-client ..."
-Creates a system service with the given command (probably surf-client) as its
-executable. Run using sudo. 
+Creates a system service with the given command (probably surf-run) as its
+executable. Run this command using sudo. This command can also create and start 
+Docker images that will build your projects.
 
-Surf-specific environment variables (e.g. GITHUB_TOKEN) will be captured 
+Surf-specific environment variables (e.g. GITHUB_TOKEN, PATH) will be captured 
 automatically, but others can be explicitly specified at the command line`)
   .alias('n', 'name')
   .describe('name', 'The name given to the OS of the service to create')
