@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 
 import _ from 'lodash';
-import request from 'request-promise'; import chalk from 'chalk';
+import chalk from 'chalk';
 
 import {asyncMap} from './promise-array';
 import {getOriginForRepo} from './git-api';
 import {fetchAllRefsWithInfo, getNwoFromRepoUrl, getCombinedStatusesForCommit} from './github-api';
-import createRefServer from './ref-server-api';
 
 const d = require('debug')('surf:commit-status-main');
 
-export default async function main(repo, server, jsonOnly, showHelp) {
+export default async function main(repo, server, jsonOnly, help, showHelp) {
+  if (help) {
+    showHelp();
+    process.exit(0);
+  }
+
   repo = repo || process.env.SURF_REPO;
 
   if (!repo) {

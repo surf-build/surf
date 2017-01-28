@@ -32,7 +32,7 @@ if (argv.version) {
   process.exit(0);
 }
 
-main(argv.r, argv.s, argv.j, () => yargs.showHelp())
+main(argv.r, argv.s, argv.j, argv.help, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
     console.log(`Fatal Error: ${e.message}`);
