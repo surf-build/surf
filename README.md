@@ -15,13 +15,9 @@ Philosophically, Surf tries to be really simple - it gives you the reusable piec
 ```sh
 npm install -g surf-build
 
-# Write a script to build your project
-vim build.sh && chmod +x build.sh
-git add build.sh && git commit -m "Add Surf build script" && git push
-
 # Start Surf building your project for every commit
 export GITHUB_TOKEN='0123456789abcdef'   # Get from https://github.com/settings/tokens
-surf
+surf-run
 ```
 
 ### Why would I use this over $ALTERNATIVE?
@@ -47,32 +43,42 @@ npm install -g surf-build
 Now, try running `surf-build`, which is a command-line app that knows how to build different kinds of projects.
 
 ```sh
-surf-build --repo https://github.com/surf-build/surf -s 12efc7bf3888ae4e4cc1a79f28fe6e7cef78d0b1
+surf-build --repo https://github.com/surf-build/surf -s 6dadf3bd5744861300eff3b640146c1cb473970f
 ```
 
-Tada! You made a build.
+Tada! You made a build. Note a few things:
 
-### Testing out Surf in your own
+* Surf doesn't need to have the cloned repo anywhere, only the URL. Surf automatically creates a clean checkout for every build.
+* Even though you probably don't have write access to the repo, you can still build it locally. Because this command didn't have the `-n` parameter, it won't post the result to GitHub.
 
-Now here's how to set it up in your own project. First, write a script in the root of the project to tell Surf how to build your project. Future versions will know how to build many common projects, but for now, we have to tell it.
 
-```sh
-echo "npm install && npm test" > build.sh
-chmod +x ./build.sh
+### Testing out Surf in your own project
 
-git add ./build.sh && git commit -m "Create Surf build script"
-git push
-```
+Surf knows how to build many kinds of projects without any kind of configuration:
+
+* Autotools-based projects
+* CMake
+* .NET Projects via MSBuild / XBuild on non-Windows
+* Node.js projects (runs `npm install && npm test`)
+* Rust projects, via Cargo
+* XCode projects via xcodebuild
+
+Surf will instead use any of the following files as the build command if they are present - you can use this for custom build setups, or for languages / platforms that Surf doesn't support automatically:
+
+* `build.sh`
+* `build.ps1`
+* `build.cmd`
+* `script/ci.ps1`
+* `script/ci.cmd`
+* `script/ci`
 
 Now, let's test it out. First, we need to get a GitHub token:
-
 
 1. Go to https://github.com/settings/tokens to get a token
 1. Make sure to check `repo` and `gist`.
 1. Generate the token and save it off
 
-
-```
+```sh
 ## When you don't specify parameters, we guess them from the current directory
 export GITHUB_TOKEN='<< your token >>'
 surf-build
@@ -87,21 +93,6 @@ Now, let's make this build on every push:
 export GITHUB_TOKEN='<< your token >>'
 surf-run
 ```
-
-### Setting up multi-platform / multi-machine continuous build
-
-Creating a multi-platform continuous build isn't much harder. Open up a Console and set up a client that will run builds for us:
-
-```sh
-export GITHUB_TOKEN='<< your token >>'
-surf-run -r https://github.com/surf-build/surf -- surf-build
-```
-
-That's it! Every time someone pushes a PR or change to Surf, your computer will clean-build the project. Since you (probably) don't have write permission on the Surf repo, you can't save the results to GitHub. 
-
-## How does Surf know to build my project?
-
-The most straightforward way (and one of the only ways at the moment), is to have a script at the root of the repo called `build.sh` and `build.cmd/ps1` for Windows. Future versions of Surf will know how to build common project types automatically, so you won't have to do this.
 
 ## Giving your multi-platform builds separate names
 
@@ -137,14 +128,16 @@ surf-run -r https://github.com/surf-build/example-csharp -- surf-build -n 'surf-
 Monitors a GitHub repo and runs a command on every changed ref, constrained to a certain number of processes in parallel.
 
 ```
-Usage: surf-run -r https://github.com/some/repo --
-command arg1 arg2 arg3...
+Usage: surf-run -r https://github.com/some/repo -- command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.
 
 Options:
-  -h, --help    Show help                                              [boolean]
-  -r, --repo    The URL of the repository to monitor
-  -j, --jobs    The number of concurrent jobs to run. Defaults to 2
+  -h, --help     Show help                                             [boolean]
+  -r, --repo     The URL of the repository to monitor. Defaults to the repo in
+                 the current directory
+  -j, --jobs     The number of concurrent jobs to run. Defaults to 2
+  -v, --version  Print the current version number and exit
+
 
 Some useful environment variables:
 
@@ -160,16 +153,18 @@ provided.
 
 ### `surf-build`
 
-Clones a repo from GitHub, checks out the specified commit, and builds the project (currently via `build.sh` / `build.cmd` but in the future will know how to build various projects).
+Clones a repo from GitHub, checks out the specified commit, and builds the project. If `-n` is specified, a status will be posted back to GitHub. If omitted, the build is only run locally.
 
 ```
 Usage: surf-build -r http://github.com/some/repo -s SHA1
 Clones a repo from GitHub and builds the given SHA1
 
 Options:
-  -r, --repo  The repository to clone
-  -s, --sha   The sha to build
-  -n, --name  The name to give this build on GitHub
+  -r, --repo     The repository to clone
+  -s, --sha      The sha to build
+  -n, --name     The name to give this build on GitHub
+  -v, --version  Print the current version number and exit
+
 
 Some useful environment variables:
 
@@ -182,9 +177,9 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the
 build output Gist.
 
 SURF_SHA1 - an alternate way to specify the --sha parameter, provided
-            automatically by surf-run.
+            automatically by surf-client.
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf-run.
+            automatically by surf-client.
 ```
 
 ### `surf-publish`
@@ -204,16 +199,17 @@ Creates a release for the given tag by downloading all of the build
 artifacts and reuploading them
 
 Options:
-  -r, --repo  The repository to clone
-  -t, --tag   The tag to download releases for
+  -r, --repo     The repository to clone
+  -t, --tag      The tag to download releases for
+  -v, --version  Print the current version number and exit
 
 
-  Some useful environment variables:
+Some useful environment variables:
 
-  GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
-  provided.
-  GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build
-  Gists.
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be
+provided.
+GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build
+Gists.
 ```
 
 ### `surf-download`
@@ -225,9 +221,10 @@ Usage: surf-download -r http://github.com/some/repo -t some-tag
 Download all of the artifacts for a given Release
 
 Options:
-  --target    The directory to download files to
-  -r, --repo  The repository to clone
-  -t, --tag   The tag to download releases for
+  --target       The directory to download files to
+  -r, --repo     The repository to clone
+  -t, --tag      The tag to download releases for
+  -v, --version  Print the current version number and exit
 
 
 Some useful environment variables:
@@ -245,35 +242,33 @@ Usage: surf-status --repo https://github.com/owner/repo
 Returns the GitHub Status for all the branches in a repo
 
 Options:
-  -s, --server  The Surf server to connect to - use this if you call surf-status
-                repeatedly
-  -h, --help    Show help                                              [boolean]
-  -r, --repo    The URL of the repository to fetch status for. Defaults to the
-                repo in the current directory
-  -j, --json    Dump the commit status in JSON format for machine parsing
-                instead of human-readable format                       [boolean]
+  -r, --repo     The URL of the repository to fetch status for. Defaults to the
+                 repo in the current directory
+  -j, --json     Dump the commit status in JSON format for machine parsing
+                 instead of human-readable format                      [boolean]
+  -v, --version  Print the current version number and exit
 
 
 Some useful environment variables:
 
-SURF_PORT - the port to serve on if not specified via -p, defaults to 3000.
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf-run.
+            automatically by surf.
 ```
 
 ### `surf-clean`
 
 Surf will leave lots of temporary directories around for work directories by-default. `surf-clean` will mop up ones that are no longer mapped to current branches.
 
-```sh
-Usage: surf-clean -s http://some.server -r https://github.com/owner/repo
+```
+Usage: surf-clean -r https://github.com/owner/repo
 Cleans builds that no longer correspond to any active ref
 
 Options:
-  -h, --help        Show help                                          [boolean]
-  --dry-run         If set, report the directories we would delete     [boolean]
-  -r, --repo        The repository URL to remove old builds for
+  -h, --help     Show help                                             [boolean]
+  --dry-run      If set, report the directories we would delete        [boolean]
+  -r, --repo     The repository URL to remove old builds for
+  -v, --version  Print the current version number and exit
 ```

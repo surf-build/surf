@@ -5,7 +5,7 @@ import main from './clean-workdirs-main';
 const d = require('debug')('surf:surf-clean');
 
 const yargs = require('yargs')
-  .usage(`Usage: surf-clean -s http://some.server -r https://github.com/owner/repo
+  .usage(`Usage: surf-clean -r https://github.com/owner/repo
 Cleans builds that no longer correspond to any active ref`)
   .help('h')
   .boolean('dry-run')
