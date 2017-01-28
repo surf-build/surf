@@ -182,6 +182,48 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.
 ```
 
+## `surf-install`
+
+Sets up a command to be run on startup (usually surf-run). This will capture your current environment and encode that into a job appropriate for your operating system (i.e. either launchd, systemd, or Task Scheduler). surf-install can also create Docker containers that will build your project.
+
+```sh
+### Set up a task that runs on launch to build Surf
+surf-install -n surf -c "surf-run -r https://github.com/surf-build/surf"
+
+## Create a Dockerfile to build Surf
+surf-install -t docker --dry-run -n surf -c "surf-run -r https://github.com/surf-build/surf"
+```
+
+```
+Usage: surf-install -n my-cool-job -c "surf-client ..."
+Creates a system service with the given command (probably surf-run) as its
+executable. Run using sudo.
+
+Surf-specific environment variables (e.g. GITHUB_TOKEN) will be captured
+automatically, but others can be explicitly specified at the command line
+
+Options:
+  --dry-run          Instead of creating a service, display the configuration
+                     file and exit
+  -n, --name         The name given to the OS of the service to create
+  -c, --command      The command to run, usually surf-run
+  -t, --type         Explicitly choose the type of service to create, usually
+                     "-t docker" for Docker
+  -e, --environment  A comma-separated list of custom environment variables to
+                     capture
+  -v, --version      Print the current version number and exit
+
+
+Some useful environment variables:
+
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use.
+GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post status
+to.
+GIST_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post Gists to.
+GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the
+build output Gist.
+```
+
 ### `surf-publish`
 
 Create a tag for a given commit that you've run `surf-build` on, and this will create a release with those binaries.
