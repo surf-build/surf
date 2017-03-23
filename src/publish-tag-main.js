@@ -48,9 +48,11 @@ export default async function main(argv, showHelp) {
   }
   
   let statuses = await fetchStatusesForCommit(nwo, ourTag.commit.sha);
-  statuses = statuses.filter((x) => x.target_url && x.target_url.match(/^https:\/\/gist\./i));
+  statuses = statuses.filter((x) => {
+    return x.state === 'success' && x.target_url && x.target_url.match(/^https:\/\/gist\./i);
+  });
   
-  d(`About to download URLs: ${JSON.stringify(statuses)}`);
+  d(`About to download URLs: ${JSON.stringify(statuses, null, 2)}`);
   let targetDirMap = {};
   for (let status of statuses) {
     let targetDir = await cloneSurfBuildGist(status.target_url);
