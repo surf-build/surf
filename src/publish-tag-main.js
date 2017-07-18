@@ -2,9 +2,9 @@ import fs from 'fs';
 import _ from 'lodash';
 import path from 'path';
 
-import { getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, getIdFromGistUrl, 
-  createRelease, uploadFileToRelease } from './github-api';
-import { cloneRepo, getGistTempdir } from './git-api';
+import { getSanitizedRepoUrl, getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, 
+  getIdFromGistUrl, createRelease, uploadFileToRelease } from './github-api';
+import { cloneRepo, getOriginForRepo, getGistTempdir } from './git-api';
 import { retryPromise } from './promise-array';
 
 const d = require('debug')('surf:surf-publish');
@@ -21,6 +21,19 @@ async function cloneSurfBuildGist(url) {
 export default async function main(argv, showHelp) {
   let repo = argv.repo || process.env.SURF_REPO;
   let tag = argv.tag;
+
+  if (!repo) {
+    try {
+      repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
+      argv.repo = repo;
+    } catch (e) {
+      console.error("Repository not specified and current directory is not a Git repo");
+      d(e.stack);
+
+      showHelp();
+      process.exit(-1);
+    }
+  }
   
   if (argv.help) {
     showHelp();
