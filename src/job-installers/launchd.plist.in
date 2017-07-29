@@ -21,6 +21,7 @@
     
     <key>ProgramArguments</key>
     <array>
+      <string><%= commandWithoutArgs %></string>
 <% print(argList.map((x) => `      <string>${x}</string>`).join("\n")) %>
     </array>
     
