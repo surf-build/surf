@@ -74,7 +74,7 @@ Surf will instead use any of the following files as the build command if they ar
 
 Now, let's test it out. First, we need to get a GitHub token:
 
-1. Go to https://github.com/settings/tokens to get a token
+1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens) to get a token (The user generating the token needs write/push privileges on the repo so surf-build can update statuses.)
 1. Make sure to check `repo` and `gist`.
 1. Generate the token and save it off
 
