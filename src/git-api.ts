@@ -1,20 +1,26 @@
-import crypto from 'crypto';
-import path from 'path';
-import _ from 'lodash';
-import sfs from 'fs';
+import * as crypto from 'crypto';
+import * as path from 'path';
+import * as sfs from 'fs-extra';
 
-import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, enableThreadSafety } from 'nodegit';
+import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, Commit, CheckoutOptions, PushOptions } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
-import { rimraf, mkdirp, fs } from './promisify';
 import { statNoException, statSyncNoException } from './promise-array';
+import { rimraf, mkdirp, mkdirpSync } from './recursive-fs';
 
-enableThreadSafety();
+import * as fs from 'mz/fs';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api');
 
-function using(block) {
-  let toFree = [];
+interface Freeable {
+  free: () => void;
+}
+
+type FreeMethod = ((f: Freeable) => Freeable);
+
+function using<TRet>(block: (f: FreeMethod) => TRet): TRet {
+  let toFree: Freeable[] = [];
 
   try {
     return block((f) => { toFree.push(f); return f; });
@@ -23,39 +29,39 @@ function using(block) {
   }
 }
 
-export async function getHeadForRepo(targetDirname) {
-  let repoDir = await Repository.discover(targetDirname, 0, '');
+export async function getHeadForRepo(targetDirname: string) {
+  let repoDir: string = await Repository.discover(targetDirname, 0, '');
 
   return await using(async (ds) => {
-    let repo = ds(await Repository.open(repoDir));
-    let commit = ds(await repo.getHeadCommit());
+    let repo = <Repository>ds(await Repository.open(repoDir));
+    let commit = <Commit>ds(await repo.getHeadCommit());
     return commit.sha();
   });
 }
 
-export async function getOriginForRepo(targetDirname) {
+export async function getOriginForRepo(targetDirname: string) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
 
   return await using(async (ds) => {
-    let repo = ds(await Repository.open(repoDir));
-    let origin = ds(await Remote.lookup(repo, 'origin'));
+    let repo = <Repository>ds(await Repository.open(repoDir));
+    let origin = <Remote>ds(await Remote.lookup(repo, 'origin', () => {}));
 
     return origin.pushurl() || origin.url();
   });
 }
 
-export async function getAllWorkdirs(repoUrl) {
+export async function getAllWorkdirs(repoUrl: string) {
   let tmp = process.env.SURF_ORIGINAL_TMPDIR || process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
 
-  return _.reduce(ret, (acc, x) => {
+  return ret.reduce((acc: string[], x) => {
     let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
     if (x.match(/^surfg-/i)) {
       let tgt = path.join(tmp, x);
       let stats = fs.statSync(tgt);
       let now = new Date();
 
-      if (now - stats.mtime > 1000 * 60 * 60 * 2) {
+      if ((now.getTime() - stats.mtime.getTime()) > 1000 * 60 * 60 * 2) {
         acc.push(path.join(tmp, x));
       }
 
@@ -70,7 +76,7 @@ export async function getAllWorkdirs(repoUrl) {
   }, []);
 }
 
-export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
+export function getWorkdirForRepoUrl(repoUrl: string, sha: string, dontCreate= false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
   let date = toIso8601(new Date()).replace(/:/g, '.');
@@ -82,11 +88,11 @@ export function getWorkdirForRepoUrl(repoUrl, sha, dontCreate=false) {
     ret = path.join(tmp, `${nwo}-${shortSha}-${date}`);
   }
 
-  if (!dontCreate) mkdirp.sync(ret);
+  if (!dontCreate) mkdirpSync(ret);
   return ret;
 }
 
-export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
+export function getTempdirForRepoUrl(repoUrl: string, sha: string, dontCreate= false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
   let date = toIso8601(new Date()).replace(/:/g, '.');
@@ -97,11 +103,11 @@ export function getTempdirForRepoUrl(repoUrl, sha, dontCreate=false) {
     ret = path.join(tmp, `t-${nwo}-${shortSha}-${date}`);
   }
 
-  if (!dontCreate) mkdirp.sync(ret);
+  if (!dontCreate) mkdirpSync(ret);
   return ret;
 }
 
-export function getGistTempdir(id) {
+export function getGistTempdir(id: string) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let date = toIso8601(new Date()).replace(/:/g, '.');
 
@@ -109,12 +115,12 @@ export function getGistTempdir(id) {
   return ret;
 }
 
-export async function checkoutSha(targetDirname, sha) {
+export async function checkoutSha(targetDirname: string, sha: string) {
   return await using(async (ds) => {
-    let repo = ds(await Repository.open(targetDirname));
-    let commit = ds(await repo.getCommit(sha));
+    let repo = <Repository>ds(await Repository.open(targetDirname));
+    let commit = <Commit>ds(await repo.getCommit(sha));
 
-    let opts = {};
+    let opts: CheckoutOptions = {};
 
     // Equivalent of `git reset --hard HEAD && git clean -xdf`
     d(`Found commit: ${targetDirname}:${commit.sha()}`);
@@ -127,11 +133,11 @@ export async function checkoutSha(targetDirname, sha) {
   });
 }
 
-export function updateRefspecToPullPRs(repository) {
+export function updateRefspecToPullPRs(repository: Repository) {
   Remote.addFetch(repository, 'origin', '+refs/pull/*/head:refs/remotes/origin/pr/*');
 }
 
-export async function cloneRepo(url, targetDirname, token=null, bare=true) {
+export async function cloneRepo(url: string, targetDirname: string, token?: string, bare = true) {
   token = token || process.env.GITHUB_TOKEN;
   let opts = {
     bare: bare ? 1 : 0,
@@ -139,7 +145,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
       callbacks: {
         credentials: () => {
           d(`Returning ${token} for authentication token`);
-          return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+          return Cred.userpassPlaintextNew(token || '', 'x-oauth-basic');
         },
         certificateCheck: () => {
           // Yolo
@@ -150,7 +156,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   };
 
   if (!token) {
-    d("GitHub token not set, only public repos will work!");
+    d('GitHub token not set, only public repos will work!');
     delete opts.fetchOpts;
   }
 
@@ -165,7 +171,7 @@ export async function cloneRepo(url, targetDirname, token=null, bare=true) {
   });
 }
 
-export async function fetchRepo(targetDirname, token=null, bare=true) {
+export async function fetchRepo(targetDirname: string, token?: string, bare = true) {
   token = token || process.env.GITHUB_TOKEN;
   let repo = bare ?
     await Repository.openBare(targetDirname) :
@@ -177,7 +183,7 @@ export async function fetchRepo(targetDirname, token=null, bare=true) {
     callbacks: {
       credentials: () => {
         d(`Returning ${token} for authentication token`);
-        return Cred.userpassPlaintextNew(token, 'x-oauth-basic');
+        return Cred.userpassPlaintextNew(token || '', 'x-oauth-basic');
       },
       certificateCheck: () => {
         // Yolo
@@ -187,15 +193,15 @@ export async function fetchRepo(targetDirname, token=null, bare=true) {
   };
 
   if (!token) {
-    d("GitHub token not set, only public repos will work!");
+    d('GitHub token not set, only public repos will work!');
     delete fo.callbacks;
   }
 
-  await repo.fetchAll(fo);
+  await repo.fetchAll(fo, () => {});
   return repo;
 }
 
-export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
+export async function cloneOrFetchRepo(url: string, checkoutDir: string, token?: string) {
   let dirname = crypto.createHash('sha1').update(url).digest('hex');
   let targetDirname = path.join(checkoutDir, dirname);
   let r = null;
@@ -219,14 +225,14 @@ export async function cloneOrFetchRepo(url, checkoutDir, token=null) {
   return targetDirname;
 }
 
-export async function resetOriginUrl(target, url) {
+export async function resetOriginUrl(target: string, url: string) {
   await using(async (ds) => {
-    let repo = ds(await Repository.open(target));
+    let repo = <Repository>ds(await Repository.open(target));
     Remote.setUrl(repo, 'origin', url);
   });
 }
 
-export async function addFilesToGist(repoUrl, targetDir, artifactDirOrFile, token=null) {
+export async function addFilesToGist(repoUrl: string, targetDir: string, artifactDirOrFile: string, token?: string) {
   return await using(async (ds) => {
     if (!(await statNoException(targetDir))) {
       d(`${targetDir} doesn't exist, cloning it`);
@@ -234,27 +240,27 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDirOrFile, toke
       ds(await cloneRepo(repoUrl, targetDir, token, false));
     }
 
-    d("Opening repo");
-    let repo = ds(await Repository.open(targetDir));
+    d('Opening repo');
+    let repo = <Repository>ds(await Repository.open(targetDir));
 
-    d("Opening index");
-    let idx = ds(await repo.index());
+    d('Opening index');
+    let idx = await repo.index();
     await idx.read(1);
 
     let stat = await fs.stat(artifactDirOrFile);
     if (stat.isFile()) {
       d(`Adding artifact directly as file: ${artifactDirOrFile}}`);
       let tgt = path.join(targetDir, path.basename(artifactDirOrFile));
-      fs.copySync(artifactDirOrFile, tgt);
+      sfs.copySync(artifactDirOrFile, tgt);
 
       d(`Adding artifact: ${tgt}`);
       await idx.addByPath(path.basename(artifactDirOrFile));
     } else {
-      d("Reading artifacts directory");
+      d('Reading artifacts directory');
       let artifacts = await fs.readdir(artifactDirOrFile);
       for (let entry of artifacts) {
         let tgt = path.join(targetDir, entry);
-        fs.copySync(path.join(artifactDirOrFile, entry), tgt);
+        sfs.copySync(path.join(artifactDirOrFile, entry), tgt);
 
         d(`Adding artifact: ${tgt}`);
         await idx.addByPath(entry);
@@ -263,31 +269,31 @@ export async function addFilesToGist(repoUrl, targetDir, artifactDirOrFile, toke
 
     await idx.write();
     let oid = await idx.writeTree();
-    let head = await Reference.nameToId(repo, "HEAD");
+    let head = await Reference.nameToId(repo, 'HEAD');
     let parent = ds(await repo.getCommit(head));
 
     d(`Writing commit to gist`);
     let now = new Date();
-    let sig = ds(await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset()));
-    let sig2 = ds(await Signature.create("Surf Build Server", "none@example.com", now.getTime(), now.getTimezoneOffset()));
+    let sig = <Signature>ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
+    let sig2 = <Signature>ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
 
     d(`Creating commit`);
-    await ds(repo.createCommit("HEAD", sig, sig2, `Adding files from ${targetDir}`, oid, [parent]));
+    await repo.createCommit('HEAD', sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);
 
     return targetDir;
   });
 }
 
-export async function pushGistRepoToMaster(targetDir, token) {
+export async function pushGistRepoToMaster(targetDir: string, token: string) {
   return await using(async (ds) => {
-    d("Opening repo");
-    let repo = ds(await Repository.open(targetDir));
+    d('Opening repo');
+    let repo = <Repository>ds(await Repository.open(targetDir));
 
-    d("Looking up origin");
-    let origin = await Remote.lookup(repo, 'origin');
+    d('Looking up origin');
+    let origin = await Remote.lookup(repo, 'origin', () => {});
 
-    let refspec = "refs/heads/master:refs/heads/master";
-    let pushopts = {
+    let refspec = 'refs/heads/master:refs/heads/master';
+    let pushopts: PushOptions = {
       callbacks: {
         credentials: () => {
           d(`Returning ${token} for authentication token`);
@@ -300,7 +306,7 @@ export async function pushGistRepoToMaster(targetDir, token) {
       }
     };
 
-    d("Pushing to Gist");
-    await origin.push([refspec], pushopts);
+    d('Pushing to Gist');
+    await origin.push([refspec], pushopts, () => {});
   });
 }

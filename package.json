@@ -61,7 +61,11 @@
   "devDependencies": {
     "@kwonoj/rxjs-testscheduler-compat": "1.0.1",
     "@paulcbetts/coveralls": "^2.11.13",
+    "@types/debug": "0.0.30",
     "@types/mkdirp": "^0.3.29",
+    "@types/mz": "0.0.31",
+    "@types/nodegit": "^0.18.1",
+    "@types/rimraf": "^2.0.0",
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7",
     "babel-plugin-__coverage__": "^11.0.0",
