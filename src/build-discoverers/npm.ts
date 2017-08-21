@@ -1,12 +1,13 @@
-import path from 'path';
-import {fs} from '../promisify';
+import * as path from 'path';
+import * as fs from 'mz/fs';
+
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-npm');
 
 export default class NpmBuildDiscoverer extends BuildDiscoverBase {
-  constructor(rootDir) {
+  constructor(rootDir: string) {
     super(rootDir);
   }
 

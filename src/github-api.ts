@@ -1,17 +1,20 @@
-import mimeTypes from 'mime-types';
-import fs from 'fs';
-import url from 'url';
-import _ from 'lodash';
-import request from 'request-promise';
-import requestOg from 'request';
-import parseLinkHeader from 'parse-link-header';
-import pkg from '../package.json';
+import * as mimeTypes from 'mime-types';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as url from 'url';
+import * as request from 'request-promise';
+import * as requestOg from 'request';
+import * as parseLinkHeader from 'parse-link-header';
 import {asyncMap} from './promise-array';
-import createLRU from 'lru-cache';
+import * as createLRU from 'lru-cache';
+import * as isNumber from 'lodash.isnumber';
 
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:github-api');
 
-function apiUrl(path, gist=false) {
+function apiUrl(path: string, gist=false) {
   let apiRoot = gist ?
     (process.env.GIST_ENTERPRISE_URL || process.env.GITHUB_ENTERPRISE_URL) :
     process.env.GITHUB_ENTERPRISE_URL;
@@ -26,7 +29,7 @@ function apiUrl(path, gist=false) {
 const sshRemoteUrl = /^git@(.*):([^.]*)(\.git)?$/i;
 const httpsRemoteUri = /https?:\/\//i;
 
-export function getSanitizedRepoUrl(repoUrl) {
+export function getSanitizedRepoUrl(repoUrl: string) {
   if (repoUrl.match(httpsRemoteUri)) return repoUrl;
   let m = repoUrl.match(sshRemoteUrl);
 
@@ -43,28 +46,38 @@ export function getSanitizedRepoUrl(repoUrl) {
   }
 }
 
-export function getNwoFromRepoUrl(repoUrl) {
+export function getNwoFromRepoUrl(repoUrl: string) {
   // Fix up SSH repo origins
   let m = repoUrl.match(sshRemoteUrl);
   if (m) { return m[2]; }
 
   let u = url.parse(repoUrl);
-  return u.path.slice(1).replace(/\.git$/, '');
+  return u.path!.slice(1).replace(/\.git$/, '');
 }
 
-export function getIdFromGistUrl(gistUrl) {
+export function getIdFromGistUrl(gistUrl: string) {
   let u = url.parse(gistUrl);
-  let s = u.pathname.split('/');
+  let s = u.pathname!.split('/');
   
   // NB: Anonymous Gists don't have usernames, just the token
   return s[2] || s[1];
 }
 
-export async function gitHub(uri, token=null, body=null, extraHeaders=null, targetFile=null) {
+export interface GitHubResponse {
+  headers: requestOg.Headers,
+  result: any
+}
+
+export async function gitHub(
+    uri: string, 
+    token?: string, 
+    body: Object | number | Buffer | fs.ReadStream | null = null, 
+    extraHeaders?: requestOg.Headers, 
+    targetFile?: string): Promise<GitHubResponse> {
   let tok = token || process.env.GITHUB_TOKEN;
 
   d(`Fetching GitHub URL: ${uri}`);
-  let opts = {
+  let opts: requestOg.Options = {
     uri: uri,
     headers: {
       'User-Agent': `${pkg.name}/${pkg.version}`,
@@ -84,7 +97,7 @@ export async function gitHub(uri, token=null, body=null, extraHeaders=null, targ
     Object.assign(opts.headers, extraHeaders);
   }
     
-  if (_.isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
+  if (isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
     delete opts.json;
   }
 
@@ -116,11 +129,11 @@ export async function gitHub(uri, token=null, body=null, extraHeaders=null, targ
   return { result, headers: ret.response.headers };
 }
 
-const githubCache = createLRU({
+const githubCache: createLRU.Cache<GitHubResponse> = createLRU({
   max: 1000
 });
 
-export async function cachedGitHub(uri, token=null, maxAge=undefined) {
+export async function cachedGitHub(uri: string, token?: string, maxAge?: number) {
   let ret = githubCache.get(uri);
   if (ret) return ret;
 
@@ -130,9 +143,9 @@ export async function cachedGitHub(uri, token=null, maxAge=undefined) {
   return ret;
 }
 
-export async function githubPaginate(uri, token=null, maxAge=null) {
+export async function githubPaginate(uri: string, token?: string, maxAge?: number) {
   let next = uri;
-  let ret = [];
+  let ret: any[] = [];
 
   do {
     let {headers, result} = await cachedGitHub(next, token, maxAge);
@@ -147,34 +160,34 @@ export async function githubPaginate(uri, token=null, maxAge=null) {
   return ret;
 }
 
-export function fetchAllOpenPRs(nwo) {
-  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), null, 60*1000);
+export function fetchAllOpenPRs(nwo: string) {
+  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), undefined, 60*1000);
 }
 
 const refCache = createLRU({
   max: 1000
 });
 
-export async function fetchSingleRef(nwo, ref, shaHint=null) {
+export async function fetchSingleRef(nwo: string, ref: string, shaHint=null) {
   let ret = shaHint ? refCache.get(shaHint) : null;
   if (ret) { 
     return ret;
   }
 
-  ret = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), null, 30*1000);
-  refCache.set(ret.result.object.sha, ret);
-  return ret;
+  let gh = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), undefined, 30*1000);
+  refCache.set(gh.result.object.sha, gh);
+  return gh;
 }
 
-export function fetchRepoInfo(nwo) {
-  return cachedGitHub(apiUrl(`repos/${nwo}`), null, 5*60*1000);
+export function fetchRepoInfo(nwo: string) {
+  return cachedGitHub(apiUrl(`repos/${nwo}`), undefined, 5*60*1000);
 }
 
-function objectValues(obj) {
+function objectValues(obj: Object) {
   return Object.keys(obj).map((x) => obj[x]);
 }
 
-export async function fetchAllRefsWithInfo(nwo) {
+export async function fetchAllRefsWithInfo(nwo: string) {
   let openPRs = (await fetchAllOpenPRs(nwo));
   let refList = openPRs.map((x) => x.head.ref);
 
@@ -190,7 +203,7 @@ export async function fetchAllRefsWithInfo(nwo) {
         let repoName = refToPR[ref].head.repo.full_name;
         let shaHint = refToPR[ref].head.sha;
         try {
-          return (await fetchSingleRef(repoName, ref, shaHint)).result;
+          return (await fetchSingleRef(repoName, ref, shaHint));
         } catch (e) {
           d(`Tried to fetch ref ${repoName}:${ref} but it failed: ${e.message}`);
           return null;
@@ -201,13 +214,13 @@ export async function fetchAllRefsWithInfo(nwo) {
   let repoInfo = await fetchRepoInfo(nwo);
   let defaultBranch = repoInfo.result.default_branch;
   let result = await fetchSingleRef(nwo, defaultBranch);
-  refs.push(result.result);
+  refs.push(result);
       
   // Filter failures from when we get the ref
   refs = refs.filter((x) => x !== null);
   
   let commitInfo = await asyncMap(
-    _.map(refs, (ref) => ref.object.url),
+    refs.map((ref) => ref.object.url),
     async (x) => {
       try {
         return (await cachedGitHub(x)).result;
@@ -217,7 +230,7 @@ export async function fetchAllRefsWithInfo(nwo) {
       }
     });
 
-  _.each(refs, (ref) => {
+  refs.forEach((ref) => {
     ref.object.commit = commitInfo[ref.object.url];
     ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
@@ -228,34 +241,45 @@ export async function fetchAllRefsWithInfo(nwo) {
   return refs;
 }
 
-export function postCommitStatus(nwo, sha, state, description, target_url, context, token=null) {
+export function postCommitStatus(
+    nwo: string, 
+    sha: string, 
+    state: string, 
+    description: string, 
+    target_url: string, 
+    context: string, 
+    token?: string) {
   let body = { state, target_url, description, context };
-  if (!target_url) {
-    delete body.target_url;
-  }
+  if (!target_url) { delete body.target_url; }
 
   d(JSON.stringify(body));
   return gitHub(apiUrl(`repos/${nwo}/statuses/${sha}`), token, body);
 }
 
-export function createGist(description, files, publicGist=false, token=null) {
+export interface GistFiles {
+  description: string,
+  public: boolean,
+  files: Array<any>
+}
+
+export function createGist(description: string, files: GistFiles, publicGist=false, token?: string) {
   let body = { files, description, "public": publicGist };
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
 
-export function fetchAllTags(nwo, token=null) {
+export function fetchAllTags(nwo: string, token?: string) {
   return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60*1000);
 }
 
-export function fetchStatusesForCommit(nwo, sha, token=null) {
+export function fetchStatusesForCommit(nwo: string, sha: string, token?: string) {
   return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
 }
 
-export function getCombinedStatusesForCommit(nwo, sha, token=null) {
+export function getCombinedStatusesForCommit(nwo: string, sha: string, token?: string) {
   return gitHub(apiUrl(`repos/${nwo}/commits/${sha}/status`), token);
 }
 
-export function createRelease(nwo, tag, token=null) {
+export function createRelease(nwo: string, tag: string, token?: string) {
   let body = { 
     tag_name: tag,
     target_committish: tag,
@@ -267,8 +291,8 @@ export function createRelease(nwo, tag, token=null) {
   return gitHub(apiUrl(`repos/${nwo}/releases`), token, body);
 }
 
-export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=null) {
-  let uploadUrl = releaseInfo.upload_url.replace(/{[^}]*}/g, '');
+export function uploadFileToRelease(targetUrl: string, targetFile: string, fileName: string, token?: string) {
+  let uploadUrl = targetUrl.replace(/{[^}]*}/g, '');
   uploadUrl = uploadUrl + `?name=${encodeURIComponent(fileName)}`;
   
   let contentType = {
@@ -280,20 +304,20 @@ export function uploadFileToRelease(releaseInfo, targetFile, fileName, token=nul
   return gitHub(uploadUrl, token, fs.createReadStream(targetFile), contentType);
 }
 
-export function getReleaseByTag(nwo, tag, token=null) {
+export function getReleaseByTag(nwo: string, tag: string, token?: string) {
   return gitHub(apiUrl(`repos/${nwo}/releases/tags/${tag}`), token);
 }
 
-export function downloadReleaseAsset(nwo, assetId, targetFile, token=null) {
+export function downloadReleaseAsset(nwo: string, assetId: string, targetFile: string, token?: string) {
   let headers = { "Accept": "application/octet-stream" };
   return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
 }
 
-export async function findPRForCommit(nwo, sha, token=null) {
+export async function findPRForCommit(nwo: string, sha: string, token?: string) {
   // NB: Thanks pea53 for this but also this is bananas weird lol
   let result = (await gitHub(apiUrl(`search/issues?q=${sha}`), token)).result;
 
-  let item = result.items.find((x) => {
+  let item = result.items.find((x: { pull_request?: { url: string } }) => {
     if (!x.pull_request) return false;
     if (x.pull_request.url.indexOf(`/${nwo}/`) < 0) return false;
     

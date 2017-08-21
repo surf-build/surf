@@ -1,17 +1,22 @@
-import _ from 'lodash';
-import path from 'path';
-import {fs} from '../promisify';
+import * as path from 'path';
+import * as fs from 'mz/fs';
+
 import {statNoException, readdirRecursive} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-dotnet');
 
+function uniq(list: string[]): string[] {
+  return Object.keys(
+    list.reduce((acc, x) => { acc[x] = true; return acc; }, {}));
+}
+
 export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
-  constructor(rootDir) {
+  constructor(rootDir: string) {
     super(rootDir);
   }
 
-  async findSolutionFile(dir=this.rootDir, recurse=true) {
+  async findSolutionFile(dir=this.rootDir, recurse=true): Promise<string | null> {
     // Look in one-level's worth of directories for any file ending in sln
     let dentries = await fs.readdir(dir);
 
@@ -49,16 +54,16 @@ export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
     let buildCommand = process.platform === 'win32' ? 'msbuild' : 'xbuild';
     let slnFile = await this.findSolutionFile();
 
-    let projFiles = _.filter(
-      await readdirRecursive(this.rootDir),
-      (x) => x.match(/\.(cs|vb|fs)proj/i));
+    let projFiles = (await readdirRecursive(this.rootDir))
+      .filter((x) => x.match(/\.(cs|vb|fs)proj/i));
 
-    let artifactDirs = _.map(projFiles, (x) => path.join(path.dirname(x), 'bin', 'Release'));
+    let artifactDirs = projFiles.map((x) => path.join(path.dirname(x), 'bin', 'Release'));
+
+    let cmd = { cmd: buildCommand, args: ['/p:Configuration=Release', slnFile] };
 
     return {
-      cmd: buildCommand,
-      args: ['/p:Configuration=Release', slnFile],
-      artifactDirs: _.uniq(artifactDirs)
+      cmds: [cmd],
+      artifactDirs: uniq(artifactDirs)
     };
   }
 }

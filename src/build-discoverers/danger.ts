@@ -1,4 +1,4 @@
-import path from 'path';
+import * as path from 'path';
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 import {findActualExecutable} from 'spawn-rx';
@@ -6,7 +6,9 @@ import {findActualExecutable} from 'spawn-rx';
 const d = require('debug')('surf:build-discover-npm');
 
 export default class DangerBuildDiscoverer extends BuildDiscoverBase {
-  constructor(rootDir) {
+  shouldAlwaysRun: boolean;
+
+  constructor(rootDir: string) {
     super(rootDir);
 
     // Danger runs concurrently with other builds
@@ -21,7 +23,7 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
     if (process.env.SURF_DISABLE_DANGER || !exists) return bailedAffinity;
 
     // If we can't find Bundler in PATH, bail
-    if (findActualExecutable('bundle').cmd === 'bundle') {
+    if (findActualExecutable('bundle', []).cmd === 'bundle') {
       console.log(`A Dangerfile exists but can't find Ruby and Bundler in PATH, skipping`);
       return bailedAffinity;
     }

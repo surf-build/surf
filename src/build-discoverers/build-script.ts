@@ -1,6 +1,8 @@
-import path from 'path';
-import {fs, mkdirp} from '../promisify';
-import BuildDiscoverBase from '../build-discover-base';
+import * as path from 'path';
+import * as fs from 'mz/fs';
+import {mkdirp} from '../recursive-fs';
+
+import BuildDiscoverBase, { BuildCommand } from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-drivers');
 
@@ -20,7 +22,7 @@ const possibleScriptPathsPosix = [
 ];
 
 export default class BuildScriptDiscoverer extends BuildDiscoverBase {
-  constructor(rootDir) {
+  constructor(rootDir: string) {
     super(rootDir);
   }
 
@@ -55,6 +57,11 @@ export default class BuildScriptDiscoverer extends BuildDiscoverBase {
     await mkdirp(artifactDir);
 
     process.env.SURF_ARTIFACT_DIR = artifactDir;
-    return { cmd: await this.getScriptPath(), args: [], artifactDirs: [artifactDir] };
+    let cmd: BuildCommand = { cmd: await this.getScriptPath() || "", args: [], }
+
+    return { 
+      cmds: [cmd],
+      artifactDirs: [artifactDir] 
+    };
   }
 }

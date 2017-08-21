@@ -1,28 +1,28 @@
-import _ from 'lodash';
-import path from 'path';
+import * as path from 'path';
 
-import {fs} from '../promisify';
+import * as fs from 'mz/fs';
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
 const d = require('debug')('surf:build-discover-autotools');
 
 export default class AutotoolsBuildDiscoverer extends BuildDiscoverBase {
-  constructor(rootDir) {
+  constructor(rootDir: string) {
     super(rootDir);
   }
 
   async getAffinityForRootDir() {
     let names = await fs.readdir(this.rootDir);
-    let result = _.find(names, (x) => x.match(/CMakeLists\.txt/i));
+    let result = names.find((x) => !!x.match(/configure\.(in|ac)/i));
+
     return result ? 5 : 0;
   }
 
   async getBuildCommand() {
-    let prefix = path.resolve(this.rootDir, 'surf-artifacts');
     let cmds = [
-      { cmd: 'cmake', args: [`-DCMAKE_INSTALL_PREFIX:PATH=${prefix}`, '.']},
-      { cmd: 'make', args: ['all', 'install']}
+      { cmd: path.join(this.rootDir, 'configure'), args: ['--prefix', path.resolve(this.rootDir, 'surf-artifacts')] },
+      { cmd: 'make', args: []},
+      { cmd: 'make', args: ['install']}
     ];
     
     let autogen = path.join(this.rootDir, 'autogen.sh');
