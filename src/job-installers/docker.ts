@@ -1,23 +1,23 @@
-import _ from 'lodash';
-import fs from 'fs';
-import path from 'path';
-import temp from 'temp';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as temp from 'temp';
+import * as template from 'lodash.template';
 
 import JobInstallerBase from '../job-installer-base';
-import {findActualExecutable, spawnPromise, spawnPromiseDetached} from 'spawn-rx';
+import {findActualExecutable, spawnPromise, spawnDetachedPromise} from 'spawn-rx';
 
 const d = require('debug')('surf:docker');
 
 // NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
 const makeDockerfile = 
-  _.template(fs.readFileSync(require.resolve('../../src/job-installers/docker.in'), 'utf8'));
+  template(fs.readFileSync(require.resolve('../../src/job-installers/docker.in'), 'utf8'));
 
 export default class DockerInstaller extends JobInstallerBase {
   getName() {
     return 'docker';
   }
   
-  async getAffinityForJob(name, command) {
+  async getAffinityForJob(_name: string, _command: string) {
     let docker = findActualExecutable('docker', []).cmd;
     if (docker === 'docker') {
       d(`Can't find docker in PATH, assuming not installed`);
@@ -28,7 +28,7 @@ export default class DockerInstaller extends JobInstallerBase {
     return 3;
   }
 
-  async installJob(name, command, returnContent=false) {
+  async installJob(name: string, command: string, returnContent?: boolean) {
     let opts = {
       envs: this.getInterestingEnvVars().map((x) => `${x}=${process.env[x]}`),
       pkgJson: require('../../package.json'),
@@ -38,6 +38,7 @@ export default class DockerInstaller extends JobInstallerBase {
     if (returnContent) {
       return { "Dockerfile" : makeDockerfile(opts) };
     } 
+
     let dir = temp.mkdirSync('surf');
     let target = path.join(dir, 'Dockerfile');
     fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
@@ -45,7 +46,7 @@ export default class DockerInstaller extends JobInstallerBase {
     console.error(`Building Docker image, this will take a bit...`);
     await spawnPromise('docker', ['build', '-t', name, dir]);
     
-    spawnPromiseDetached('docker', ['run', name])
+    spawnDetachedPromise('docker', ['run', name])
       .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
     
     return `Created new docker image: ${name}

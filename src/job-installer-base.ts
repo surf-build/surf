@@ -8,16 +8,18 @@ const interestingEnvVars = [
 ];
 
 export default class JobInstallerBase {
+  extraEnvVars: string[];
+
   constructor() {
   }
 
   getInterestingEnvVars() {
     return Object.keys(process.env)
-      .filter((x) => interestingEnvVars.find((re) => x.match(re)))
+      .filter((x) => interestingEnvVars.find((re) => !!x.match(re)))
       .concat(this.extraEnvVars || []);
   }
   
-  setExtraEnvVars(vars) {
+  setExtraEnvVars(vars: string[]) {
     this.extraEnvVars = vars;
   }
   
@@ -25,11 +27,11 @@ export default class JobInstallerBase {
     throw new Error("Implement me!");
   }
 
-  async getAffinityForJob(name, command) {
+  async getAffinityForJob(_name: string, _command: string): Promise<number> {
     throw new Error("Implement me!");
   }
 
-  async installJob(name, command, returnContent=false) {
+  async installJob(_name: string, _command: string, _returnContent?: boolean): Promise<string | Object> {
     throw new Error("Implement me!");
   }
 }
