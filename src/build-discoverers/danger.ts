@@ -3,11 +3,10 @@ import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 import {findActualExecutable} from 'spawn-rx';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-npm');
 
 export default class DangerBuildDiscoverer extends BuildDiscoverBase {
-  shouldAlwaysRun: boolean;
-
   constructor(rootDir: string) {
     super(rootDir);
 

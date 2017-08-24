@@ -4,6 +4,7 @@ import * as fs from 'mz/fs';
 import {statNoException, readdirRecursive} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-dotnet');
 
 function uniq(list: string[]): string[] {
@@ -16,7 +17,7 @@ export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
     super(rootDir);
   }
 
-  async findSolutionFile(dir=this.rootDir, recurse=true): Promise<string | null> {
+  async findSolutionFile(dir = this.rootDir, recurse = true): Promise<string | null> {
     // Look in one-level's worth of directories for any file ending in sln
     let dentries = await fs.readdir(dir);
 
@@ -52,7 +53,7 @@ export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
   async getBuildCommand() {
     // TODO: This sucks right now, make it more better'er
     let buildCommand = process.platform === 'win32' ? 'msbuild' : 'xbuild';
-    let slnFile = await this.findSolutionFile();
+    let slnFile: string = (await this.findSolutionFile())!;
 
     let projFiles = (await readdirRecursive(this.rootDir))
       .filter((x) => x.match(/\.(cs|vb|fs)proj/i));

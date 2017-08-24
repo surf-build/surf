@@ -3,6 +3,7 @@ import * as path from 'path';
 import {statNoException} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-rust');
 
 export default class RustBuildDiscoverer extends BuildDiscoverBase {
@@ -13,7 +14,7 @@ export default class RustBuildDiscoverer extends BuildDiscoverBase {
   async getAffinityForRootDir() {
     let cargo = path.join(this.rootDir, 'Cargo.toml');
     let exists = await statNoException(cargo);
-    
+
     if (exists) { d(`Found Cargo.toml at ${cargo}`); }
     return exists ? 5 : 0;
   }

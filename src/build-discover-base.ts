@@ -9,6 +9,7 @@ export interface BuildCommandResult {
 }
 
 export default class BuildDiscoverBase {
+  public shouldAlwaysRun: boolean;
   public rootDir: string;
 
   constructor(rootDir: string) {
