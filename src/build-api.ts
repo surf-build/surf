@@ -5,7 +5,7 @@ import {Observable} from 'rxjs';
 import { asyncReduce } from './promise-array';
 import { spawnDetached, findActualExecutable } from 'spawn-rx';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
-import BuildDiscoverBase, { BuildCommandResult } from './build-discover-base';
+import BuildDiscoverBase, { BuildCommandResult, BuildCommand } from './build-discover-base';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-api');
@@ -70,8 +70,7 @@ export async function determineBuildCommands(rootPath: string, sha: string) {
   return ret;
 }
 
-// XXX: WE ARE HERE
-export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
+export function runAllBuildCommands(cmds: BuildCommand[], rootDir: string, sha: string, tempDir: string) {
   let toConcat = cmds.map(({cmd, args}) => {
     return runBuildCommand(cmd, args, rootDir, sha, tempDir);
   });
@@ -80,7 +79,7 @@ export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
     .publish().refCount();
 }
 
-export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
+export function runBuildCommand(cmd: string, args: string[], rootDir: string, sha: string, tempDir: string) {
   let envToAdd = {
     'SURF_SHA1': sha,
     'SURF_ORIGINAL_TMPDIR': process.env.TMPDIR || process.env.TEMP || '/tmp',
@@ -91,14 +90,14 @@ export function runBuildCommand(cmd, args, rootDir, sha, tempDir) {
 
   let opts = {
     cwd: rootDir,
-    env: _.assign({}, process.env, envToAdd)
+    env: Object.assign({}, process.env, envToAdd)
   };
 
   d(`Running ${cmd} ${args.join(' ')}...`);
   return spawnDetached(cmd, args, opts);
 }
 
-export async function uploadBuildArtifacts(gistId, gistCloneUrl, artifactDirs, buildLog, token) {
+export async function uploadBuildArtifacts(gistId: string, gistCloneUrl: string, artifactDirs: string[], buildLog: string, token: string) {
   let targetDir = getGistTempdir(gistId);
 
   // Add the build log even though it isn't an artifact
