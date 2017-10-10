@@ -1,30 +1,42 @@
-import _ from 'lodash';
 import {spawn} from 'spawn-rx';
 import {Observable, Scheduler, Subject, Subscription} from 'rxjs';
 import SerialSubscription from 'rxjs-serial-subscription';
+import * as clone from 'lodash.clone';
 
 import {getNwoFromRepoUrl} from './github-api';
 
 import './custom-rx-operators';
+import { IScheduler } from 'rxjs/Scheduler';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-monitor');
 
-export function getSeenRefs(refs) {
-  return _.reduce(refs, (acc, x) => {
+export function getSeenRefs(refs: any[]) {
+  return refs.reduce((acc, x) => {
     acc.add(x.object.sha);
     return acc;
   }, new Set());
 }
 
 export default class BuildMonitor {
-  constructor(cmdWithArgs, repo, maxConcurrentJobs, fetchRefs, initialRefs=null, scheduler=null, pollInterval=5000) {
-    _.assign(this, {cmdWithArgs, maxConcurrentJobs, fetchRefs, scheduler, pollInterval, repo});
+  private readonly scheduler: IScheduler;
+  private readonly currentRunningMonitor = new SerialSubscription();
+  private readonly buildsToActuallyExecute = new Subject();
+  private readonly buildMonitorCrashed = new Subject<Error>();
+  private readonly currentBuilds: any = {};
+  private readonly seenCommits: Set<any>;
+
+  constructor(
+      private cmdWithArgs: string[],
+      private repo: string,
+      private maxConcurrentJobs: number,
+      private fetchRefs: (() => Promise<any[]>),
+      initialRefs?: any[],
+      scheduler?: IScheduler,
+      private pollInterval = 5000) {
 
     this.currentBuilds = {};
-    this.scheduler = this.scheduler || Scheduler.queue;
-    this.currentRunningMonitor = new SerialSubscription();
-    this.buildsToActuallyExecute = new Subject();
-    this.buildMonitorCrashed = new Subject();
+    this.scheduler = scheduler || Scheduler.queue;
 
     this.buildMonitorCrashed.subscribe((e) => {
       console.error(`Build Monitor crashed! ${e.message}`);
@@ -44,9 +56,9 @@ export default class BuildMonitor {
     this.currentRunningMonitor.unsubscribe();
   }
 
-  runBuild(ref) {
-    let args = _.clone(this.cmdWithArgs).splice(1).concat([ref.object.sha]);
-    let envToAdd = {
+  runBuild(ref: any) {
+    let args = clone(this.cmdWithArgs).splice(1).concat([ref.object.sha]);
+    let envToAdd: any = {
       'SURF_SHA1': ref.object.sha,
       'SURF_REPO': this.repo,
       'SURF_NWO': getNwoFromRepoUrl(this.repo),
@@ -58,7 +70,7 @@ export default class BuildMonitor {
     }
 
     let opts = {
-      env: _.assign({}, envToAdd, process.env)
+      env: Object.assign({}, envToAdd, process.env)
     };
 
     d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`);
@@ -68,7 +80,7 @@ export default class BuildMonitor {
       .do((x) => console.log(x), e => console.error(e));
   }
 
-  getOrCreateBuild(ref) {
+  getOrCreateBuild(ref: any) {
     let ret = this.currentBuilds[ref.object.sha];
     if (ret) return ret;
 
@@ -86,7 +98,7 @@ export default class BuildMonitor {
         delete this.currentBuilds[ref.object.sha];
       });
 
-    let connected = null;
+    let connected: Subscription;
     let buildObs = Observable.create((subj) => {
       this.seenCommits.add(ref.object.sha);
 
