@@ -1,18 +1,19 @@
-import _ from 'lodash';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import {Observable} from 'rxjs';
 
 import { asyncReduce } from './promise-array';
 import { spawnDetached, findActualExecutable } from 'spawn-rx';
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api';
+import BuildDiscoverBase, { BuildCommandResult } from './build-discover-base';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-api');
 
-export function createBuildDiscovers(rootPath) {
+export function createBuildDiscovers(rootPath: string): BuildDiscoverBase[] {
   let discoverClasses = fs.readdirSync(path.join(__dirname, 'build-discoverers'));
 
-  return _.map(discoverClasses, (file) => {
+  return discoverClasses.map((file) => {
     const Klass = require(path.join(__dirname, 'build-discoverers', file)).default;
 
     d(`Found build discoverer: ${Klass.name}`);
@@ -20,11 +21,11 @@ export function createBuildDiscovers(rootPath) {
   });
 }
 
-export async function determineBuildCommands(rootPath, sha) {
+export async function determineBuildCommands(rootPath: string, sha: string) {
   let discoverers = createBuildDiscovers(rootPath);
-  let activeDiscoverers = [];
+  let activeDiscoverers: { affinity: number, discoverer: BuildDiscoverBase }[] = [];
 
-  let mainDiscoverer = await asyncReduce(discoverers, async (acc, x) => {
+  let mainDiscoverer = await asyncReduce(discoverers, async (acc: { affinity: number, discoverer: BuildDiscoverBase | null}, x) => {
     let affinity = await x.getAffinityForRootDir() || 0;
     if (affinity < 1) return acc;
 
@@ -39,16 +40,16 @@ export async function determineBuildCommands(rootPath, sha) {
   }, {affinity: -1, discoverer: null});
 
   if (mainDiscoverer.discoverer) {
-    activeDiscoverers.push(mainDiscoverer);
+    activeDiscoverers.push({ affinity: mainDiscoverer.affinity, discoverer: mainDiscoverer.discoverer!});
   }
 
-  activeDiscoverers = _.sortBy(activeDiscoverers, (x) => 0 - x.affinity);
+  activeDiscoverers = activeDiscoverers.sort((a, b) => a.affinity - b.affinity);
 
   if (activeDiscoverers.length < 1) {
     throw new Error("We can't figure out how to build this repo automatically.");
   }
 
-  let ret = {
+  let ret: BuildCommandResult = {
     cmds: [],
     artifactDirs: []
   };
@@ -57,24 +58,21 @@ export async function determineBuildCommands(rootPath, sha) {
     let thisCmd = await discoverer.getBuildCommand(sha);
 
     d(`Discoverer returned ${JSON.stringify(thisCmd)}`);
-    if (thisCmd.cmds) {
-      let newCmds = _.map(thisCmd.cmds, (x) => findActualExecutable(x.cmd, x.args));
-      ret.cmds.push(...newCmds);
-    } else {
-      ret.cmds.push(findActualExecutable(thisCmd.cmd, thisCmd.args));
-    }
+    let newCmds = thisCmd.cmds.map((x) => findActualExecutable(x.cmd, x.args));
+    ret.cmds.push(...newCmds);
 
     if (thisCmd.artifactDirs) {
-      ret.artifactDirs.push(...thisCmd.artifactDirs);
+      ret.artifactDirs!.push(...thisCmd.artifactDirs);
     }
   }
 
-  _.each(ret.cmds, (x) => d(`Actual executable to run: ${x.cmd} ${x.args.join(' ')}`));
+  ret.cmds.forEach((x) => d(`Actual executable to run: ${x.cmd} ${x.args.join(' ')}`));
   return ret;
 }
 
+// XXX: WE ARE HERE
 export function runAllBuildCommands(cmds, rootDir, sha, tempDir) {
-  let toConcat = _.map(cmds, ({cmd, args}) => {
+  let toConcat = cmds.map(({cmd, args}) => {
     return runBuildCommand(cmd, args, rootDir, sha, tempDir);
   });
 
