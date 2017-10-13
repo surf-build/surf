@@ -246,7 +246,7 @@ export function postCommitStatus(
     sha: string, 
     state: string, 
     description: string, 
-    target_url: string, 
+    target_url: string | null, 
     context: string, 
     token?: string) {
   let body = { state, target_url, description, context };
@@ -262,7 +262,7 @@ export interface GistFiles {
   files: Array<any>
 }
 
-export function createGist(description: string, files: GistFiles, publicGist=false, token?: string) {
+export function createGist(description: string, files: Object, publicGist=false, token?: string) {
   let body = { files, description, "public": publicGist };
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }

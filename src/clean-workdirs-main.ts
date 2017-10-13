@@ -1,12 +1,11 @@
-import _ from 'lodash';
 import { asyncMap } from './promise-array';
-import { rimraf } from './promisify';
+import { rimraf } from './recursive-fs';
 import { getAllWorkdirs, getOriginForRepo } from './git-api';
 import { fetchAllRefsWithInfo, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api';
 
 const d = require('debug')('surf:surf-clean');
 
-export default async function main(argv, showHelp) {
+export default async function main(argv: any, showHelp: (() => void)) {
   if (argv.help) {
     showHelp();
     process.exit(0);
@@ -33,16 +32,15 @@ export default async function main(argv, showHelp) {
     process.exit(-1);
   }
 
-  let safeShas = _.map(refInfo, (ref) => `-${ref.object.sha.substr(0,6)}`);
+  let safeShas = refInfo!.map((ref) => `-${ref.object.sha.substr(0,6)}`);
 
   d(`safeShas: ${Array.from(safeShas).join()}`);
   let allDirs = await getAllWorkdirs(repo);
-  let toDelete = _.filter(
-    allDirs,
-    (x) => !_.find(safeShas, (sha) => x.indexOf(sha) > 0));
+  let toDelete = allDirs.filter(
+    (x) => !safeShas.find((sha) => x.indexOf(sha) > 0));
 
   if (argv['dry-run']) {
-    _.each(toDelete, (x) => console.log(x));
+    toDelete.forEach((x) => console.log(x));
   } else {
     await asyncMap(toDelete, (x) => {
       d(`Burninating path '${x}'`);

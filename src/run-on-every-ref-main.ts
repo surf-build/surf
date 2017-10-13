@@ -1,4 +1,3 @@
-import request from 'request-promise';
 import {Observable} from 'rxjs';
 
 import {getOriginForRepo} from './git-api';

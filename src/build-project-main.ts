@@ -1,20 +1,21 @@
-import path from 'path';
-import mkdirp from 'mkdirp';
-import sfs from 'fs';
+import * as path from 'path';
+import * as mkdirp from 'mkdirp';
+import * as sfs from 'fs';
 
 import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
   getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
   findPRForCommit } from './github-api';
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api';
-import { fs, rimraf } from './promisify';
+import * as fs from 'mz/fs';
+import { rimraf } from './recursive-fs';
 import { retryPromise } from './promise-array';
 
 import {Observable} from 'rxjs';
 import ON_DEATH from 'death';
 
-const DeathPromise = new Promise((res,rej) => {
-  ON_DEATH((sig) => rej(new Error(`Signal ${sig} thrown`)));
+const DeathPromise = new Promise<number>((_res,rej) => {
+  ON_DEATH((sig: number) => rej(new Error(`Signal ${sig} thrown`)));
 });
 
 const d = require('debug')('surf:surf-build');
@@ -25,16 +26,16 @@ function getRootAppDir() {
 
   switch (process.platform) {
   case 'win32':
-    ret = path.join(process.env.LOCALAPPDATA, 'surf');
+    ret = path.join(process.env.LOCALAPPDATA!, 'surf');
     break;
   case 'darwin':
     ret = process.env.HOME ?
-      path.join(process.env.HOME, 'Library', 'Application Support', 'surf') :
+      path.join(process.env.HOME!, 'Library', 'Application Support', 'surf') :
       path.join(tmp, 'surf-repos');
     break;
   default:
     ret = process.env.HOME ?
-      path.join(process.env.HOME, '.config', 'surf') :
+      path.join(process.env.HOME!, '.config', 'surf') :
       path.join(tmp, 'surf-repos');
     break;
   }
@@ -47,11 +48,11 @@ function getRepoCloneDir() {
   return path.join(getRootAppDir(), 'repos');
 }
 
-function truncateErrorMessage(errorMessage) {
+function truncateErrorMessage(errorMessage: string) {
   return (errorMessage.split('\n')[0]).substr(0, 256);
 }
 
-export default function main(argv, showHelp) {
+export default function main(argv: any, showHelp: (() => void)) {
   let doIt = Observable.merge(
     Observable.fromPromise(realMain(argv, showHelp)),
     Observable.fromPromise(DeathPromise)
@@ -80,7 +81,7 @@ export default function main(argv, showHelp) {
     });
 }
 
-async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
+async function configureEnvironmentVariablesForChild(nwo: string, sha: string, name: string, repo: string) {
   process.env.SURF_NWO = nwo;
   process.env.SURF_REPO = repo;
   if (name) process.env.SURF_BUILD_NAME = name;
@@ -100,7 +101,7 @@ async function configureEnvironmentVariablesForChild(nwo, sha, name, repo) {
   }
 }
 
-async function realMain(argv, showHelp) {
+async function realMain(argv: any, showHelp: (() => void)) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
   let name = argv.name;
@@ -170,7 +171,7 @@ async function realMain(argv, showHelp) {
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, null, false));
+  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, '', false));
   r.free();
 
   d(`Checking out to given SHA1: ${sha}`);
@@ -180,11 +181,7 @@ async function realMain(argv, showHelp) {
   await resetOriginUrl(workDir, repo);
 
   d(`Determining command to build`);
-  let { cmd, cmds, args, artifactDirs } = await determineBuildCommands(workDir);
-
-  if (!cmds) {
-    cmds = [{cmd, args}];
-  }
+  let { cmds, artifactDirs } = await determineBuildCommands(workDir, sha);
 
   let buildPassed = true;
   let buildLog = path.join(workDir, 'build-output.log');
@@ -195,7 +192,7 @@ async function realMain(argv, showHelp) {
 
     buildStream.concatMap((x) => {
       console.log(x.replace(/[\r\n]+$/, ''));
-      return Observable.fromPromise(fs.write(fd, x, null, 'utf8'));
+      return Observable.fromPromise(fs.write(fd, x, 0, 'utf8'));
     }).subscribe(() => {}, (e) => {
       console.error(e.message);
       sfs.writeSync(fd, `${e.message}\n`, null, 'utf8');
@@ -204,7 +201,7 @@ async function realMain(argv, showHelp) {
     await buildStream
       .reduce(() => null)
       .toPromise();
-  } catch (_) {
+  } catch (_e) {
     // NB: We log this in the subscribe statement above
     buildPassed = false;
   } finally {
@@ -221,12 +218,12 @@ async function realMain(argv, showHelp) {
 
     d(`Gist result: ${gistInfo.result.html_url}`);
     d(`Gist clone URL: ${gistInfo.result.git_pull_url}`);
-    let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN;
+    let token = process.env.GIST_TOKEN || process.env.GITHUB_TOKEN || '';
 
     try {
       d(`Uploading build artifacts using token: ${token}`);
       await retryPromise(() => 
-        uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs, buildLog, token));
+        uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs || [], buildLog, token));
     } catch (e) {
       console.error(`Failed to upload build artifacts: ${e.message}`);
       d(e.stack);

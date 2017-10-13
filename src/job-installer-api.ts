@@ -1,6 +1,7 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import {asyncReduce} from './promise-array';
+import JobInstallerBase from './job-installer-base';
 
 const d = require('debug')('surf:job-installer-api');
 
@@ -11,11 +12,11 @@ export function createJobInstallers() {
     const Klass = require(path.join(__dirname, 'job-installers', x)).default;
 
     d(`Found job installer: ${Klass.name}`);
-    return new Klass();
+    return new Klass() as JobInstallerBase;
   });
 }
 
-export async function getDefaultJobInstallerForPlatform(name, command) {
+export async function getDefaultJobInstallerForPlatform(name: string, command: string) {
   let ret = (await asyncReduce(createJobInstallers(), async (acc, installer) => {
     let affinity = await installer.getAffinityForJob(name, command);
 
@@ -23,7 +24,7 @@ export async function getDefaultJobInstallerForPlatform(name, command) {
     if (!acc) return { affinity, installer };
 
     return acc.affinity >= affinity ? acc : { affinity, installer };
-  }, null));
+  }, null as ({affinity: number, installer: JobInstallerBase} | null)));
 
   let installer = ret ? ret.installer : null;
 
@@ -35,11 +36,11 @@ export async function getDefaultJobInstallerForPlatform(name, command) {
   return installer;
 }
 
-export async function installJob(name, command, returnContent=false, explicitType=null, extraEnvVars=null) {
+export async function installJob(name: string, command: string, returnContent=false, explicitType?: string, extraEnvVars?: string[]) {
   let installer = null;
 
   if (explicitType) {
-    installer = createJobInstallers().find((x) => x.getName() == explicitType);
+    installer = createJobInstallers().find((x) => x.getName() === explicitType);
 
     if (!installer) {
       let names = createJobInstallers().map((x) => x.getName());

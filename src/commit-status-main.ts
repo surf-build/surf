@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-
-import _ from 'lodash';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 
 import {asyncMap} from './promise-array';
 import {getOriginForRepo} from './git-api';
@@ -9,13 +7,13 @@ import {fetchAllRefsWithInfo, getNwoFromRepoUrl, getCombinedStatusesForCommit} f
 
 const d = require('debug')('surf:commit-status-main');
 
-export default async function main(repo, server, jsonOnly, help, showHelp) {
+export default async function main(theRepo: string, jsonOnly: boolean, help: boolean, showHelp: (() => void)) {
   if (help) {
     showHelp();
     process.exit(0);
   }
 
-  repo = repo || process.env.SURF_REPO;
+  let repo = theRepo || process.env.SURF_REPO;
 
   if (!repo) {
     try {
@@ -30,7 +28,7 @@ export default async function main(repo, server, jsonOnly, help, showHelp) {
   }
 
   d(`Getting nwo for ${repo}`);
-  let nwo = getNwoFromRepoUrl(repo);
+  let nwo = getNwoFromRepoUrl(repo!);
 
   let refList = await fetchAllRefsWithInfo(nwo);
   let refToObject = refList.reduce((acc,x) => {
@@ -39,18 +37,19 @@ export default async function main(repo, server, jsonOnly, help, showHelp) {
   }, {});
   
   let statuses = await asyncMap(
-    _.map(refList, (x) => x.ref),
+    refList.map((x) => x.ref),
     async (ref) => {
       let sha = refToObject[ref].sha;
       return (await getCombinedStatusesForCommit(nwo, sha)).result;
     });
     
   if (jsonOnly) {
-    let statusArr = _.reduce(refList, (acc, x) => {
+    let statusArr = refList.reduce((acc, x) => {
       acc[x.ref] = statuses[x.ref];
       delete acc[x.ref].repository;
       return acc;
     }, {});
+
     console.log(JSON.stringify(statusArr));
   } else {
     const statusToIcon = {
@@ -81,7 +80,7 @@ export default async function main(repo, server, jsonOnly, help, showHelp) {
       }
 
       console.log(`${statusToIcon[status.state]}: ${friendlyName}`);
-      _.each(status.statuses, (status) => {
+      status.statuses.each((status: any) => {
         console.log(`  ${status.description} - ${status.target_url}`);
       });
     }
