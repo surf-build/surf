@@ -50,6 +50,7 @@
     "lru-cache": "^4.0.2",
     "mime-types": "^2.1.15",
     "mkdirp": "^0.5.1",
+    "mz": "^2.7.0",
     "nodegit": "^0.18.3",
     "parse-link-header": "^0.4.1",
     "pify": "^2.3.0",
