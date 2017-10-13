@@ -12,7 +12,7 @@
     "surf-install": "./lib/job-installer-cli.js"
   },
   "scripts": {
-    "compile": "cross-env NODE_ENV='production' git clean -xdf lib && tsc --outDir ./lib -p ./src",
+    "compile": "cross-env NODE_ENV='production' git clean -xdf lib && tsc",
     "prepublish": "npm run compile",
     "test": "mocha --compilers ts:ts-node/register ./test/*.ts",
     "test-cov": "cross-env NODE_ENV='test' istanbul cover ./node_modules/mocha/bin/_mocha -- --compilers ts:ts-node/register test/*.ts"

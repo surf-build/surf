@@ -16,14 +16,18 @@
     "pretty": true,
     "target": "es2015",
     "outDir": "lib",
-    "lib": ["es2015"]
+    "lib": ["es2015", "dom"]
   },
   "formatCodeOptions": {
     "indentSize": 2,
     "tabSize": 2
   },
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
-    "lib"
-  ]
+    "**/*.spec.ts"
+  ]  
 }

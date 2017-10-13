@@ -6,12 +6,13 @@ import { cloneRepo, fetchRepo, cloneOrFetchRepo } from '../src/git-api';
 import { rimraf, mkdirp } from '../src/recursive-fs';
 import * as fs from 'mz/fs';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf-test:git-api');
 
 let count = 0;
 
 describe('The node-git helper methods', function() {
-  this.timeout(20*1000);
+  this.timeout(20 * 1000);
 
   beforeEach(async function() {
     this.targetDir = await mkdirp(path.join(__dirname, `__nodegit_${++count}`));

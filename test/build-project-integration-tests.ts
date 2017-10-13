@@ -1,12 +1,11 @@
 import './support';
-import {expect} from 'chai';
 
 import * as path from 'path';
 import main from '../src/build-project-main';
 import {mkdirp, rimraf} from '../src/recursive-fs';
 
 describe('The build project CLI', function() {
-  this.timeout(15*1000);
+  this.timeout(15 * 1000);
 
   let testCount = 0;
   beforeEach(async function() {

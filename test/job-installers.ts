@@ -7,6 +7,7 @@ import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
 import LaunchdInstaller from '../src/job-installers/launchd';
 import {installJob, getDefaultJobInstallerForPlatform} from '../src/job-installer-api';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf-test:job-installers');
 
 describe('systemd job installer', function() {
@@ -25,7 +26,7 @@ describe('systemd job installer', function() {
 
     expect(
       result[`${this.sampleName}.service`].split('\n')
-        .find((l) => l.match(/Environment.*SURF_TEST_ENV_VAR.*hello/))
+        .find((l: string) => l.match(/Environment.*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
 
@@ -33,7 +34,7 @@ describe('systemd job installer', function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
     let execStartLine = result[`${this.sampleName}.service`].split('\n')
-      .find((l) => l.match(/ExecStart/));
+      .find((l: string) => l.match(/ExecStart/));
     expect(execStartLine.indexOf(this.sampleCommand) > 0).to.be.ok;
   });
 
@@ -42,7 +43,9 @@ describe('systemd job installer', function() {
 
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
-    let execStartLine = result[`${this.sampleName}.service`].split('\n').find((l) => l.match(/ExecStart/));
+    let execStartLine = result[`${this.sampleName}.service`]
+      .split('\n')
+      .find((l: string) => l.match(/ExecStart/));
 
     d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
@@ -65,14 +68,17 @@ describe('docker job installer', function() {
 
     expect(
       result['Dockerfile'].split('\n')
-        .find((l) => l.match(/ENV .*SURF_TEST_ENV_VAR.*hello/))
+        .find((l: string) => l.match(/ENV .*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
 
   it('should have the command as CMD', async function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result['Dockerfile'].split('\n').find((l) => l.match(/CMD/));
+    let execStartLine = result['Dockerfile']
+      .split('\n')
+      .find((l: string) => l.match(/CMD/));
+
     d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
   });
@@ -82,7 +88,7 @@ describe('Task scheduler job installer', function() {
   if (process.platform !== 'win32') return;
 
   // NB: This has to spawn PowerShell to get the user list :-/
-  this.timeout(10*1000);
+  this.timeout(10 * 1000);
 
   beforeEach(function() {
     this.fixture = new TaskSchedulerInstaller();
@@ -98,8 +104,7 @@ describe('Task scheduler job installer', function() {
     d(JSON.stringify(result));
 
     expect(
-      result[`${this.sampleName}.cmd`].split('\n')
-        .find((l) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
+      result[`${this.sampleName}.cmd`].split('\n').find((l: string) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
     ).to.be.ok;
   });
 
@@ -108,8 +113,7 @@ describe('Task scheduler job installer', function() {
 
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result[`${this.sampleName}.cmd`].split('\n')
-      .find((l) => l.match(/surf-build/));
+    let execStartLine = result[`${this.sampleName}.cmd`].split('\n').find((l: string) => l.match(/surf-build/));
     expect(execStartLine).to.be.ok;
   });
 });
@@ -129,16 +133,14 @@ describe('launchd job installer', function() {
     d(result);
 
     expect(
-      result[`local.${this.sampleName}.plist`].split('\n')
-        .find((l) => l.match(/key.*SURF_TEST_ENV_VAR.*string.*hello/))
+      result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/key.*SURF_TEST_ENV_VAR.*string.*hello/))
     ).to.be.ok;
   });
 
   it('should have the command', async function() {
     let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
 
-    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n')
-      .find((l) => l.match(/Program/));
+    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/));
     expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
   });
 
@@ -147,7 +149,7 @@ describe('launchd job installer', function() {
 
     let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
 
-    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l) => l.match(/Program/));
+    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/));
 
     d(`execStartLine: ${execStartLine}`);
     expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
@@ -155,7 +157,7 @@ describe('launchd job installer', function() {
 });
 
 describe('Job installer API', function() {
-  this.timeout(10*1000);
+  this.timeout(10 * 1000);
 
   beforeEach(function() {
     this.sampleName = 'example-csharp';
@@ -188,8 +190,8 @@ describe('Job installer API', function() {
 
     let lines = result['Dockerfile'].split('\n');
     expect(lines.length > 2).to.be.ok;
-    expect(lines.find((x) => x.match(/^ENV.*FOOBAR.*baz/))).to.be.ok;
-    expect(lines.find((x) => x.match(/^ENV.*BAMF.*baz/))).to.be.ok;
+    expect(lines.find((x: string) => x.match(/^ENV.*FOOBAR.*baz/))).to.be.ok;
+    expect(lines.find((x: string) => x.match(/^ENV.*BAMF.*baz/))).to.be.ok;
   });
 
   it('should allow us to explicitly select the Docker API', async function() {
@@ -197,7 +199,7 @@ describe('Job installer API', function() {
     let lines = result['Dockerfile'].split('\n');
 
     expect(lines.length > 2).to.be.ok;
-    expect(lines.find((x) => x.match(/^CMD /))).to.be.ok;
-    expect(lines.find((x) => x.match(/^ExecPath/))).not.to.be.ok;
+    expect(lines.find((x: string) => x.match(/^CMD /))).to.be.ok;
+    expect(lines.find((x: string) => x.match(/^ExecPath/))).not.to.be.ok;
   });
 });
