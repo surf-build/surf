@@ -1,6 +1,8 @@
-import fs from 'fs';
-import _ from 'lodash';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// tslint:disable-next-line:no-var-requires
+const flatten = require('lodash.flatten');
 
 import { getSanitizedRepoUrl, getNwoFromRepoUrl, fetchAllTags, fetchStatusesForCommit, 
   getIdFromGistUrl, createRelease, uploadFileToRelease } from './github-api';
@@ -9,7 +11,7 @@ import { retryPromise } from './promise-array';
 
 const d = require('debug')('surf:surf-publish');
 
-async function cloneSurfBuildGist(url) {
+async function cloneSurfBuildGist(url: string) {
   let targetDir = getGistTempdir(getIdFromGistUrl(url));
   let token = process.env['GIST_TOKEN'] || process.env['GITHUB_TOKEN'];
   
@@ -18,7 +20,7 @@ async function cloneSurfBuildGist(url) {
   return targetDir;
 }
 
-export default async function main(argv, showHelp) {
+export default async function main(argv: any, showHelp: (() => void)) {
   let repo = argv.repo || process.env.SURF_REPO;
   let tag = argv.tag;
 
@@ -72,7 +74,7 @@ export default async function main(argv, showHelp) {
     targetDirMap[targetDir] = status.context;
   }
   
-  let fileList = _.flatten(Object.keys(targetDirMap)
+  let fileList: string[] = flatten(Object.keys(targetDirMap)
     .map((d) => fs.readdirSync(d)
       .filter((f) => f !== 'build-output.txt' && fs.statSync(path.join(d,f)).isFile())
       .map((f) => path.join(d,f))));

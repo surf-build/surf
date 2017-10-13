@@ -1,5 +1,7 @@
 import * as fs from 'fs';
-import * as template from 'lodash.template';
+
+// tslint:disable-next-line:no-var-requires
+const template = require('lodash.template');
 
 import JobInstallerBase from '../job-installer-base';
 import {statNoException} from '../promise-array';

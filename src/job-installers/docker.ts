@@ -1,22 +1,25 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as temp from 'temp';
-import * as template from 'lodash.template';
 
 import JobInstallerBase from '../job-installer-base';
 import {findActualExecutable, spawnPromise, spawnDetachedPromise} from 'spawn-rx';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:docker');
 
+// tslint:disable-next-line:no-var-requires
+const template = require('lodash.template');
+
 // NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
-const makeDockerfile = 
+const makeDockerfile =
   template(fs.readFileSync(require.resolve('../../src/job-installers/docker.in'), 'utf8'));
 
 export default class DockerInstaller extends JobInstallerBase {
   getName() {
     return 'docker';
   }
-  
+
   async getAffinityForJob(_name: string, _command: string) {
     let docker = findActualExecutable('docker', []).cmd;
     if (docker === 'docker') {
@@ -34,23 +37,23 @@ export default class DockerInstaller extends JobInstallerBase {
       pkgJson: require('../../package.json'),
       name, command
     };
-    
+
     if (returnContent) {
-      return { "Dockerfile" : makeDockerfile(opts) };
-    } 
+      return { 'Dockerfile' : makeDockerfile(opts) };
+    }
 
     let dir = temp.mkdirSync('surf');
     let target = path.join(dir, 'Dockerfile');
     fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
-    
+
     console.error(`Building Docker image, this will take a bit...`);
     await spawnPromise('docker', ['build', '-t', name, dir]);
-    
+
     spawnDetachedPromise('docker', ['run', name])
       .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
-    
+
     return `Created new docker image: ${name}
-  
+
 To start it: docker run ${name}'`;
   }
 }

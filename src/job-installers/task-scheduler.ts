@@ -3,7 +3,9 @@ import * as os from 'os';
 import * as mkdirp from 'mkdirp';
 import * as path from 'path';
 import * as temp from 'temp';
-import * as template from 'lodash.template';
+
+// tslint:disable-next-line:no-var-requires
+const template = require('lodash.template');
 
 import JobInstallerBase from '../job-installer-base';
 import {spawnPromise} from 'spawn-rx';

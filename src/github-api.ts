@@ -1,5 +1,4 @@
 import * as mimeTypes from 'mime-types';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
 import * as request from 'request-promise';
@@ -7,14 +6,20 @@ import * as requestOg from 'request';
 import * as parseLinkHeader from 'parse-link-header';
 import {asyncMap} from './promise-array';
 import * as createLRU from 'lru-cache';
-import * as isNumber from 'lodash.isnumber';
+import { ReadStream } from 'fs';
+
+// tslint:disable-next-line:no-var-requires
+const isNumber = require('lodash.isnumber');
+
+// tslint:disable-next-line:no-var-requires
+const fs = require('fs');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:github-api');
 
-function apiUrl(path: string, gist=false) {
+function apiUrl(path: string, gist = false) {
   let apiRoot = gist ?
     (process.env.GIST_ENTERPRISE_URL || process.env.GITHUB_ENTERPRISE_URL) :
     process.env.GITHUB_ENTERPRISE_URL;
@@ -58,21 +63,21 @@ export function getNwoFromRepoUrl(repoUrl: string) {
 export function getIdFromGistUrl(gistUrl: string) {
   let u = url.parse(gistUrl);
   let s = u.pathname!.split('/');
-  
+
   // NB: Anonymous Gists don't have usernames, just the token
   return s[2] || s[1];
 }
 
 export interface GitHubResponse {
-  headers: requestOg.Headers,
-  result: any
+  headers: requestOg.Headers;
+  result: any;
 }
 
 export async function gitHub(
-    uri: string, 
-    token?: string, 
-    body: Object | number | Buffer | fs.ReadStream | null = null, 
-    extraHeaders?: requestOg.Headers, 
+    uri: string,
+    token?: string,
+    body: Object | number | Buffer | ReadStream | null = null,
+    extraHeaders?: requestOg.Headers,
     targetFile?: string): Promise<GitHubResponse> {
   let tok = token || process.env.GITHUB_TOKEN;
 
@@ -96,7 +101,7 @@ export async function gitHub(
   if (extraHeaders) {
     Object.assign(opts.headers, extraHeaders);
   }
-    
+
   if (isNumber(body) || body instanceof Buffer || body instanceof fs.ReadStream) {
     delete opts.json;
   }
@@ -109,13 +114,13 @@ export async function gitHub(
         .pipe(fs.createWriteStream(targetFile));
 
       str.on('finish', () => res());
-      str.on('error', (e) => rej(e));
+      str.on('error', (e: Error) => rej(e));
     });
 
     return { result: targetFile, headers: {}};
   }
 
-  let ret = null;
+  let ret: any = null;
   let result = null;
   try {
     ret = request(opts);
@@ -170,7 +175,7 @@ const refCache = createLRU({
 
 export async function fetchSingleRef(nwo: string, ref: string, shaHint=null) {
   let ret = shaHint ? refCache.get(shaHint) : null;
-  if (ret) { 
+  if (ret) {
     return ret;
   }
 
@@ -195,10 +200,10 @@ export async function fetchAllRefsWithInfo(nwo: string) {
     acc[x.head.ref] = x;
     return acc;
   }, {});
-  
+
   let refs = objectValues(
     await asyncMap(
-      refList, 
+      refList,
       async (ref) => {
         let repoName = refToPR[ref].head.repo.full_name;
         let shaHint = refToPR[ref].head.sha;
@@ -209,16 +214,16 @@ export async function fetchAllRefsWithInfo(nwo: string) {
           return null;
         }
       }));
-        
+
   // Monitor the default branch for the repo (usually 'master')
   let repoInfo = await fetchRepoInfo(nwo);
   let defaultBranch = repoInfo.result.default_branch;
   let result = await fetchSingleRef(nwo, defaultBranch);
   refs.push(result);
-      
+
   // Filter failures from when we get the ref
   refs = refs.filter((x) => x !== null);
-  
+
   let commitInfo = await asyncMap(
     refs.map((ref) => ref.object.url),
     async (x) => {
@@ -234,7 +239,7 @@ export async function fetchAllRefsWithInfo(nwo: string) {
     ref.object.commit = commitInfo[ref.object.url];
     ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
-  
+
   // Filter failures from the commitInfo asyncMap above
   refs = refs.filter((r) => r.object.commit);
 
@@ -242,12 +247,12 @@ export async function fetchAllRefsWithInfo(nwo: string) {
 }
 
 export function postCommitStatus(
-    nwo: string, 
-    sha: string, 
-    state: string, 
-    description: string, 
-    target_url: string | null, 
-    context: string, 
+    nwo: string,
+    sha: string,
+    state: string,
+    description: string,
+    target_url: string | null,
+    context: string,
     token?: string) {
   let body = { state, target_url, description, context };
   if (!target_url) { delete body.target_url; }
@@ -257,13 +262,13 @@ export function postCommitStatus(
 }
 
 export interface GistFiles {
-  description: string,
-  public: boolean,
-  files: Array<any>
+  description: string;
+  public: boolean;
+  files: Array<any>;
 }
 
 export function createGist(description: string, files: Object, publicGist=false, token?: string) {
-  let body = { files, description, "public": publicGist };
+  let body = { files, description, 'public': publicGist };
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
 
@@ -280,21 +285,21 @@ export function getCombinedStatusesForCommit(nwo: string, sha: string, token?: s
 }
 
 export function createRelease(nwo: string, tag: string, token?: string) {
-  let body = { 
+  let body = {
     tag_name: tag,
     target_committish: tag,
     name: `${nwo.split('/')[1]} @ ${tag}`,
     body: 'To be written',
     draft: true
   };
-  
+
   return gitHub(apiUrl(`repos/${nwo}/releases`), token, body);
 }
 
 export function uploadFileToRelease(targetUrl: string, targetFile: string, fileName: string, token?: string) {
   let uploadUrl = targetUrl.replace(/{[^}]*}/g, '');
   uploadUrl = uploadUrl + `?name=${encodeURIComponent(fileName)}`;
-  
+
   let contentType = {
     "Content-Type": mimeTypes.lookup[fileName] || 'application/octet-stream',
     "Content-Length": fs.statSync(targetFile).size
@@ -309,7 +314,7 @@ export function getReleaseByTag(nwo: string, tag: string, token?: string) {
 }
 
 export function downloadReleaseAsset(nwo: string, assetId: string, targetFile: string, token?: string) {
-  let headers = { "Accept": "application/octet-stream" };
+  let headers = { 'Accept': 'application/octet-stream' };
   return gitHub(apiUrl(`repos/${nwo}/releases/assets/${assetId}`), token, null, headers, targetFile);
 }
 
@@ -320,10 +325,10 @@ export async function findPRForCommit(nwo: string, sha: string, token?: string) 
   let item = result.items.find((x: { pull_request?: { url: string } }) => {
     if (!x.pull_request) return false;
     if (x.pull_request.url.indexOf(`/${nwo}/`) < 0) return false;
-    
+
     return true;
   });
-  
+
   if (!item || !item.pull_request) return null;
   return (await gitHub(item.pull_request.url)).result;
 }

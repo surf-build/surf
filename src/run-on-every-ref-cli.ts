@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+/*
 import main from './run-on-every-ref-main';
 
 const d = require('debug')('surf:surf');
@@ -35,3 +35,5 @@ main(argv, () => yargs.showHelp())
     d(e.stack);
     process.exit(-1);
   });
+
+  */

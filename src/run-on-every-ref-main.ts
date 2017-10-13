@@ -1,3 +1,4 @@
+/*
 import {Observable} from 'rxjs';
 
 import {getOriginForRepo} from './git-api';
@@ -79,3 +80,5 @@ export default async function main(argv, showHelp) {
   // NB: We will never get here in normal operation
   return true;
 }
+
+*/

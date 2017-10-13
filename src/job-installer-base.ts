@@ -23,7 +23,7 @@ export default class JobInstallerBase {
     this.extraEnvVars = vars;
   }
   
-  getName() {
+  getName(): string {
     throw new Error("Implement me!");
   }
 

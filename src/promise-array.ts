@@ -41,10 +41,10 @@ export function delay(ms: number) {
   });
 }
 
-export function retryPromise(func: (() => Promise<any>)) {
+export function retryPromise(func: (() => Promise<any>), count = 3) {
   return Observable.defer(() =>
       Observable.fromPromise(func()))
-    .retry(3)
+    .retry(count)
     .toPromise();
 }
 

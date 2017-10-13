@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import * as sfs from 'fs-extra';
 
-import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote, Commit, CheckoutOptions, PushOptions } from 'nodegit';
+import { Repository, Clone, Checkout, Cred, Reference, Signature, Remote } from 'nodegit';
 import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { statNoException, statSyncNoException } from './promise-array';
@@ -13,14 +13,10 @@ import * as fs from 'mz/fs';
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api');
 
-interface Freeable {
-  free: () => void;
-}
-
-type FreeMethod = ((f: Freeable) => Freeable);
+type FreeMethod = ((f: any) => any);
 
 function using<TRet>(block: (f: FreeMethod) => TRet): TRet {
-  let toFree: Freeable[] = [];
+  let toFree: any[] = [];
 
   try {
     return block((f) => { toFree.push(f); return f; });
@@ -30,11 +26,11 @@ function using<TRet>(block: (f: FreeMethod) => TRet): TRet {
 }
 
 export async function getHeadForRepo(targetDirname: string) {
-  let repoDir: string = await Repository.discover(targetDirname, 0, '');
+  let repoDir = (await Repository.discover(targetDirname, 0, '')) as string;
 
   return await using(async (ds) => {
-    let repo = <Repository>ds(await Repository.open(repoDir));
-    let commit = <Commit>ds(await repo.getHeadCommit());
+    let repo = ds(await Repository.open(repoDir));
+    let commit = ds(await repo.getHeadCommit());
     return commit.sha();
   });
 }
@@ -43,8 +39,8 @@ export async function getOriginForRepo(targetDirname: string) {
   let repoDir = await Repository.discover(targetDirname, 0, '');
 
   return await using(async (ds) => {
-    let repo = <Repository>ds(await Repository.open(repoDir));
-    let origin = <Remote>ds(await Remote.lookup(repo, 'origin', () => {}));
+    let repo = ds(await Repository.open(repoDir));
+    let origin = ds(await Remote.lookup(repo, 'origin', () => {}));
 
     return origin.pushurl() || origin.url();
   });
@@ -117,10 +113,10 @@ export function getGistTempdir(id: string) {
 
 export async function checkoutSha(targetDirname: string, sha: string) {
   return await using(async (ds) => {
-    let repo = <Repository>ds(await Repository.open(targetDirname));
-    let commit = <Commit>ds(await repo.getCommit(sha));
+    let repo = ds(await Repository.open(targetDirname));
+    let commit = ds(await repo.getCommit(sha));
 
-    let opts: CheckoutOptions = {};
+    let opts: any = {};
 
     // Equivalent of `git reset --hard HEAD && git clean -xdf`
     d(`Found commit: ${targetDirname}:${commit.sha()}`);
@@ -133,7 +129,7 @@ export async function checkoutSha(targetDirname: string, sha: string) {
   });
 }
 
-export function updateRefspecToPullPRs(repository: Repository) {
+export function updateRefspecToPullPRs(repository: any) {
   Remote.addFetch(repository, 'origin', '+refs/pull/*/head:refs/remotes/origin/pr/*');
 }
 
@@ -227,7 +223,7 @@ export async function cloneOrFetchRepo(url: string, checkoutDir: string, token?:
 
 export async function resetOriginUrl(target: string, url: string) {
   await using(async (ds) => {
-    let repo = <Repository>ds(await Repository.open(target));
+    let repo = ds(await Repository.open(target));
     Remote.setUrl(repo, 'origin', url);
   });
 }
@@ -241,7 +237,7 @@ export async function addFilesToGist(repoUrl: string, targetDir: string, artifac
     }
 
     d('Opening repo');
-    let repo = <Repository>ds(await Repository.open(targetDir));
+    let repo = ds(await Repository.open(targetDir));
 
     d('Opening index');
     let idx = await repo.index();
@@ -274,8 +270,8 @@ export async function addFilesToGist(repoUrl: string, targetDir: string, artifac
 
     d(`Writing commit to gist`);
     let now = new Date();
-    let sig = <Signature>ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
-    let sig2 = <Signature>ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
+    let sig = ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
+    let sig2 = ds(await Signature.create('Surf Build Server', 'none@example.com', now.getTime(), now.getTimezoneOffset()));
 
     d(`Creating commit`);
     await repo.createCommit('HEAD', sig, sig2, `Adding files from ${targetDir}`, oid, [parent]);
@@ -287,13 +283,13 @@ export async function addFilesToGist(repoUrl: string, targetDir: string, artifac
 export async function pushGistRepoToMaster(targetDir: string, token: string) {
   return await using(async (ds) => {
     d('Opening repo');
-    let repo = <Repository>ds(await Repository.open(targetDir));
+    let repo = ds(await Repository.open(targetDir));
 
     d('Looking up origin');
     let origin = await Remote.lookup(repo, 'origin', () => {});
 
     let refspec = 'refs/heads/master:refs/heads/master';
-    let pushopts: PushOptions = {
+    let pushopts: any = {
       callbacks: {
         credentials: () => {
           d(`Returning ${token} for authentication token`);
