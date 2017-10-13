@@ -1,6 +1,9 @@
+import './support';
+import {expect} from 'chai';
+
 import path from 'path';
 import main from '../src/build-project-main';
-import {mkdirp, rimraf} from '../src/promisify';
+import {mkdirp, rimraf} from '../src/recursive-fs';
 
 describe('The build project CLI', function() {
   this.timeout(15*1000);
@@ -27,11 +30,6 @@ describe('The build project CLI', function() {
 
     process.env.HOME = this.home;
     process.env.TEMP = process.env.TMPDIR = this.temp;
-  });
-
-  // NB: This is a valid test but takes forever
-  it.skip('should compile surf itself', async function() {
-    await main('f6db5b824c6d23a5b620d22bb9df7fcc3ee9f2ac', 'https://github.com/surf-build/surf', '__test__');
   });
 
   it('should compile the example C# app', async function() {

@@ -1,4 +1,5 @@
 import './support';
+import {expect} from 'chai';
 
 import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';

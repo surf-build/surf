@@ -1,8 +1,10 @@
 import './support';
+import {expect} from 'chai';
 
-import path from 'path';
+import * as path from 'path';
 import { cloneRepo, fetchRepo, cloneOrFetchRepo } from '../src/git-api';
-import { rimraf, mkdirp, fs } from '../src/promisify';
+import { rimraf, mkdirp } from '../src/recursive-fs';
+import * as fs from 'mz/fs';
 
 const d = require('debug')('surf-test:git-api');
 

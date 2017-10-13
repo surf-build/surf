@@ -1,4 +1,4 @@
-import './support';
+import {expect} from 'chai';
 
 function delay(ms) {
   return new Promise((resolve) => {
