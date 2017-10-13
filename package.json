@@ -14,8 +14,8 @@
   "scripts": {
     "compile": "cross-env NODE_ENV='production' git clean -xdf lib && tsc --outDir ./lib -p ./src",
     "prepublish": "npm run compile",
-    "test": "mocha --compilers ts:ts-node/register ./test/*",
-    "test-cov": "cross-env NODE_ENV='test' istanbul cover ./node_modules/mocha/bin/_mocha -- --compilers ts:ts-node/register test/*.js"
+    "test": "mocha --compilers ts:ts-node/register ./test/*.ts",
+    "test-cov": "cross-env NODE_ENV='test' istanbul cover ./node_modules/mocha/bin/_mocha -- --compilers ts:ts-node/register test/*.ts"
   },
   "repository": {
     "type": "git",
@@ -60,6 +60,7 @@
     "spawn-rx": "^2.0.10",
     "string-argv": "0.0.2",
     "temp": "^0.8.3",
+    "ts-node": "^3.3.0",
     "xml-escape": "^1.1.0",
     "yargs": "^7.0.2"
   },

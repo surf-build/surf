@@ -1,7 +1,7 @@
 import './support';
 import {expect} from 'chai';
 
-import path from 'path';
+import * as path from 'path';
 import main from '../src/build-project-main';
 import {mkdirp, rimraf} from '../src/recursive-fs';
 

@@ -1,6 +1,6 @@
 import {expect} from 'chai';
 
-function delay(ms) {
+function delay(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });

@@ -15,7 +15,8 @@
     "moduleResolution": "node",
     "pretty": true,
     "target": "es2015",
-    "outDir": "lib"
+    "outDir": "lib",
+    "lib": ["es2015"]
   },
   "formatCodeOptions": {
     "indentSize": 2,
