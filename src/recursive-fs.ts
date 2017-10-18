@@ -5,10 +5,10 @@ export function mkdirpSync(dir: string) {
   ogM.sync(dir);
 }
 
-export function mkdirp(dir: string): Promise<void> {
-  return new Promise<void>((res,rej) => {
+export function mkdirp(dir: string): Promise<string> {
+  return new Promise<string>((res,rej) => {
     ogM(dir, (err: Error) => {
-      if (err) { rej(err); } else { res(); }
+      if (err) { rej(err); } else { res(dir); }
     });
   });
 }
