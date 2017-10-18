@@ -3,6 +3,7 @@ import * as path from 'path';
 import {asyncReduce} from './promise-array';
 import JobInstallerBase from './job-installer-base';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:job-installer-api');
 
 export function createJobInstallers() {
@@ -36,7 +37,7 @@ export async function getDefaultJobInstallerForPlatform(name: string, command: s
   return installer;
 }
 
-export async function installJob(name: string, command: string, returnContent=false, explicitType?: string, extraEnvVars?: string[]) {
+export async function installJob(name: string, command: string, returnContent = false, explicitType?: string, extraEnvVars?: string[]) {
   let installer = null;
 
   if (explicitType) {
