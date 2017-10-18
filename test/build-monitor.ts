@@ -1,19 +1,24 @@
-import _ from 'lodash';
-import path from 'path';
-import {fs} from '../src/promisify';
+import * as path from 'path';
+import * as fs from 'mz/fs';
+
+import {expect} from 'chai';
+import './support';
+
 import BuildMonitor from '../src/build-monitor';
-import {Observable, Subscription, Subject} from 'rxjs';
+import {Observable, Subscription, Subject, Observer} from 'rxjs';
+
 import {TestScheduler} from '@kwonoj/rxjs-testscheduler-compat';
 
 import '../src/custom-rx-operators';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf-test:build-monitor');
 
-function getSeenRefs(refs) {
-  return _.reduce(refs, (acc, x) => {
+function getSeenRefs(refs: [any]) {
+  return refs.reduce((acc, x) => {
     acc.add(x.object.sha);
     return acc;
-  }, new Set());
+  }, new Set<string>());
 }
 
 describe('the build monitor', function() {
@@ -31,7 +36,7 @@ describe('the build monitor', function() {
     this.refExamples = acc;
 
     this.sched = new TestScheduler();
-    this.fixture = new BuildMonitor(null, null, 2, null, null, this.sched);
+    this.fixture = new BuildMonitor([], '', 2, () => Promise.reject(new Error('no')), undefined, this.sched);
   });
 
   afterEach(function() {
@@ -102,7 +107,7 @@ describe('the build monitor', function() {
     this.fixture.start();
     expect(buildCount).to.equal(0);
 
-    this.sched.advanceBy(30*1000);
+    this.sched.advanceBy(30 * 1000);
     expect(buildCount).to.equal(10);
   });
 
@@ -111,7 +116,7 @@ describe('the build monitor', function() {
       Observable.of(this.refExamples['refs1.json']);
 
     let buildCount = 0;
-    this.fixture.runBuild = (ref) => {
+    this.fixture.runBuild = (ref: any) => {
       buildCount++;
       return Observable.of('')
         .subUnsub(() => d(`Building ${ref.object.sha}`));
@@ -136,14 +141,14 @@ describe('the build monitor', function() {
     let completedBuilds = 0;
     let completedShas = new Set();
 
-    this.fixture.runBuild = (ref) => {
+    this.fixture.runBuild = (ref: any) => {
       return Observable.of('')
         .do(() => {
           if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
-        .delay(2*1000, this.sched)
+        .delay(2 * 1000, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
           completedBuilds++;
@@ -174,15 +179,15 @@ describe('the build monitor', function() {
 
   it('shouldnt cancel any builds when we only look at one set of refs', function() {
     let liveBuilds = 0;
-    let cancelledRefs = [];
+    let cancelledRefs = new Array<string>();
 
-    this.fixture.runBuild = (ref) => {
+    this.fixture.runBuild = (ref: any) => {
       let ret = Observable.of('')
         .do(() => {
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
-        .delay(2*1000, this.sched)
+        .delay(2 * 1000, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
           d(`Completing build: ${ref.object.sha}`);
@@ -190,7 +195,7 @@ describe('the build monitor', function() {
         .publish()
         .refCount();
 
-      return Observable.create((subj) => {
+      return Observable.create((subj: Observer<string|{}>) => {
         let producedItem = false;
         let disp = ret
           .do(() => producedItem = true)
@@ -226,15 +231,15 @@ describe('the build monitor', function() {
 
   it('should cancel builds when their refs disappear', function() {
     let liveBuilds = 0;
-    let cancelledRefs = [];
+    let cancelledRefs = new Array<string>();
 
-    this.fixture.runBuild = (ref) => {
+    this.fixture.runBuild = (ref: any) => {
       let ret = Observable.of('')
         .do(() => {
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
-        .delay(10*1000, this.sched)
+        .delay(10 * 1000, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
           d(`Completing build: ${ref.object.sha}`);
@@ -242,7 +247,7 @@ describe('the build monitor', function() {
         .publish()
         .refCount();
 
-      return Observable.create((subj) => {
+      return Observable.create((subj: Observer<string|{}>) => {
         let producedItem = false;
         let disp = ret
           .do(() => producedItem = true)
@@ -278,15 +283,15 @@ describe('the build monitor', function() {
 
   it('should cancel builds when their refs change', function() {
     let liveBuilds = 0;
-    let cancelledRefs = [];
+    let cancelledRefs = new Array<string>();
 
-    this.fixture.runBuild = (ref) => {
+    this.fixture.runBuild = (ref: any) => {
       let ret = Observable.of('')
         .do(() => {
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
-        .delay(10*1000, this.sched)
+        .delay(10 * 1000, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
           d(`Completing build: ${ref.object.sha}`);
@@ -294,7 +299,7 @@ describe('the build monitor', function() {
         .publish()
         .refCount();
 
-      return Observable.create((subj) => {
+      return Observable.create((subj: Observer<string|{}>) => {
         let producedItem = false;
         let disp = ret
           .do(() => producedItem = true)
@@ -326,7 +331,7 @@ describe('the build monitor', function() {
   });
 
   it('shouldnt die when builds fail', function() {
-    this.fixture.runBuild = () => Observable.throw(new Error("no"));
+    this.fixture.runBuild = () => Observable.throw(new Error('no'));
 
     this.fixture.fetchRefs = () =>
       Observable.of(this.refExamples['refs1.json']);
