@@ -8,7 +8,7 @@ const d = require('debug')('surf:job-installer-api');
 export function createJobInstallers() {
   let discoverClasses = fs.readdirSync(path.join(__dirname, 'job-installers'));
 
-  return discoverClasses.filter((x) => x.match(/\.js$/i)).map((x) => {
+  return discoverClasses.filter((x) => x.match(/\.[jt]s$/i)).map((x) => {
     const Klass = require(path.join(__dirname, 'job-installers', x)).default;
 
     d(`Found job installer: ${Klass.name}`);

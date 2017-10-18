@@ -12,7 +12,7 @@ import { rimraf } from './recursive-fs';
 import { retryPromise } from './promise-array';
 
 import {Observable} from 'rxjs';
-import ON_DEATH from 'death';
+import * as ON_DEATH from 'death';
 
 const DeathPromise = new Promise<number>((_res,rej) => {
   ON_DEATH((sig: number) => rej(new Error(`Signal ${sig} thrown`)));
