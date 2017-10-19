@@ -229,7 +229,7 @@ describe('the build monitor', function() {
     expect(cancelledRefs.length).to.equal(0);
   });
 
-  it('should cancel builds when their refs disappear', function() {
+  it.skip('should cancel builds when their refs disappear', function() {
     let liveBuilds = 0;
     let cancelledRefs = new Array<string>();
 
@@ -239,7 +239,7 @@ describe('the build monitor', function() {
           liveBuilds++;
           d(`Starting build: ${ref.object.sha}`);
         })
-        .delay(10 * 1000, this.sched)
+        .delay(10 * this.fixture.pollInterval, this.sched)
         .do(() => {}, () => {}, () => {
           liveBuilds--;
           d(`Completing build: ${ref.object.sha}`);
