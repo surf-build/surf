@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-/*
+
 import main from './run-on-every-ref-main';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf');
 
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-run -r https://github.com/some/repo -- command arg1 arg2 arg3...
 Monitors a GitHub repo and runs a command for each changed branch / PR.`)
@@ -24,6 +26,7 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provide
 const argv = yargs.argv;
 
 if (argv.version) {
+  // tslint:disable-next-line:no-var-requires
   let pkgJson = require('../package.json');
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
@@ -35,5 +38,3 @@ main(argv, () => yargs.showHelp())
     d(e.stack);
     process.exit(-1);
   });
-
-  */

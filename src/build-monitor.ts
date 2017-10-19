@@ -28,14 +28,15 @@ export default class BuildMonitor {
   private readonly scheduler: IScheduler;
   private readonly currentRunningMonitor = new SerialSubscription();
   private readonly buildsToActuallyExecute = new Subject<Observable<string | {}>>();
-  private readonly buildMonitorCrashed = new Subject<Error>();
   private readonly seenCommits = new Set<string>();
+
+  public readonly buildMonitorCrashed = new Subject<Error>();
 
   constructor(
       private cmdWithArgs: string[],
       private repo: string,
       private maxConcurrentJobs: number,
-      private fetchRefs: (() => Promise<[any]>),
+      private fetchRefs: (() => Observable<[any]>),
       initialRefs?: [any],
       scheduler?: IScheduler,
       private pollInterval = 5000) {

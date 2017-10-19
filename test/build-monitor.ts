@@ -36,7 +36,7 @@ describe('the build monitor', function() {
     this.refExamples = acc;
 
     this.sched = new TestScheduler();
-    this.fixture = new BuildMonitor([], '', 2, () => Promise.reject(new Error('no')), undefined, this.sched);
+    this.fixture = new BuildMonitor([], '', 2, () => Observable.throw(new Error('no')), undefined, this.sched);
   });
 
   afterEach(function() {
