@@ -134,7 +134,7 @@ export async function gitHub(
   return { result, headers: ret.response.headers };
 }
 
-const githubCache: createLRU.Cache<GitHubResponse> = createLRU({
+const githubCache: createLRU.Cache<string, GitHubResponse> = createLRU({
   max: 1000
 });
 
@@ -166,26 +166,26 @@ export async function githubPaginate(uri: string, token?: string, maxAge?: numbe
 }
 
 export function fetchAllOpenPRs(nwo: string) {
-  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), undefined, 60*1000);
+  return githubPaginate(apiUrl(`repos/${nwo}/pulls?state=open`), undefined, 60 * 1000);
 }
 
 const refCache = createLRU({
   max: 1000
 });
 
-export async function fetchSingleRef(nwo: string, ref: string, shaHint=null) {
+export async function fetchSingleRef(nwo: string, ref: string, shaHint?: string) {
   let ret = shaHint ? refCache.get(shaHint) : null;
   if (ret) {
     return ret;
   }
 
-  let gh = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), undefined, 30*1000);
+  let gh = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), undefined, 30 * 1000);
   refCache.set(gh.result.object.sha, gh);
   return gh;
 }
 
 export function fetchRepoInfo(nwo: string) {
-  return cachedGitHub(apiUrl(`repos/${nwo}`), undefined, 5*60*1000);
+  return cachedGitHub(apiUrl(`repos/${nwo}`), undefined, 5 * 60 * 1000);
 }
 
 function objectValues(obj: Object) {
@@ -267,17 +267,17 @@ export interface GistFiles {
   files: Array<any>;
 }
 
-export function createGist(description: string, files: Object, publicGist=false, token?: string) {
+export function createGist(description: string, files: Object, publicGist?: boolean, token?: string) {
   let body = { files, description, 'public': publicGist };
   return gitHub(apiUrl('gists', true), token || process.env.GIST_TOKEN, body);
 }
 
 export function fetchAllTags(nwo: string, token?: string) {
-  return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60*1000);
+  return githubPaginate(apiUrl(`repos/${nwo}/tags?per_page=100`), token, 60 * 1000);
 }
 
 export function fetchStatusesForCommit(nwo: string, sha: string, token?: string) {
-  return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60*1000);
+  return githubPaginate(apiUrl(`repos/${nwo}/commits/${sha}/statuses?per_page=100`), token, 60 * 1000);
 }
 
 export function getCombinedStatusesForCommit(nwo: string, sha: string, token?: string) {
@@ -300,9 +300,9 @@ export function uploadFileToRelease(targetUrl: string, targetFile: string, fileN
   let uploadUrl = targetUrl.replace(/{[^}]*}/g, '');
   uploadUrl = uploadUrl + `?name=${encodeURIComponent(fileName)}`;
 
-  let contentType = {
-    "Content-Type": mimeTypes.lookup[fileName] || 'application/octet-stream',
-    "Content-Length": fs.statSync(targetFile).size
+  let contentType: any = {
+    'Content-Type': mimeTypes.lookup[fileName] || 'application/octet-stream',
+    'Content-Length': fs.statSync(targetFile).size
   };
 
   d(JSON.stringify(contentType));
