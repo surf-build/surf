@@ -1,6 +1,6 @@
 {
   "name": "surf-build",
-  "version": "1.2.0-beta.3",
+  "version": "1.2.0-beta.4",
   "description": "The simplest GitHub build server",
   "bin": {
     "surf-run": "./lib/src/run-on-every-ref-cli.js",
