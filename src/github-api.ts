@@ -14,7 +14,7 @@ const isNumber = require('lodash.isnumber');
 // tslint:disable-next-line:no-var-requires
 const fs = require('fs');
 
-const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:github-api');
