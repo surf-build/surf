@@ -12,10 +12,10 @@
     "surf-install": "./lib/job-installer-cli.js"
   },
   "scripts": {
-    "compile": "babel -d lib/ src/",
+    "compile": "cross-env NODE_ENV='production' git clean -xdf lib && tsc",
     "prepublish": "npm run compile",
-    "test": "mocha --compilers js:babel-register ./test/*",
-    "test-cov": "NODE_ENV=test istanbul cover ./node_modules/mocha/bin/_mocha -- ./test/* --compilers js:babel-register && cat ./coverage/lcov.info | ./node_modules/@paulcbetts/coveralls/bin/coveralls.js"
+    "test": "mocha --compilers ts:ts-node/register ./test/*.ts",
+    "test-cov": "cross-env NODE_ENV='test' istanbul cover ./node_modules/mocha/bin/_mocha -- --compilers ts:ts-node/register test/*.ts"
   },
   "repository": {
     "type": "git",
@@ -32,6 +32,10 @@
   },
   "homepage": "https://github.com/surf-build/surf",
   "dependencies": {
+    "@types/chai": "^4.0.4",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/fs-extra": "^4.0.2",
+    "@types/mocha": "^2.2.43",
     "chalk": "^1.1.3",
     "death": "^1.1.0",
     "debug": "^2.6.3",
@@ -39,9 +43,14 @@
     "ini": "^1.3.4",
     "iso8601": "^1.1.1",
     "lodash": "^4.17.4",
+    "lodash.clone": "^4.5.0",
+    "lodash.flatten": "^4.4.0",
+    "lodash.isnumber": "^3.0.3",
+    "lodash.template": "^4.4.0",
     "lru-cache": "^4.0.2",
     "mime-types": "^2.1.15",
     "mkdirp": "^0.5.1",
+    "mz": "^2.7.0",
     "nodegit": "^0.18.3",
     "parse-link-header": "^0.4.1",
     "pify": "^2.3.0",
@@ -52,6 +61,7 @@
     "spawn-rx": "^2.0.10",
     "string-argv": "0.0.2",
     "temp": "^0.8.3",
+    "ts-node": "^3.3.0",
     "xml-escape": "^1.1.0",
     "yargs": "^7.0.2"
   },
@@ -59,8 +69,22 @@
     "runas": "^3.1.1"
   },
   "devDependencies": {
-    "@kwonoj/rxjs-testscheduler-compat": "1.0.1",
+    "@kwonoj/rxjs-testscheduler-compat": "^1.0.2",
     "@paulcbetts/coveralls": "^2.11.13",
+    "@types/chalk": "^0.4.31",
+    "@types/debug": "0.0.30",
+    "@types/lodash.clone": "^4.5.3",
+    "@types/lodash.flatten": "^4.4.3",
+    "@types/lodash.isnumber": "^3.0.3",
+    "@types/lodash.template": "^4.4.3",
+    "@types/lru-cache": "^4.0.0",
+    "@types/mime-types": "^2.1.0",
+    "@types/mkdirp": "^0.3.29",
+    "@types/mz": "0.0.31",
+    "@types/request": "^2.0.0",
+    "@types/request-promise": "^4.1.36",
+    "@types/rimraf": "^2.0.0",
+    "@types/temp": "^0.8.29",
     "babel-cli": "^6.24.1",
     "babel-eslint": "^7",
     "babel-plugin-__coverage__": "^11.0.0",
@@ -68,9 +92,12 @@
     "babel-register": "^6.24.1",
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
+    "cross-env": "^3.2.4",
     "eslint": "^3",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^3.2.0",
-    "mocha-lcov-reporter": "^1.3.0"
+    "mocha-lcov-reporter": "^1.3.0",
+    "tslint": "^5.7.0",
+    "typescript": "^2.5.3"
   }
 }
