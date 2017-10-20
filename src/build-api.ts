@@ -13,7 +13,7 @@ const d = require('debug')('surf:build-api');
 export function createBuildDiscovers(rootPath: string): BuildDiscoverBase[] {
   let discoverClasses = fs.readdirSync(path.join(__dirname, 'build-discoverers'));
 
-  return discoverClasses.map((file) => {
+  return discoverClasses.filter((x) => x.match(/\.[jt]s$/i) && !x.match(/\.d\.ts$/i)).map((file) => {
     const Klass = require(path.join(__dirname, 'build-discoverers', file)).default;
 
     d(`Found build discoverer: ${Klass.name}`);

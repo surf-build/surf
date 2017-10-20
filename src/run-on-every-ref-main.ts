@@ -2,7 +2,7 @@ import {Observable} from 'rxjs';
 
 import {getOriginForRepo} from './git-api';
 import {fetchAllRefsWithInfo, getSanitizedRepoUrl, getNwoFromRepoUrl} from './github-api';
-import ON_DEATH from 'death';
+import * as ON_DEATH from 'death';
 
 import BuildMonitor from './build-monitor';
 import './custom-rx-operators';
