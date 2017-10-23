@@ -180,12 +180,13 @@ export async function fetchSingleRef(nwo: string, ref: string, shaHint?: string)
   }
 
   let gh = await cachedGitHub(apiUrl(`repos/${nwo}/git/refs/heads/${ref}`), undefined, 30 * 1000);
-  refCache.set(gh.result.object.sha, gh);
-  return gh;
+  refCache.set(gh.result.object.sha, gh.result);
+  return gh.result;
 }
 
-export function fetchRepoInfo(nwo: string) {
-  return cachedGitHub(apiUrl(`repos/${nwo}`), undefined, 5 * 60 * 1000);
+export async function fetchRepoInfo(nwo: string) {
+  let ret = await cachedGitHub(apiUrl(`repos/${nwo}`), undefined, 5 * 60 * 1000);
+  return ret.result;
 }
 
 function objectValues(obj: Object) {
@@ -207,6 +208,7 @@ export async function fetchAllRefsWithInfo(nwo: string) {
       async (ref) => {
         let repoName = refToPR[ref].head.repo.full_name;
         let shaHint = refToPR[ref].head.sha;
+
         try {
           return (await fetchSingleRef(repoName, ref, shaHint));
         } catch (e) {
@@ -217,15 +219,14 @@ export async function fetchAllRefsWithInfo(nwo: string) {
 
   // Monitor the default branch for the repo (usually 'master')
   let repoInfo = await fetchRepoInfo(nwo);
-  let defaultBranch = repoInfo.result.default_branch;
+  let defaultBranch = repoInfo.default_branch;
   let result = await fetchSingleRef(nwo, defaultBranch);
   refs.push(result);
 
   // Filter failures from when we get the ref
   refs = refs.filter((x) => x !== null);
 
-  let commitInfo = await asyncMap(
-    refs.map((ref) => ref.object.url),
+  let commitInfo = await asyncMap(refs.map((ref) => ref.object.url),
     async (x) => {
       try {
         return (await cachedGitHub(x)).result;
