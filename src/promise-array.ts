@@ -12,9 +12,7 @@ export function asyncMap<T, TRet>(
     maxConcurrency = 4): Promise<Map<T, TRet>> {
   return Observable.from(array)
     .map((k) =>
-      Observable.defer(() =>
-        Observable.fromPromise(selector(k))
-          .map((v) => ({ k, v }))))
+      Observable.defer(() => selector(k)).map((v) => ({ k, v })))
     .mergeAll(maxConcurrency)
     .reduce((acc, kvp) => {
       acc.set(kvp.k, kvp.v);

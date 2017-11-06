@@ -18,6 +18,7 @@ const DeathPromise = new Promise<number>((_res,rej) => {
   ON_DEATH((sig: number) => rej(new Error(`Signal ${sig} thrown`)));
 });
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-build');
 
 function getRootAppDir() {
@@ -60,7 +61,7 @@ export default function main(argv: any, showHelp: (() => void)) {
 
   return doIt
     .then((x) => Promise.resolve(x), (e) => {
-      d("Build being taken down!");
+      d('Build being taken down!');
       if (argv.name) {
         let repo = argv.repo || process.env.SURF_REPO;
         let sha = argv.sha || process.env.SURF_SHA1;
@@ -121,7 +122,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
       repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
       argv.repo = repo;
     } catch (e) {
-      console.error("Repository not specified and current directory is not a Git repo");
+      console.error('Repository not specified and current directory is not a Git repo');
       d(e.stack);
 
       showHelp();
@@ -212,8 +213,8 @@ async function realMain(argv: any, showHelp: (() => void)) {
     d(`Posting to GitHub status`);
     let nwo = getNwoFromRepoUrl(repo);
 
-    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, { 
-      "README.md": { content: `## Build for ${nwo} ${buildPassed ? 'succeeded' : 'failed'} on ${new Date()}` }
+    let gistInfo = await retryPromise(() => createGist(`Build completed: ${nwo}#${sha}, ${new Date()}`, {
+      'README.md': { content: `## Build for ${nwo} ${buildPassed ? 'succeeded' : 'failed'} on ${new Date()}` }
     }));
 
     d(`Gist result: ${gistInfo.result.html_url}`);
@@ -222,7 +223,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
 
     try {
       d(`Uploading build artifacts using token: ${token}`);
-      await retryPromise(() => 
+      await retryPromise(() =>
         uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs || [], buildLog, token));
     } catch (e) {
       console.error(`Failed to upload build artifacts: ${e.message}`);
