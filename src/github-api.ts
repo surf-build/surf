@@ -190,33 +190,31 @@ export async function fetchRepoInfo(nwo: string) {
   return ret.result;
 }
 
-function objectValues(obj: Object) {
-  return Object.keys(obj).map((x) => obj[x]);
-}
-
 export async function fetchAllRefsWithInfo(nwo: string) {
   let openPRs = (await fetchAllOpenPRs(nwo));
-  let refList = openPRs.map((x) => x.head.ref);
+  let refList: string[] = openPRs.map((x) => x.head.ref);
 
   let refToPR = openPRs.reduce((acc, x) => {
     acc[x.head.ref] = x;
     return acc;
   }, {});
 
-  let refs = objectValues(
-    await asyncMap(
-      refList,
-      async (ref) => {
-        let repoName = refToPR[ref].head.repo.full_name;
-        let shaHint = refToPR[ref].head.sha;
+  let theMap = await asyncMap(
+    refList,
+    async (ref) => {
+      let repoName = refToPR[ref].head.repo.full_name;
+      let shaHint = refToPR[ref].head.sha;
 
-        try {
-          return (await fetchSingleRef(repoName, ref, shaHint));
-        } catch (e) {
-          d(`Tried to fetch ref ${repoName}:${ref} but it failed: ${e.message}`);
-          return null;
-        }
-      }));
+      try {
+        let ret = await fetchSingleRef(repoName, ref, shaHint);
+        return ret;
+      } catch (e) {
+        d(`Tried to fetch ref ${repoName}:${ref} but it failed: ${e.message}`);
+        return null;
+      }
+    });
+
+  let refs = Array.from(theMap.values());
 
   // Monitor the default branch for the repo (usually 'master')
   let repoInfo = await fetchRepoInfo(nwo);
