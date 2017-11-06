@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import main from './run-on-every-ref-main';
+import * as path from 'path';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf');
@@ -27,7 +28,7 @@ const argv = yargs.argv;
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require('../package.json');
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }

@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 
 import main from './job-installer-main';
+import * as path from 'path';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-install');
 
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-install -n my-cool-job -c "surf-client ..."
 Creates a system service with the given command (probably surf-run) as its
-executable. Run this command using sudo. This command can also create and start 
+executable. Run this command using sudo. This command can also create and start
 Docker images that will build your projects.
 
-Surf-specific environment variables (e.g. GITHUB_TOKEN, PATH) will be captured 
+Surf-specific environment variables (e.g. GITHUB_TOKEN, PATH) will be captured
 automatically, but others can be explicitly specified at the command line`)
   .alias('n', 'name')
   .describe('name', 'The name given to the OS of the service to create')
@@ -37,7 +40,8 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the buil
 const argv = yargs.argv;
 
 if (argv.version) {
-  let pkgJson = require('../package.json');
+  // tslint:disable-next-line:no-var-requires
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }

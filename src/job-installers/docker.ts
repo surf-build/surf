@@ -11,6 +11,9 @@ const d = require('debug')('surf:docker');
 // tslint:disable-next-line:no-var-requires
 const template = require('lodash.template');
 
+// tslint:disable-next-line:no-var-requires
+const pkgJson = require(path.join(__dirname, '..', '..', 'package.json'));
+
 // NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
 const makeDockerfile =
   template(fs.readFileSync(require.resolve('../../src/job-installers/docker.in'), 'utf8'));
@@ -34,8 +37,7 @@ export default class DockerInstaller extends JobInstallerBase {
   async installJob(name: string, command: string, returnContent?: boolean) {
     let opts = {
       envs: this.getInterestingEnvVars().map((x) => `${x}=${process.env[x]}`),
-      pkgJson: require('../../package.json'),
-      name, command
+      pkgJson, name, command
     };
 
     if (returnContent) {

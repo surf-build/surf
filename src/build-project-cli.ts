@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import main from './build-project-main';
+import * as path from 'path';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-build');
 
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-build -r http://github.com/some/repo -s SHA1
 Clones a repo from GitHub and builds the given SHA1`)
@@ -32,7 +35,8 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
 const argv = yargs.argv;
 
 if (argv.version) {
-  let pkgJson = require('../package.json');
+  // tslint:disable-next-line:no-var-requires
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }

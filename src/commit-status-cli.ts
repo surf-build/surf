@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
+import main from './commit-status-main';
+import * as path from 'path';
+
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-status');
 
-import main from './commit-status-main';
-
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-status --repo https://github.com/owner/repo
 Returns the GitHub Status for all the branches in a repo`)
@@ -27,7 +30,8 @@ SURF_REPO - an alternate way to specify the --repo parameter, provided
 const argv = yargs.argv;
 
 if (argv.version) {
-  let pkgJson = require('../package.json');
+  // tslint:disable-next-line:no-var-requires
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }

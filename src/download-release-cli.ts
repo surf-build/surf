@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import main from './download-release-main';
+import * as path from 'path';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-download');
 
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-download -r http://github.com/some/repo -t some-tag
 Download all of the artifacts for a given Release`)
@@ -24,7 +27,8 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provide
 const argv = yargs.argv;
 
 if (argv.version) {
-  let pkgJson = require('../package.json');
+  // tslint:disable-next-line:no-var-requires
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }

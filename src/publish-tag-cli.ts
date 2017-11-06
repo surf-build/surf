@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 
 import main from './publish-tag-main';
+import * as path from 'path';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-publish');
 
+// tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
   .usage(`Usage: surf-publish -r http://github.com/some/repo -t some-tag
-Creates a release for the given tag by downloading all of the build 
+Creates a release for the given tag by downloading all of the build
 artifacts and reuploading them`)
   .alias('r', 'repo')
   .describe('repo', 'The repository to clone')
@@ -25,7 +28,8 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build
 const argv = yargs.argv;
 
 if (argv.version) {
-  let pkgJson = require('../package.json');
+  // tslint:disable-next-line:no-var-requires
+  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
   console.log(`Surf ${pkgJson.version}`);
   process.exit(0);
 }
