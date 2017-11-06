@@ -56,8 +56,8 @@ export default class SystemdInstaller extends JobInstallerBase {
     await spawnPromise('systemctl', ['daemon-reload']);
     await spawnPromise('systemctl', ['start', name]);
 
-    return `systemd service written to '${target}
+    return { 'README.txt': `systemd service written to '${target}
 
-To run it at system startup: sudo systemctl enable ${name}'`;
+To run it at system startup: sudo systemctl enable ${name}'` };
   }
 }

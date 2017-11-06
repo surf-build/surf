@@ -54,8 +54,8 @@ export default class DockerInstaller extends JobInstallerBase {
     spawnDetachedPromise('docker', ['run', name])
       .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
 
-    return `Created new docker image: ${name}
+    return { 'README.txt': `Created new docker image: ${name}
 
-To start it: docker run ${name}'`;
+To start it: docker run ${name}'` };
   }
 }

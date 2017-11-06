@@ -60,11 +60,11 @@ export default class LaunchdInstaller extends JobInstallerBase {
     fs.writeFileSync(target, makeLaunchdService(opts));
     fs.chmodSync(target, 0o644);
 
-    return `launchd agent written to '${target}
+    return { 'README.txt': `launchd agent written to '${target}
 
 launchd agents only run when the current user logs on, because many macOS services
 only work interactively, such as the keychain.
 
-To start manually, run launchctl load ${target}`;
+To start manually, run launchctl load ${target}` };
   }
 }

@@ -119,6 +119,6 @@ export default class TaskSchedulerInstaller extends JobInstallerBase {
       throw new Error(`Failed to run schtasks, exited with ${exitCode}`);
     }
 
-    return `Created new Scheduled Task ${name}, with script ${shimCmdPath}`;
+    return { 'README.txt': `Created new Scheduled Task ${name}, with script ${shimCmdPath}` };
   }
 }
