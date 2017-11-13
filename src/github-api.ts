@@ -236,7 +236,7 @@ export async function fetchAllRefsWithInfo(nwo: string) {
     });
 
   refs.forEach((ref) => {
-    ref.object.commit = commitInfo[ref.object.url];
+    ref.object.commit = commitInfo.get(ref.object.url);
     ref.object.pr = refToPR[ref.ref.replace(/^refs\/heads\//, '')];
   });
 
