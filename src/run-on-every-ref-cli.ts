@@ -18,6 +18,8 @@ Monitors a GitHub repo and runs a command for each changed branch / PR.`)
   .alias('v', 'version')
   .describe('version', 'Print the current version number and exit')
   .alias('h', 'help')
+  .describe('no-cancel', 'Disable build cancellation - new pushes will not abort in-progress builds')
+  .boolean('no-cancel')
   .epilog(`
 Some useful environment variables:
 

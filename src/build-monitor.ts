@@ -39,7 +39,8 @@ export default class BuildMonitor {
       private fetchRefs: (() => Observable<[any]>),
       initialRefs?: [any],
       scheduler?: IScheduler,
-      private pollInterval = 5000) {
+      private pollInterval = 5000,
+      private enableCancellation = true) {
 
     this.scheduler = scheduler || Scheduler.queue;
     this.currentRunningMonitor = new SerialSubscription();
@@ -147,7 +148,7 @@ export default class BuildMonitor {
 
       // NB: We intentionally collect all of these via the reducer first to avoid
       // altering currentBuilds while iterating through it
-      cancellers.forEach((x) => x());
+      if (this.enableCancellation) cancellers.forEach((x) => x());
 
       let refsToBuild = this.determineRefsToBuild(refs);
 
