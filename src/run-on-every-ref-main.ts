@@ -21,6 +21,7 @@ function getRandomInt(min: number, max: number) {
 export default async function main(argv: any, showHelp: () => void) {
   let cmdWithArgs = argv._;
   let repo = argv.r;
+  let enableCancellation = !argv['no-cancel'];
 
   if (argv.help) {
     showHelp();
@@ -64,7 +65,7 @@ export default async function main(argv: any, showHelp: () => void) {
   refInfo = await fetchRefsWithRetry.toPromise();
 
   console.log(`Watching ${repo}, will run '${cmdWithArgs.join(' ')}'\n`);
-  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo);
+  let buildMonitor = new BuildMonitor(cmdWithArgs, repo, jobs, () => fetchRefsWithRetry, refInfo, undefined, undefined, enableCancellation);
   buildMonitor.start();
 
   // NB: This is a little weird - buildMonitorCrashed just returns an item
