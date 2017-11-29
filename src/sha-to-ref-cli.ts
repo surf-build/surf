@@ -10,7 +10,7 @@ const d = require('debug')('surf:surf-publish');
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
-  .usage(`Usage: surf-sha-to-tag -r http://github.com/some/repo -s some-sha1
+  .usage(`Usage: surf-pr-info http://github.com/some/repo -s some-sha1
 Returns the PR number for a given SHA1
 `)
   .alias('r', 'repo')
