@@ -9,7 +9,8 @@
     "surf-download": "./lib/download-release-cli.js",
     "surf-status": "./lib/commit-status-cli.js",
     "surf-clean": "./lib/clean-workdirs-cli.js",
-    "surf-install": "./lib/job-installer-cli.js"
+    "surf-install": "./lib/job-installer-cli.js",
+    "surf-pr-info": "./lib/sha-to-ref-cli.js"
   },
   "scripts": {
     "compile": "cross-env NODE_ENV='production' git clean -xdf lib && tsc && mv ./lib/src/* ./lib/ && rm -rf ./lib/test",
