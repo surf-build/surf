@@ -2,10 +2,8 @@
 
 import * as path from 'path';
 
-import { cloneOrFetchRepo, cloneRepo, checkoutSha, getWorkdirForRepoUrl,
-  getTempdirForRepoUrl, getOriginForRepo, getHeadForRepo, resetOriginUrl } from './git-api';
-import { getSanitizedRepoUrl, getNwoFromRepoUrl, postCommitStatus, createGist,
-  findPRForCommit } from './github-api';
+import { getOriginForRepo, getHeadForRepo } from './git-api';
+import { getSanitizedRepoUrl, getNwoFromRepoUrl, findPRForCommit } from './github-api';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:surf-publish');
@@ -19,8 +17,10 @@ Returns the PR number for a given SHA1
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
   .describe('sha', 'The sha to build')
-   .alias('v', 'version')
+  .alias('v', 'version')
   .describe('version', 'Print the current version number and exit')
+  .alias('t', 'type')
+  .describe('type', 'What to return, either "url", "number", or "json"')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
@@ -82,7 +82,22 @@ async function main(argv: any, showHelp: (() => void)) {
 
   let nwo = getNwoFromRepoUrl(repo);
   let pr = await findPRForCommit(nwo, sha);
-  console.log(pr);
+  if (!pr) process.exit(-1);
+
+  let type = argv.t || 'number';
+  switch (type) {
+  case 'number':
+    console.log(pr.number);
+    return;
+  case 'url':
+    console.log(pr.url);
+    return;
+  case 'json':
+    console.log(JSON.stringify(pr, null, 2));
+    return;
+  default:
+    throw new Error('Invalid type!');
+  }
 }
 
 main(argv, () => yargs.showHelp())
