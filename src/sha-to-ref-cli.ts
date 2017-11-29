@@ -20,7 +20,7 @@ Returns the PR number for a given SHA1
   .alias('v', 'version')
   .describe('version', 'Print the current version number and exit')
   .alias('t', 'type')
-  .describe('type', 'What to return, either "url", "number", or "json"')
+  .describe('type', 'What to return, either "url", "number", "ref", or "json"')
   .alias('h', 'help')
   .epilog(`
 Some useful environment variables:
@@ -94,6 +94,9 @@ async function main(argv: any, showHelp: (() => void)) {
     return;
   case 'json':
     console.log(JSON.stringify(pr, null, 2));
+    return;
+  case 'ref':
+    console.log(pr.head.ref);
     return;
   default:
     throw new Error('Invalid type!');
