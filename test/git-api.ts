@@ -2,7 +2,7 @@ import './support';
 import {expect} from 'chai';
 
 import * as path from 'path';
-import { cloneRepo, fetchRepo, cloneOrFetchRepo } from '../src/git-api';
+import { cloneRepo, fetchRepo, cloneOrFetchRepo, parseGitDiffOutput } from '../src/git-api';
 import { rimraf, mkdirp } from '../src/recursive-fs';
 import * as fs from 'mz/fs';
 
@@ -49,5 +49,17 @@ describe('The node-git helper methods', function() {
 
     let result = await fs.stat(path.join(repoDir, 'HEAD'));
     expect(result).to.be.ok;
+  });
+});
+
+describe.only('The parseGitDiffOutput function', function() {
+  let diffStatFile = path.join(__dirname, '..', 'fixtures', 'diffstat.txt');
+  let fixtureData = fs.readFileSync(diffStatFile, 'utf8');
+
+  it('should parse the fixture file', () => {
+    let result = parseGitDiffOutput(fixtureData);
+
+    expect(result).to.contain('src/build-discover-base.ts');
+    expect(result).to.contain('test/job-installers.ts');
   });
 });

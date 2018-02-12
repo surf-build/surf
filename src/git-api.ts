@@ -9,6 +9,7 @@ import { statNoException, statSyncNoException } from './promise-array';
 import { rimraf, mkdirp, mkdirpSync } from './recursive-fs';
 
 import * as fs from 'mz/fs';
+import { spawnPromise } from 'spawn-rx';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api');
@@ -70,6 +71,38 @@ export async function getAllWorkdirs(repoUrl: string) {
     acc.push(path.join(tmp, x));
     return acc;
   }, []);
+}
+
+export function parseGitDiffOutput(output: string): string[] {
+  return output.split('\n')
+    .filter(line => line.length > 1)
+    .map(line => {
+      let pathSegment = line.split('\t')[2];
+      if (pathSegment.indexOf('{') < 0) return pathSegment;
+
+      // Fix up renames, which are of the format:
+      // src/job-installers/{systemd.js => systemd.ts}
+      return pathSegment.replace(/(.*){.*=> (.*)}$/, '$1$2');
+    });
+}
+
+export async function getChangedFiles(targetDirname: string): Promise<string[]> {
+  let repoDir = (await Repository.discover(targetDirname, 0, '')) as string;
+  let opts = { cwd: repoDir };
+
+  let ourCommit = await spawnPromise('git', ['rev-parse', 'HEAD'], opts);
+  let remoteHeadCommit = await spawnPromise('git', ['rev-parse', 'origin/HEAD'], opts);
+
+  // If we're on the remote master branch, there are no changes,
+  // so just return every file
+  if (ourCommit == remoteHeadCommit) {
+    return (await spawnPromise('git', ['ls-files'], opts))
+      .split('\n')
+      .filter(x => x.length > 1);
+  }
+
+  return parseGitDiffOutput(
+    await spawnPromise('git', ['diff', '--numstat', 'origin/HEAD...HEAD']));
 }
 
 export function getWorkdirForRepoUrl(repoUrl: string, sha: string, dontCreate= false) {
