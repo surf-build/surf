@@ -1,16 +1,11 @@
 import * as path from 'path';
 import * as fs from 'mz/fs';
 
-import {statNoException, readdirRecursive} from '../promise-array';
+import {statNoException, readdirRecursive, uniq} from '../promise-array';
 import BuildDiscoverBase from '../build-discover-base';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-dotnet');
-
-function uniq(list: string[]): string[] {
-  return Object.keys(
-    list.reduce((acc, x) => { acc[x] = true; return acc; }, {}));
-}
 
 export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
   constructor(rootDir: string) {

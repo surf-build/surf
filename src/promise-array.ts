@@ -79,3 +79,8 @@ export async function readdirRecursive(dir: string): Promise<string[]> {
 
   return acc;
 }
+
+export function uniq(list: string[]): string[] {
+  return Object.keys(
+    list.reduce((acc, x) => { acc[x] = true; return acc; }, {}));
+}
