@@ -52,7 +52,7 @@ describe('The node-git helper methods', function() {
   });
 });
 
-describe.only('The parseGitDiffOutput function', function() {
+describe('The parseGitDiffOutput function', function() {
   let diffStatFile = path.join(__dirname, '..', 'fixtures', 'diffstat.txt');
   let fixtureData = fs.readFileSync(diffStatFile, 'utf8');
 
