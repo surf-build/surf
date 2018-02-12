@@ -21,13 +21,13 @@ export default class AutotoolsBuildDiscoverer extends BuildDiscoverBase {
   async getBuildCommand() {
     let prefix = path.resolve(this.rootDir, 'surf-artifacts');
     let cmds = [
-      { cmd: 'cmake', args: [`-DCMAKE_INSTALL_PREFIX:PATH=${prefix}`, '.']},
-      { cmd: 'make', args: ['all', 'install']}
+      { cmd: 'cmake', args: [`-DCMAKE_INSTALL_PREFIX:PATH=${prefix}`, '.'], cwd: this.rootDir },
+      { cmd: 'make', args: ['all', 'install'], cwd: this.rootDir }
     ];
 
     let autogen = path.join(this.rootDir, 'autogen.sh');
     if (await statNoException(autogen)) {
-      cmds.unshift({ cmd: autogen, args: [] });
+      cmds.unshift({ cmd: autogen, args: [], cwd: this.rootDir });
     }
 
     d(JSON.stringify(cmds));

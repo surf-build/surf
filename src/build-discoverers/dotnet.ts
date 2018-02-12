@@ -55,7 +55,7 @@ export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
 
     let artifactDirs = projFiles.map((x) => path.join(path.dirname(x), 'bin', 'Release'));
 
-    let cmd = { cmd: buildCommand, args: ['/p:Configuration=Release', slnFile] };
+    let cmd = { cmd: buildCommand, args: ['/p:Configuration=Release', slnFile], cwd: this.rootDir };
 
     return {
       cmds: [cmd],

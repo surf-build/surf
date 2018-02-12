@@ -12,7 +12,7 @@ export default class XcodeBuildDiscoverer extends BuildDiscoverBase {
   }
 
   async getBuildCommand() {
-    let cmd = { cmd: 'xcodebuild', args: []};
+    let cmd = { cmd: 'xcodebuild', args: [], cwd: this.rootDir };
     return { cmds: [cmd] };
   }
 }

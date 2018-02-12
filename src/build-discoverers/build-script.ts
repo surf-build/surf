@@ -4,6 +4,7 @@ import {mkdirp} from '../recursive-fs';
 
 import BuildDiscoverBase, { BuildCommand } from '../build-discover-base';
 
+// tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-drivers');
 
 const possibleScriptPathsWin32 = [
@@ -41,7 +42,7 @@ export default class BuildScriptDiscoverer extends BuildDiscoverBase {
         d(`Looking for file ${fullPath}`);
         let stat = await fs.stat(fullPath);
 
-        d("Found it!");
+        d('Found it!');
         if (stat) return fullPath;
       } catch (e) {
         continue;
@@ -57,11 +58,11 @@ export default class BuildScriptDiscoverer extends BuildDiscoverBase {
     await mkdirp(artifactDir);
 
     process.env.SURF_ARTIFACT_DIR = artifactDir;
-    let cmd: BuildCommand = { cmd: await this.getScriptPath() || "", args: [], }
+    let cmd: BuildCommand = { cmd: await this.getScriptPath() || '', args: [], cwd: this.rootDir };
 
-    return { 
+    return {
       cmds: [cmd],
-      artifactDirs: [artifactDir] 
+      artifactDirs: [artifactDir]
     };
   }
 }

@@ -21,14 +21,14 @@ export default class AutotoolsBuildDiscoverer extends BuildDiscoverBase {
 
   async getBuildCommand() {
     let cmds = [
-      { cmd: path.join(this.rootDir, 'configure'), args: ['--prefix', path.resolve(this.rootDir, 'surf-artifacts')] },
-      { cmd: 'make', args: []},
-      { cmd: 'make', args: ['install']}
+      { cmd: path.join(this.rootDir, 'configure'), args: ['--prefix', path.resolve(this.rootDir, 'surf-artifacts')], cwd: this.rootDir },
+      { cmd: 'make', args: [], cwd: this.rootDir},
+      { cmd: 'make', args: ['install'], cwd: this.rootDir }
     ];
 
     let autogen = path.join(this.rootDir, 'autogen.sh');
     if (await statNoException(autogen)) {
-      cmds.unshift({ cmd: autogen, args: [] });
+      cmds.unshift({ cmd: autogen, args: [], cwd: this.rootDir });
     }
 
     d(JSON.stringify(cmds));

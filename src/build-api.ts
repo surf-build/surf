@@ -58,7 +58,12 @@ export async function determineBuildCommands(rootPath: string, sha: string) {
     let thisCmd = await discoverer.getBuildCommand(sha);
 
     d(`Discoverer returned ${JSON.stringify(thisCmd)}`);
-    let newCmds = thisCmd.cmds.map((x) => findActualExecutable(x.cmd, x.args));
+    let newCmds = thisCmd.cmds.map((x) => {
+      return {
+        ...findActualExecutable(x.cmd, x.args),
+        cwd: x.cwd
+      };
+    });
     ret.cmds.push(...newCmds);
 
     if (thisCmd.artifactDirs) {
@@ -71,8 +76,8 @@ export async function determineBuildCommands(rootPath: string, sha: string) {
 }
 
 export function runAllBuildCommands(cmds: BuildCommand[], rootDir: string, sha: string, tempDir: string) {
-  let toConcat = cmds.map(({cmd, args}) => {
-    return runBuildCommand(cmd, args, rootDir, sha, tempDir);
+  let toConcat = cmds.map(({cmd, args, cwd}) => {
+    return runBuildCommand(cmd, args, cwd || rootDir, sha, tempDir);
   });
 
   return Observable.concat(...toConcat)

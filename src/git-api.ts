@@ -47,6 +47,35 @@ export async function getOriginForRepo(targetDirname: string) {
   });
 }
 
+export async function getOriginDefaultBranchName(targetDirname: string, token?: string) {
+  let repoDir = await Repository.discover(targetDirname, 0, '');
+
+  return await using(async (ds) => {
+    let repo = ds(await Repository.open(repoDir));
+    let origin = ds(await Remote.lookup(repo, 'origin', () => {}));
+
+    let cb = {
+      credentials: () => {
+        d(`Returning ${token} for authentication token`);
+        return Cred.userpassPlaintextNew(token || '', 'x-oauth-basic');
+      },
+      certificateCheck: () => {
+        // Yolo
+        return 1;
+       }
+    };
+
+    await origin.connect(0, cb, null, null, null);
+
+    try {
+      let ret = await origin.defaultBranch();
+      return ret.replace('refs/heads/', '');
+    } finally {
+      origin.disconnect();
+    }
+  });
+}
+
 export async function getAllWorkdirs(repoUrl: string) {
   let tmp = process.env.SURF_ORIGINAL_TMPDIR || process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
@@ -87,15 +116,18 @@ export function parseGitDiffOutput(output: string): string[] {
 }
 
 export async function getChangedFiles(targetDirname: string): Promise<string[]> {
-  let repoDir = (await Repository.discover(targetDirname, 0, '')) as string;
-  let opts = { cwd: repoDir };
+  let opts = { cwd: targetDirname };
 
-  let ourCommit = await spawnPromise('git', ['rev-parse', 'HEAD'], opts);
-  let remoteHeadCommit = await spawnPromise('git', ['rev-parse', 'origin/HEAD'], opts);
+  let ourCommit = (await getHeadForRepo(targetDirname));
+  d(`Got our commit: ${ourCommit}`);
+  let defaultRemoteBranch = await getOriginDefaultBranchName(targetDirname);
+
+  d(`Using origin/${defaultRemoteBranch} as remote default branch`);
+  let remoteHeadCommit = (await spawnPromise('git', ['rev-parse', `origin/${defaultRemoteBranch}`], opts)).trim();
 
   // If we're on the remote master branch, there are no changes,
   // so just return every file
-  if (ourCommit == remoteHeadCommit) {
+  if (ourCommit === remoteHeadCommit) {
     return (await spawnPromise('git', ['ls-files'], opts))
       .split('\n')
       .filter(x => x.length > 1);

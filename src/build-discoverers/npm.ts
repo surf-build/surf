@@ -25,11 +25,11 @@ export default class NpmBuildDiscoverer extends BuildDiscoverBase {
       await fs.readFile(path.join(this.rootDir, 'package.json'), 'utf8'));
 
     let cmds = [
-      { cmd: 'npm', args: ['install']}
+      { cmd: 'npm', args: ['install'], cwd: this.rootDir }
     ];
 
     if (pkgJson.scripts && pkgJson.scripts.test) {
-      cmds.push({ cmd: 'npm', args: ['test']});
+      cmds.push({ cmd: 'npm', args: ['test'], cwd: this.rootDir });
     }
 
     return {cmds};
