@@ -20,7 +20,7 @@ export default class BuildDiscoverBase {
     throw new Error("Implement me!");
   }
 
-  getBuildCommand(_sha: string): Promise<BuildCommandResult>  {
+  getBuildCommand(_sha: string): Promise<BuildCommandResult> {
     throw new Error("Implement me!");
   }
 }
