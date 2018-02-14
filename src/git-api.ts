@@ -27,13 +27,8 @@ function using<TRet>(block: (f: FreeMethod) => TRet): TRet {
 }
 
 export async function getHeadForRepo(targetDirname: string) {
-  let repoDir = (await Repository.discover(targetDirname, 0, '')) as string;
-
-  return await using(async (ds) => {
-    let repo = ds(await Repository.open(repoDir));
-    let commit = ds(await repo.getHeadCommit());
-    return commit.sha();
-  });
+  const opts = { cwd: targetDirname };
+  return (await spawnPromise('git', ['rev-parse', 'HEAD'], opts)).trim();
 }
 
 export async function getOriginForRepo(targetDirname: string) {
