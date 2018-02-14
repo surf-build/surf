@@ -29,7 +29,7 @@ export default class BuildScriptDiscoverer extends BuildDiscoverBase {
 
   async getAffinityForRootDir() {
     let scriptDir = await this.getScriptPath();
-    return (scriptDir ? 50 : 0);
+    return (scriptDir ? 20 : 0);
   }
 
   async getScriptPath() {
