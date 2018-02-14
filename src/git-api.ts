@@ -9,6 +9,7 @@ import { statNoException, statSyncNoException } from './promise-array';
 import { rimraf, mkdirp, mkdirpSync } from './recursive-fs';
 
 import * as fs from 'mz/fs';
+import { spawnPromise } from 'spawn-rx';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api');
@@ -46,6 +47,36 @@ export async function getOriginForRepo(targetDirname: string) {
   });
 }
 
+export async function getOriginDefaultBranchName(targetDirname: string, token?: string) {
+  let repoDir = await Repository.discover(targetDirname, 0, '');
+  token = token || process.env.GITHUB_TOKEN;
+
+  return await using(async (ds) => {
+    let repo = ds(await Repository.open(repoDir));
+    let origin = ds(await Remote.lookup(repo, 'origin', () => {}));
+
+    let cb = {
+      credentials: () => {
+        d(`Returning ${token} for authentication token`);
+        return Cred.userpassPlaintextNew(token || '', 'x-oauth-basic');
+      },
+      certificateCheck: () => {
+        // Yolo
+        return 1;
+       }
+    };
+
+    await origin.connect(0, cb, null, null, null);
+
+    try {
+      let ret = await origin.defaultBranch();
+      return ret.replace('refs/heads/', '');
+    } finally {
+      origin.disconnect();
+    }
+  });
+}
+
 export async function getAllWorkdirs(repoUrl: string) {
   let tmp = process.env.SURF_ORIGINAL_TMPDIR || process.env.TMPDIR || process.env.TEMP || '/tmp';
   let ret = await fs.readdir(tmp);
@@ -72,7 +103,43 @@ export async function getAllWorkdirs(repoUrl: string) {
   }, []);
 }
 
-export function getWorkdirForRepoUrl(repoUrl: string, sha: string, dontCreate= false) {
+export function parseGitDiffOutput(output: string): string[] {
+  return output.split('\n')
+    .filter(line => line.length > 1)
+    .map(line => {
+      let pathSegment = line.split('\t')[2];
+      if (pathSegment.indexOf('{') < 0) return pathSegment;
+
+      // Fix up renames, which are of the format:
+      // src/job-installers/{systemd.js => systemd.ts}
+      return pathSegment.replace(/(.*){.*=> (.*)}$/, '$1$2');
+    });
+}
+
+export async function getChangedFiles(targetDirname: string, token?: string): Promise<string[]> {
+  let opts = { cwd: targetDirname };
+  token = token || process.env.GITHUB_TOKEN;
+
+  let ourCommit = (await getHeadForRepo(targetDirname));
+  d(`Got our commit: ${ourCommit}`);
+  let defaultRemoteBranch = await getOriginDefaultBranchName(targetDirname, token);
+
+  d(`Using origin/${defaultRemoteBranch} as remote default branch`);
+  let remoteHeadCommit = (await spawnPromise('git', ['rev-parse', `origin/${defaultRemoteBranch}`], opts)).trim();
+
+  // If we're on the remote master branch, there are no changes,
+  // so just return every file
+  if (ourCommit === remoteHeadCommit) {
+    return (await spawnPromise('git', ['ls-files'], opts))
+      .split('\n')
+      .filter(x => x.length > 1);
+  }
+
+  return parseGitDiffOutput(
+    await spawnPromise('git', ['diff', '--numstat', 'origin/HEAD...HEAD']));
+}
+
+export function getWorkdirForRepoUrl(repoUrl: string, sha: string, dontCreate = false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
   let date = toIso8601(new Date()).replace(/:/g, '.');
@@ -88,7 +155,7 @@ export function getWorkdirForRepoUrl(repoUrl: string, sha: string, dontCreate= f
   return ret;
 }
 
-export function getTempdirForRepoUrl(repoUrl: string, sha: string, dontCreate= false) {
+export function getTempdirForRepoUrl(repoUrl: string, sha: string, dontCreate = false) {
   let tmp = process.env.TMPDIR || process.env.TEMP || '/tmp';
   let nwo = getNwoFromRepoUrl(repoUrl).split('/')[1];
   let date = toIso8601(new Date()).replace(/:/g, '.');

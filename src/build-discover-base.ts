@@ -1,6 +1,7 @@
 export interface BuildCommand {
   cmd: string;
   args: string[];
+  cwd: string;
 }
 
 export interface BuildCommandResult {
@@ -17,10 +18,10 @@ export default class BuildDiscoverBase {
   }
 
   getAffinityForRootDir(): Promise<number>  {
-    throw new Error("Implement me!");
+    throw new Error('Implement me!');
   }
 
-  getBuildCommand(_sha: string): Promise<BuildCommandResult>  {
-    throw new Error("Implement me!");
+  getBuildCommand(_sha: string): Promise<BuildCommandResult> {
+    throw new Error('Implement me!');
   }
 }

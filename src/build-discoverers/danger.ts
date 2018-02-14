@@ -33,8 +33,8 @@ export default class DangerBuildDiscoverer extends BuildDiscoverBase {
 
   async getBuildCommand() {
     let cmds = [
-      { cmd: 'bundle', args: ['install']},
-      { cmd: 'bundle', args: ['exec', 'danger']}
+      { cmd: 'bundle', args: ['install'], cwd: this.rootDir },
+      { cmd: 'bundle', args: ['exec', 'danger'], cwd: this.rootDir }
     ];
 
     if (!process.env.SURF_BUILD_NAME) {

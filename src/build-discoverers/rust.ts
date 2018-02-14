@@ -21,7 +21,7 @@ export default class RustBuildDiscoverer extends BuildDiscoverBase {
 
   async getBuildCommand() {
     process.env.RUST_BACKTRACE = '1';
-    let cmd = { cmd: 'cargo', args: ['test', '-v'] };
+    let cmd = { cmd: 'cargo', args: ['test', '-v'], cwd: this.rootDir };
 
     return { cmds: [cmd] };
   }

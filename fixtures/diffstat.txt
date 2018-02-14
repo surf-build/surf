@@ -1,0 +1,59 @@
+1	1	.travis.yml
+110	103	README.md
+5693	0	package-lock.json
+57	29	package.json
+7	0	src/ambient.d.ts
+0	3	src/babel-maybefill.js
+24	24	src/{build-api.js => build-api.ts}
+0	13	src/build-discover-base.js
+26	0	src/build-discover-base.ts
+8	7	src/build-discoverers/{autotools.js => autotools.ts}
+12	5	src/build-discoverers/{build-script.js => build-script.ts}
+7	7	src/build-discoverers/{cmake.js => cmake.ts}
+4	3	src/build-discoverers/{danger.js => danger.ts}
+19	13	src/build-discoverers/{dotnet.js => dotnet.ts}
+40	0	src/build-discoverers/monorepo.ts
+9	7	src/build-discoverers/{npm.js => npm.ts}
+9	5	src/build-discoverers/{rust.js => rust.ts}
+5	5	src/build-discoverers/{xcode.js => xcode.ts}
+44	23	src/{build-monitor.js => build-monitor.ts}
+6	2	src/{build-project-cli.js => build-project-cli.ts}
+47	52	src/{build-project-main.js => build-project-main.ts}
+7	3	src/{clean-workdirs-cli.js => clean-workdirs-cli.ts}
+9	9	src/{clean-workdirs-main.js => clean-workdirs-main.ts}
+8	4	src/{commit-status-cli.js => commit-status-cli.ts}
+13	10	src/{commit-status-main.js => commit-status-main.ts}
+0	32	src/custom-rx-operators.js
+44	0	src/custom-rx-operators.ts
+5	1	src/{download-release-cli.js => download-release-cli.ts}
+3	3	src/{download-release-main.js => download-release-main.ts}
+78	53	src/{git-api.js => git-api.ts}
+121	92	src/{github-api.js => github-api.ts}
+10	8	src/{job-installer-api.js => job-installer-api.ts}
+0	35	src/job-installer-base.js
+37	0	src/job-installer-base.ts
+10	5	src/{job-installer-cli.js => job-installer-cli.ts}
+7	7	src/{job-installer-main.js => job-installer-main.ts}
+28	22	src/job-installers/{docker.js => docker.ts}
+1	0	src/job-installers/launchd.plist.in
+30	27	src/job-installers/{launchd.js => launchd.ts}
+25	19	src/job-installers/{systemd.js => systemd.ts}
+40	36	src/job-installers/{task-scheduler.js => task-scheduler.ts}
+0	76	src/promise-array.js
+81	0	src/promise-array.ts
+0	18	src/promisify.js
+6	2	src/{publish-tag-cli.js => publish-tag-cli.ts}
+28	11	src/{publish-tag-main.js => publish-tag-main.ts}
+26	0	src/recursive-fs.ts
+8	2	src/{run-on-every-ref-cli.js => run-on-every-ref-cli.ts}
+17	17	src/{run-on-every-ref-main.js => run-on-every-ref-main.ts}
+113	0	src/sha-to-ref-cli.ts
+2	2	test/{asserttest.js => asserttest.ts}
+31	26	test/{build-monitor.js => build-monitor.ts}
+5	8	test/{build-project-integration-tests.js => build-project-integration-tests.ts}
+6	3	test/{git-api.js => git-api.ts}
+23	20	test/{job-installers.js => job-installers.ts}
+0	12	test/support.js
+5	0	test/support.ts
+33	0	tsconfig.json
+36	0	tslint.json
