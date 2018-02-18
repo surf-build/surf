@@ -42,6 +42,7 @@
     "debug": "^2.6.3",
     "dugite": "^1.57.0",
     "fs-extra": "^2.1.2",
+    "git-credential-envvar": "^1.1.0",
     "ini": "^1.3.4",
     "iso8601": "^1.1.1",
     "lodash": "^4.17.4",
