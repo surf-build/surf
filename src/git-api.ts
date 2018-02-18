@@ -8,6 +8,7 @@ import { getNwoFromRepoUrl } from './github-api';
 import { toIso8601 } from 'iso8601';
 import { statNoException, statSyncNoException } from './promise-array';
 import { rimraf, mkdirp, mkdirpSync } from './recursive-fs';
+import { findActualExecutable } from 'spawn-rx';
 
 import * as fs from 'mz/fs';
 
@@ -16,9 +17,12 @@ const d = require('debug')('surf:git-api');
 
 export async function git(args: string[], cwd: string, token?: string): Promise<string> {
   token = token || process.env.GITHUB_TOKEN;
-  process.env.GIT_ASKPASS = 'envvar';
-  process.env.GITCREDENTIALUSERNAME = 'token';
-  process.env.GITCREDENTIALPASSWORD = token;
+  const { cmd } = findActualExecutable('git-askpass-env', []);
+
+  d(`Actually using token! ${token}`);
+  process.env.GIT_ASKPASS = cmd;
+  process.env.GIT_ASKPASS_USER = token;
+  process.env.GIT_ASKPASS_PASSWORD = 'x-oauth-basic';
 
   let ret = await GitProcess.exec(args, cwd);
   if (ret.exitCode !== 0) {
