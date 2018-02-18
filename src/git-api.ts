@@ -182,7 +182,6 @@ export async function fetchRepo(targetDirname: string, token?: string) {
 export async function cloneOrFetchRepo(url: string, checkoutDir: string, token?: string) {
   let dirname = crypto.createHash('sha1').update(url).digest('hex');
   let targetDirname = path.join(checkoutDir, dirname);
-  let r = null;
 
   try {
     await fetchRepo(targetDirname, token);

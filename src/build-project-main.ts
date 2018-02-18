@@ -172,8 +172,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, '', false));
-  r.free();
+  await retryPromise(() => cloneRepo(bareRepoDir, workDir, '', false));
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);
