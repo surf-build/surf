@@ -165,6 +165,8 @@ describe('Job installer API', function() {
   });
 
   it('should select the correct installer per-platform', async function() {
+    if (process.env.CI) return;
+
     let expected = {
       'win32': 'task-scheduler',
       'darwin': 'launchd',
