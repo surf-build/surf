@@ -5,7 +5,7 @@ import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';
 import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
 import LaunchdInstaller from '../src/job-installers/launchd';
-import {installJob, getDefaultJobInstallerForPlatform} from '../src/job-installer-api';
+import {installJob} from '../src/job-installer-api';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf-test:job-installers');
@@ -162,17 +162,6 @@ describe('Job installer API', function() {
   beforeEach(function() {
     this.sampleName = 'example-csharp';
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
-
-  it('should select the correct installer per-platform', async function() {
-    let expected = {
-      'win32': 'task-scheduler',
-      'darwin': 'launchd',
-      'linux': 'systemd'
-    };
-
-    let result = await getDefaultJobInstallerForPlatform(this.sampleName, this.sampleCommand);
-    expect(result.getName()).to.equal(expected[process.platform]);
   });
 
   it('should return some content', async function() {

@@ -141,6 +141,18 @@ async function realMain(argv: any, showHelp: (() => void)) {
   let bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir));
 
   if (!sha) {
+    d(`SHA1 not specified, trying to retrieve SHA1 for current repo in directory`);
+    try {
+      sha = await getHeadForRepo(process.cwd());
+      argv.sha = sha;
+      d(`Current checkout is at ${sha}`);
+    } catch (e) {
+      console.error(`Failed to find the commit for cwd ${process.cwd()}: ${e.message}`);
+      d(e.stack);
+    }
+  }
+
+  if (!sha) {
     d(`SHA1 not specified, trying to retrieve default branch`);
     try {
       sha = await getHeadForRepo(bareRepoDir);
@@ -172,8 +184,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
   let tempDir = getTempdirForRepoUrl(repo, sha);
 
   d(`Cloning to work directory: ${workDir}`);
-  let r = await retryPromise(() => cloneRepo(bareRepoDir, workDir, '', false));
-  r.free();
+  await retryPromise(() => cloneRepo(bareRepoDir, workDir, '', false));
 
   d(`Checking out to given SHA1: ${sha}`);
   await checkoutSha(workDir, sha);

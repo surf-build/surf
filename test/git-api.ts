@@ -25,8 +25,7 @@ describe('The node-git helper methods', function() {
   });
 
   it('should clone a public repo with cloneRepo', async function() {
-    let r = await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
-    r.free();
+    await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
 
     let result = await fs.stat(path.join(this.targetDir, 'HEAD'));
     expect(result).to.be.ok;
