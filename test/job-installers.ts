@@ -164,19 +164,6 @@ describe('Job installer API', function() {
     this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
   });
 
-  it('should select the correct installer per-platform', async function() {
-    if (process.env.CI) return;
-
-    let expected = {
-      'win32': 'task-scheduler',
-      'darwin': 'launchd',
-      'linux': 'systemd'
-    };
-
-    let result = await getDefaultJobInstallerForPlatform(this.sampleName, this.sampleCommand);
-    expect(result.getName()).to.equal(expected[process.platform]);
-  });
-
   it('should return some content', async function() {
     let result = await installJob(this.sampleName, this.sampleCommand, true);
     let keys = Object.keys(result);
