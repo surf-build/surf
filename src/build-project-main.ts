@@ -204,7 +204,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
 
     buildStream.concatMap((x) => {
       console.log(x.replace(/[\r\n]+$/, ''));
-      return Observable.fromPromise(fs.write(fd, x, 0, 'utf8'));
+      return Observable.fromPromise(fs.write(fd, x, undefined, 'utf8'));
     }).subscribe(() => {}, (e) => {
       console.error(e.message);
       sfs.writeSync(fd, `${e.message}\n`, null, 'utf8');
