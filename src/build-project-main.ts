@@ -222,8 +222,8 @@ async function realMain(argv: any, showHelp: (() => void)) {
 
     try {
       d(`Uploading build artifacts using token: ${token}`);
-      await retryPromise(() =>
-        uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs || [], buildLog, token));
+      //await retryPromise(() =>
+        uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs || [], buildLog, token);//);
     } catch (e) {
       console.error(`Failed to upload build artifacts: ${e.message}`);
       d(e.stack);

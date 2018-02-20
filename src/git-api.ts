@@ -15,18 +15,22 @@ import * as fs from 'mz/fs';
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api');
 
+let askPassPath: string;
 export async function git(args: string[], cwd: string, token?: string): Promise<string> {
-  token = token || process.env.GITHUB_TOKEN;
-  const { cmd } = findActualExecutable('git-askpass-env', []);
+  let ourToken = token || process.env.GITHUB_TOKEN;
+  if (!askPassPath) {
+    askPassPath = findActualExecutable('git-askpass-env', []).cmd;
+  }
 
-  d(`Actually using token! ${token}`);
-  process.env.GIT_ASKPASS = cmd;
-  process.env.GIT_ASKPASS_USER = token;
+  d(`Actually using token! ${ourToken}`);
+  process.env.GIT_ASKPASS = askPassPath;
+  process.env.GIT_ASKPASS_USER = ourToken;
   process.env.GIT_ASKPASS_PASSWORD = 'x-oauth-basic';
 
+  d(`Running command: git ${args.join(' ')} in ${cwd}`);
   let ret = await GitProcess.exec(args, cwd);
   if (ret.exitCode !== 0) {
-    throw new Error(ret.stderr);
+    throw new Error(`Failed with exit code ${ret.exitCode}\n${ret.stderr}`);
   }
 
   return ret.stdout.trim();
@@ -162,9 +166,13 @@ export async function cloneRepo(url: string, targetDirname: string, token?: stri
   d(`Cloning ${url} => ${targetDirname}, bare=${bare}`);
   await git(
     ['clone', bare ? '--bare' : '--recurse-submodules', url, targetDirname],
-    '.', token);
+    process.cwd(), token);
 
-  await fetchRepo(targetDirname, token);
+  if (url.indexOf('gist.github') < 0) {
+    d('Fetching PRs for repo');
+    await fetchRepo(targetDirname, token);
+  }
+
   return targetDirname;
 }
 
@@ -220,7 +228,7 @@ export async function addFilesToGist(repoUrl: string, targetDirname: string, art
     sfs.copySync(artifactDirOrFile, tgt);
 
     d(`Adding artifact: ${tgt}`);
-    await git(['add', path.basename(artifactDirOrFile)], targetDirname);
+    await git(['add', path.basename(tgt)], targetDirname);
   } else {
     d('Reading artifacts directory');
     let artifacts = await fs.readdir(artifactDirOrFile);
@@ -236,8 +244,9 @@ export async function addFilesToGist(repoUrl: string, targetDirname: string, art
 
   d(`Writing commit to gist`);
   await git(['commit',
-    '--author=Surf Build Server <none@example.com>',
-    '--allow-empty-message',
+    '--author="Surf Build Server <none@example.com>"',
+    '--allow-empty',
+    '-m', '"Add files"'
   ], targetDirname);
 
   return targetDirname;
