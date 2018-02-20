@@ -5,7 +5,7 @@ import SystemdInstaller from '../src/job-installers/systemd';
 import DockerInstaller from '../src/job-installers/docker';
 import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
 import LaunchdInstaller from '../src/job-installers/launchd';
-import {installJob, getDefaultJobInstallerForPlatform} from '../src/job-installer-api';
+import {installJob} from '../src/job-installer-api';
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf-test:job-installers');
