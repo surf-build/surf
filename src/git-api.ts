@@ -253,5 +253,5 @@ export async function addFilesToGist(repoUrl: string, targetDirname: string, art
 }
 
 export async function pushGistRepoToMaster(targetDirname: string, token: string) {
-  await git(['push', 'origin', 'master'], targetDirname, token);
+  await git(['push', 'origin', 'main'], targetDirname, token);
 }
