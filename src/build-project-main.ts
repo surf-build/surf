@@ -106,6 +106,7 @@ async function realMain(argv: any, showHelp: (() => void)) {
   let sha = argv.sha || process.env.SURF_SHA1;
   let repo = argv.repo || process.env.SURF_REPO;
   let name = argv.name;
+  let logsonly = argv.logsonly;
 
   if (argv.help) {
     showHelp();
@@ -194,6 +195,11 @@ async function realMain(argv: any, showHelp: (() => void)) {
 
   d(`Determining command to build`);
   let { cmds, artifactDirs } = await determineBuildCommands(workDir, sha);
+
+  if (logsonly) {
+    d(`Ignoring build artifacts, only uploading build log`);
+    artifactDirs = [];
+  }
 
   let buildPassed = true;
   let buildLog = path.join(workDir, 'build-output.log');
