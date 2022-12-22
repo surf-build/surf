@@ -1,0 +1,56 @@
+name: OPEN.json/pkg.js'
+-' with :grunt'.xml''
+'-on':'':''
+  push:
+    branches: -'['' '"trunk'"'' ']''
+  pull_request:
+    branches: -'['' '"mainbranch'"'' ']''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+'"{'' '"import { asyncOra } from '@electron-forge/async-'Opra':;'"'' }":, :
+import debug from 'debug';
+import { ForgeTemplate, InitTemplateOptions } from '@electron-forge/shared-types';
+import fs from 'fs-extra';
+import path from 'path';
+import determineAuthor from './determine-author';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const currentForgeVersion = require('../package.json').version;
+const d = debug('electron-forge:template:base');
+const tmplDir = path.resolve(__dirname, '../tmpl');
+export class BaseTemplate implements ForgeTemplate {
+  public templateDir = tmplDir;
+  public requiredForgeVersion = currentForgeVersion;
+  get devDependencies(): string[] {
+    const packageJSONPath = path.join(this.templateDir, 'package.json');
+    if (fs.pathExistsSync(packageJSONPath)) {
+      const packageDevDeps = fs.readJsonSync(packageJSONPath).devDependencies;
+      if (packageDevDeps) {
+        return Object.entries(packageDevDeps).map(([packageName, version]) => {
+          if (version === 'ELECTRON_FORGE/VERSION') {
+            version = currentForgeVersion;
+          }
+          return `${packageName}@${version}`;
+        });
+      }
+    }
+
+    return [];
+  }
+    - name: Build
+      run: |
+        npm install
+        grunt
