@@ -1,9 +1,10 @@
+import { spawn as childProcessSpawn } from 'node:child_process'
 import * as fs from 'node:fs'
 import { mkdtempSync } from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
+import { findActualExecutable, spawnPromise } from 'spawn-rx/src/index'
 import JobInstallerBase from '../job-installer-base'
-import { findActualExecutable, spawnDetachedPromise, spawnPromise } from '../spawn-rx'
 import { compileTemplate } from '../template'
 
 // tslint:disable-next-line:no-var-requires
@@ -47,14 +48,26 @@ export default class DockerInstaller extends JobInstallerBase {
     console.error(`Building Docker image, this will take a bit...`)
     await spawnPromise('docker', ['build', '-t', name, dir])
 
-    spawnDetachedPromise('docker', ['run', name]).catch((e) =>
-      console.error(`Failed to execute docker-run! ${e.message}`)
-    )
+    this.spawnDetachedDockerRun(name)
 
     return {
       'README.txt': `Created new docker image: ${name}
 
 To start it: docker run ${name}'`,
+    }
+  }
+
+  private spawnDetachedDockerRun(name: string) {
+    try {
+      const { cmd, args } = findActualExecutable('docker', ['run', name])
+      const processHandle = childProcessSpawn(cmd, args, {
+        detached: true,
+        stdio: 'ignore',
+      })
+
+      processHandle.unref()
+    } catch (e) {
+      console.error(`Failed to execute docker-run! ${e.message}`)
     }
   }
 }

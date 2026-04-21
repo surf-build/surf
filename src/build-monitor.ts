@@ -10,9 +10,9 @@ import {
   Subscription,
 } from 'rxjs'
 import { catchError, finalize, map, mergeAll, observeOn, share, switchMap, takeUntil, tap } from 'rxjs/operators'
+import { spawn } from 'spawn-rx/src/index'
 import { delayFailures } from './custom-rx-operators'
 import { getNwoFromRepoUrl } from './github-api'
-import { spawn } from './spawn-rx'
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-monitor')
@@ -71,7 +71,7 @@ export default class BuildMonitor {
     this.currentRunningMonitor.unsubscribe()
   }
 
-  runBuild(ref: any) {
+  runBuild(ref: any): Observable<string> {
     const args = this.cmdWithArgs.slice(1).concat([ref.object.sha])
     const envToAdd: any = {
       SURF_SHA1: ref.object.sha,
@@ -91,7 +91,7 @@ export default class BuildMonitor {
     d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`)
     console.log(`Building ${this.repo}@${ref.object.sha} (${ref.ref})`)
 
-    return spawn(this.cmdWithArgs[0], args, opts).pipe(
+    return spawn(this.cmdWithArgs[0], args, { ...opts, split: false }).pipe(
       tap({
         next: (output) => console.log(output),
         error: (error) => console.error(error),

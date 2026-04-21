@@ -2,10 +2,10 @@ import * as crypto from 'node:crypto'
 import { cpSync, statSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import * as path from 'node:path'
+import { findActualExecutable, spawnPromise } from 'spawn-rx/src/index'
 import { getNwoFromRepoUrl } from './github-api'
 import { statNoException, statSyncNoException } from './promise-array'
 import { mkdirp, mkdirpSync, rimraf } from './recursive-fs'
-import { findActualExecutable, spawnPromise } from './spawn-rx'
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:git-api')

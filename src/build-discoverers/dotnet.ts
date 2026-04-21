@@ -41,15 +41,17 @@ export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
   }
 
   async getBuildCommand() {
-    // TODO: This sucks right now, make it more better'er
-    const buildCommand = process.platform === 'win32' ? 'msbuild' : 'xbuild'
     const slnFile: string = (await this.findSolutionFile())!
 
     const projFiles = (await readdirRecursive(this.rootDir)).filter((x) => x.match(/\.(cs|vb|fs)proj/i))
 
     const artifactDirs = projFiles.map((x) => path.join(path.dirname(x), 'bin', 'Release'))
 
-    const cmd = { cmd: buildCommand, args: ['/p:Configuration=Release', slnFile], cwd: this.rootDir }
+    const cmd = {
+      cmd: 'dotnet',
+      args: ['build', slnFile, '--configuration', 'Release'],
+      cwd: this.rootDir,
+    }
 
     return {
       cmds: [cmd],

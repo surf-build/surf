@@ -1,7 +1,7 @@
 import * as path from 'node:path'
+import { findActualExecutable } from 'spawn-rx/src/index'
 import BuildDiscoverBase from '../build-discover-base'
 import { statNoException } from '../promise-array'
-import { findActualExecutable } from '../spawn-rx'
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-discover-npm')

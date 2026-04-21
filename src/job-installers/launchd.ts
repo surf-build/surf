@@ -1,10 +1,10 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { findActualExecutable } from 'spawn-rx/src/index'
 import stringArgv from 'string-argv'
 import xmlescape from 'xml-escape'
 import JobInstallerBase from '../job-installer-base'
 import { mkdirpSync } from '../recursive-fs'
-import { findActualExecutable } from '../spawn-rx'
 import { compileTemplate } from '../template'
 
 const makeLaunchdService = compileTemplate(fs.readFileSync(path.join(__dirname, 'launchd.plist.in'), 'utf8'))

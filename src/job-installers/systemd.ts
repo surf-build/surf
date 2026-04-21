@@ -1,8 +1,8 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { findActualExecutable, spawnPromise } from 'spawn-rx/src/index'
 import JobInstallerBase from '../job-installer-base'
 import { statNoException } from '../promise-array'
-import { findActualExecutable, spawnPromise } from '../spawn-rx'
 import { compileTemplate } from '../template'
 
 const d = require('debug')('surf:systemd')

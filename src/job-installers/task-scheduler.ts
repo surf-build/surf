@@ -2,10 +2,10 @@ import * as fs from 'node:fs'
 import { mkdtempSync } from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
+import { spawnPromise } from 'spawn-rx/src/index'
 import xmlescape from 'xml-escape'
 import JobInstallerBase from '../job-installer-base'
 import { mkdirpSync } from '../recursive-fs'
-import { spawnPromise } from '../spawn-rx'
 import { compileTemplate } from '../template'
 
 const d = require('debug')('surf:task-scheduler')

@@ -2,11 +2,11 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { concat } from 'rxjs'
 import { share } from 'rxjs/operators'
+import { findActualExecutable, spawn } from 'spawn-rx/src/index'
 import type BuildDiscoverBase from './build-discover-base'
 import type { BuildCommand, BuildCommandResult } from './build-discover-base'
 import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api'
 import { asyncReduce } from './promise-array'
-import { findActualExecutable, spawnDetached } from './spawn-rx'
 
 // tslint:disable-next-line:no-var-requires
 const d = require('debug')('surf:build-api')
@@ -105,7 +105,7 @@ export function runBuildCommand(cmd: string, args: string[], rootDir: string, sh
   }
 
   d(`Running ${cmd} ${args.join(' ')}...`)
-  return spawnDetached(cmd, args, opts)
+  return spawn(cmd, args, { ...opts, split: false })
 }
 
 export async function uploadBuildArtifacts(
