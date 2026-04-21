@@ -1,14 +1,14 @@
-import {expect} from 'chai';
+import { describe, expect, it } from 'bun:test'
 
 function delay(ms: number) {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+    setTimeout(resolve, ms)
+  })
 }
 
-describe('The test runner', function() {
-  it('should pass this test', async function() {
-    await delay(1000);
-    expect(true).to.be.ok;
-  });
-});
+describe('The test runner', () => {
+  it('should pass this test', async () => {
+    await delay(1000)
+    expect(true).toBe(true)
+  })
+})

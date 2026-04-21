@@ -1,44 +1,26 @@
-import { Observable, Subscription, Observer, ConnectableObservable } from 'rxjs';
+import { Observable, timer } from 'rxjs'
+import { catchError, mergeMap } from 'rxjs/operators'
 
-export function subUnsub<T>(this: Observable<T>, onSub?: Function, onUnsub?: Function) {
-  return Observable.create((subj: Observer<T>) => {
-    if (onSub) onSub();
-    let d = this.subscribe(subj);
+export function subUnsub<T>(source: Observable<T>, onSub?: () => void, onUnsub?: () => void) {
+  return new Observable<T>((subscriber) => {
+    onSub?.()
+    const subscription = source.subscribe(subscriber)
 
-    return new Subscription(() => {
-      if (onUnsub) onUnsub();
-      d.unsubscribe();
-    });
-  });
+    return () => {
+      onUnsub?.()
+      subscription.unsubscribe()
+    }
+  })
 }
 
-export function permaRefcount<T>(this: ConnectableObservable<T>) {
-  let connected: Subscription;
-
-  return Observable.create((subj: Observer<T>) => {
-    let d = this.subscribe(subj);
-    if (!connected) connected = this.connect();
-
-    return d;
-  });
+export function delayFailures<T>(source: Observable<T>, delayTime: number) {
+  return source.pipe(
+    catchError((error) =>
+      timer(delayTime).pipe(
+        mergeMap(() => {
+          throw error
+        })
+      )
+    )
+  )
 }
-
-export function delayFailures<T>(this: Observable<T>, delayTime: number) {
-  return this
-    .catch((e) => {
-      return Observable.timer(delayTime)
-        .flatMap(() => Observable.throw(e));
-    });
-}
-
-declare module 'rxjs/Observable' {
-  interface Observable<T> {
-    subUnsub: typeof subUnsub;
-    permaRefcount: typeof permaRefcount;
-    delayFailures: typeof delayFailures;
-  }
-}
-
-Observable.prototype.subUnsub = subUnsub;
-Observable.prototype.permaRefcount = permaRefcount;
-Observable.prototype.delayFailures = delayFailures;

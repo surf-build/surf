@@ -1,26 +1,19 @@
-import * as ogM from 'mkdirp';
-import * as ogR from 'rimraf';
+import { mkdirSync, rmSync } from 'node:fs'
+import { mkdir, rm } from 'node:fs/promises'
 
 export function mkdirpSync(dir: string) {
-  ogM.sync(dir);
+  mkdirSync(dir, { recursive: true })
 }
 
-export function mkdirp(dir: string): Promise<string> {
-  return new Promise<string>((res,rej) => {
-    ogM(dir, (err: Error) => {
-      if (err) { rej(err); } else { res(dir); }
-    });
-  });
+export async function mkdirp(dir: string): Promise<string> {
+  await mkdir(dir, { recursive: true })
+  return dir
 }
 
 export function rimrafSync(dir: string) {
-  ogR.sync(dir);
+  rmSync(dir, { force: true, recursive: true })
 }
 
-export function rimraf(dir: string): Promise<void> {
-  return new Promise<void>((res,rej) => {
-    ogR(dir, (err: Error) => {
-      if (err) { rej(err); } else { res(); }
-    });
-  });
+export async function rimraf(dir: string): Promise<void> {
+  await rm(dir, { force: true, recursive: true })
 }

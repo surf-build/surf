@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import main from './run-on-every-ref-main';
-import * as path from 'path';
+import * as path from 'node:path'
+import main from './run-on-every-ref-main'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf');
+const d = require('debug')('surf:surf')
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
@@ -24,20 +24,19 @@ Monitors a GitHub repo and runs a command for each changed branch / PR.`)
 Some useful environment variables:
 
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use instead of .com.
-GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.`);
+GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.`)
 
-const argv = yargs.argv;
+const argv = yargs.argv
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
-main(argv, () => yargs.showHelp())
-  .catch((e) => {
-    console.error(e.message);
-    d(e.stack);
-    process.exit(-1);
-  });
+main(argv, () => yargs.showHelp()).catch((e) => {
+  console.error(e.message)
+  d(e.stack)
+  process.exit(-1)
+})

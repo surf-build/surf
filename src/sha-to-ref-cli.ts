@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import * as path from 'path';
+import * as path from 'node:path'
 
-import { getOriginForRepo, getHeadForRepo } from './git-api';
-import { getSanitizedRepoUrl, getNwoFromRepoUrl, findPRForCommit } from './github-api';
+import { getHeadForRepo, getOriginForRepo } from './git-api'
+import { findPRForCommit, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-publish');
+const d = require('debug')('surf:surf-publish')
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
@@ -27,87 +27,87 @@ Some useful environment variables:
 
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use instead of .com.
 GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.
-`);
+`)
 
-const argv = yargs.argv;
+const argv = yargs.argv
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
-async function main(argv: any, showHelp: (() => void)) {
-  let sha = argv.sha || process.env.SURF_SHA1;
-  let repo = argv.repo || process.env.SURF_REPO;
+async function main(argv: any, showHelp: () => void) {
+  let sha = argv.sha || process.env.SURF_SHA1
+  let repo = argv.repo || process.env.SURF_REPO
 
   if (argv.help) {
-    showHelp();
-    process.exit(0);
+    showHelp()
+    process.exit(0)
   }
 
   if (!repo) {
     try {
-      repo = getSanitizedRepoUrl(await getOriginForRepo('.'));
-      argv.repo = repo;
+      repo = getSanitizedRepoUrl(await getOriginForRepo('.'))
+      argv.repo = repo
     } catch (e) {
-      console.error('Repository not specified and current directory is not a Git repo');
-      d(e.stack);
+      console.error('Repository not specified and current directory is not a Git repo')
+      d(e.stack)
 
-      showHelp();
-      process.exit(-1);
+      showHelp()
+      process.exit(-1)
     }
   }
 
   if (!repo) {
-    showHelp();
-    process.exit(-1);
+    showHelp()
+    process.exit(-1)
   }
 
   if (!sha) {
-    d(`SHA1 not specified, trying to retrieve default branch`);
+    d(`SHA1 not specified, trying to retrieve default branch`)
     try {
-      sha = await getHeadForRepo('.');
-      argv.sha = sha;
-      d(`Default branch is ${sha}`);
+      sha = await getHeadForRepo('.')
+      argv.sha = sha
+      d(`Default branch is ${sha}`)
     } catch (e) {
-      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`);
-      d(e.stack);
+      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`)
+      d(e.stack)
 
-      showHelp();
-      process.exit(-1);
+      showHelp()
+      process.exit(-1)
     }
   }
 
-  let nwo = getNwoFromRepoUrl(repo);
-  let pr = await findPRForCommit(nwo, sha);
-  if (!pr) process.exit(-1);
+  const nwo = getNwoFromRepoUrl(repo)
+  const pr = await findPRForCommit(nwo, sha)
+  if (!pr) process.exit(-1)
 
-  let type = argv.t || 'number';
+  const type = argv.t || 'number'
   switch (type) {
-  case 'number':
-    console.log(pr.number);
-    return;
-  case 'url':
-    console.log(pr.url);
-    return;
-  case 'json':
-    console.log(JSON.stringify(pr, null, 2));
-    return;
-  case 'ref':
-    console.log(pr.head.ref);
-    return;
-  default:
-    throw new Error('Invalid type!');
+    case 'number':
+      console.log(pr.number)
+      return
+    case 'url':
+      console.log(pr.url)
+      return
+    case 'json':
+      console.log(JSON.stringify(pr, null, 2))
+      return
+    case 'ref':
+      console.log(pr.head.ref)
+      return
+    default:
+      throw new Error('Invalid type!')
   }
 }
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

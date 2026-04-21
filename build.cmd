@@ -1,1 +1,1 @@
-npm i && npm t
+bun install && bun test ./test/*.ts

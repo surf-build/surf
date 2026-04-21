@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import main from './publish-tag-main';
-import * as path from 'path';
+import * as path from 'node:path'
+import main from './publish-tag-main'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-publish');
+const d = require('debug')('surf:surf-publish')
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
@@ -23,22 +23,22 @@ Some useful environment variables:
 
 GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.
 GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to clone the build Gists.
-`);
+`)
 
-const argv = yargs.argv;
+const argv = yargs.argv
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

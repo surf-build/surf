@@ -1,194 +1,180 @@
-import './support';
-import {expect} from 'chai';
-
-import SystemdInstaller from '../src/job-installers/systemd';
-import DockerInstaller from '../src/job-installers/docker';
-import TaskSchedulerInstaller from '../src/job-installers/task-scheduler';
-import LaunchdInstaller from '../src/job-installers/launchd';
-import {installJob} from '../src/job-installer-api';
+import { beforeEach, describe, expect, it } from 'bun:test'
+import { installJob } from '../src/job-installer-api'
+import DockerInstaller from '../src/job-installers/docker'
+import LaunchdInstaller from '../src/job-installers/launchd'
+import SystemdInstaller from '../src/job-installers/systemd'
+import TaskSchedulerInstaller from '../src/job-installers/task-scheduler'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:job-installers');
+const d = require('debug')('surf-test:job-installers')
+const sampleName = 'example-csharp'
+const sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"'
 
-describe('systemd job installer', function() {
-  beforeEach(function() {
-    this.fixture = new SystemdInstaller();
-    this.sampleName = 'example-csharp';
-    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
+describe('systemd job installer', () => {
+  let fixture: SystemdInstaller
 
-  it('should capture Surf environment variables', async function() {
-    process.env.SURF_TEST_ENV_VAR = 'hello';
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
-    delete process.env.SURF_TEST_ENV_VAR;
+  beforeEach(() => {
+    fixture = new SystemdInstaller()
+  })
 
-    d(result);
+  it('should capture Surf environment variables', async () => {
+    process.env.SURF_TEST_ENV_VAR = 'hello'
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
+    delete process.env.SURF_TEST_ENV_VAR
 
-    expect(
-      result[`${this.sampleName}.service`].split('\n')
-        .find((l: string) => l.match(/Environment.*SURF_TEST_ENV_VAR.*hello/))
-    ).to.be.ok;
-  });
-
-  it('should have the command as ExecPath', async function() {
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
-
-    let execStartLine = result[`${this.sampleName}.service`].split('\n')
-      .find((l: string) => l.match(/ExecStart/));
-    expect(execStartLine.indexOf(this.sampleCommand) > 0).to.be.ok;
-  });
-
-  it('should ensure that absolute paths are rooted', async function() {
-    if (process.platform === 'win32') return;
-
-    let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
-
-    let execStartLine = result[`${this.sampleName}.service`]
-      .split('\n')
-      .find((l: string) => l.match(/ExecStart/));
-
-    d(`execStartLine: ${execStartLine}`);
-    expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
-  });
-});
-
-describe('docker job installer', function() {
-  beforeEach(function() {
-    this.fixture = new DockerInstaller();
-    this.sampleName = 'example-csharp';
-    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
-
-  it('should capture Surf environment variables', async function() {
-    process.env.SURF_TEST_ENV_VAR = 'hello';
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
-    delete process.env.SURF_TEST_ENV_VAR;
-
-    d(result);
+    d(result)
 
     expect(
-      result['Dockerfile'].split('\n')
-        .find((l: string) => l.match(/ENV .*SURF_TEST_ENV_VAR.*hello/))
-    ).to.be.ok;
-  });
+      result[`${sampleName}.service`].split('\n').find((l: string) => l.match(/Environment.*SURF_TEST_ENV_VAR.*hello/))
+    ).toBeTruthy()
+  })
 
-  it('should have the command as CMD', async function() {
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+  it('should have the command as ExecPath', async () => {
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
 
-    let execStartLine = result['Dockerfile']
-      .split('\n')
-      .find((l: string) => l.match(/CMD/));
+    const execStartLine = result[`${sampleName}.service`].split('\n').find((l: string) => l.match(/ExecStart/))
+    expect(execStartLine.indexOf(sampleCommand)).toBeGreaterThan(0)
+  })
 
-    d(`execStartLine: ${execStartLine}`);
-    expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
-  });
-});
+  it('should ensure that absolute paths are rooted', async () => {
+    if (process.platform === 'win32') return
 
-describe('Task scheduler job installer', function() {
-  if (process.platform !== 'win32') return;
+    const result = await fixture.installJob(sampleName, 'ls -al', true)
 
-  // NB: This has to spawn PowerShell to get the user list :-/
-  this.timeout(10 * 1000);
+    const execStartLine = result[`${sampleName}.service`].split('\n').find((l: string) => l.match(/ExecStart/))
 
-  beforeEach(function() {
-    this.fixture = new TaskSchedulerInstaller();
-    this.sampleName = 'example-csharp';
-    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
+    d(`execStartLine: ${execStartLine}`)
+    expect(execStartLine.indexOf('/bin/ls')).toBeGreaterThan(0)
+  })
+})
 
-  it('should capture Surf environment variables', async function() {
-    process.env.SURF_TEST_ENV_VAR = 'hello';
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
-    delete process.env.SURF_TEST_ENV_VAR;
+describe('docker job installer', () => {
+  let fixture: DockerInstaller
 
-    d(JSON.stringify(result));
+  beforeEach(() => {
+    fixture = new DockerInstaller()
+  })
+
+  it('should capture Surf environment variables', async () => {
+    process.env.SURF_TEST_ENV_VAR = 'hello'
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
+    delete process.env.SURF_TEST_ENV_VAR
+    const dockerfile = result.Dockerfile || ''
+
+    d(result)
+
+    expect(dockerfile.split('\n').find((l: string) => l.match(/ENV .*SURF_TEST_ENV_VAR.*hello/))).toBeTruthy()
+  })
+
+  it('should have the command as CMD', async () => {
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
+    const dockerfile = result.Dockerfile || ''
+
+    const execStartLine = dockerfile.split('\n').find((l: string) => l.match(/CMD/))
+
+    d(`execStartLine: ${execStartLine}`)
+    expect(execStartLine).toBeTruthy()
+    expect(execStartLine!.indexOf(sampleCommand.split(' ')[0])).toBeGreaterThan(0)
+  })
+})
+
+if (process.platform === 'win32') {
+  describe('Task scheduler job installer', () => {
+    let fixture: TaskSchedulerInstaller
+
+    beforeEach(() => {
+      fixture = new TaskSchedulerInstaller()
+    })
+
+    it('should capture Surf environment variables', async () => {
+      process.env.SURF_TEST_ENV_VAR = 'hello'
+      const result = await fixture.installJob(sampleName, sampleCommand, true)
+      delete process.env.SURF_TEST_ENV_VAR
+
+      d(JSON.stringify(result))
+
+      expect(
+        result[`${sampleName}.cmd`].split('\n').find((l: string) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
+      ).toBeTruthy()
+    }, 10_000)
+
+    it('should have the command', async () => {
+      expect(await fixture.getAffinityForJob(sampleName, sampleCommand)).toBeGreaterThan(0)
+
+      const result = await fixture.installJob(sampleName, sampleCommand, true)
+      const execStartLine = result[`${sampleName}.cmd`].split('\n').find((l: string) => l.match(/surf-build/))
+
+      expect(execStartLine).toBeTruthy()
+    }, 10_000)
+  })
+}
+
+describe('launchd job installer', () => {
+  let fixture: LaunchdInstaller
+
+  beforeEach(() => {
+    fixture = new LaunchdInstaller()
+  })
+
+  it('should capture Surf environment variables', async () => {
+    process.env.SURF_TEST_ENV_VAR = 'hello'
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
+    delete process.env.SURF_TEST_ENV_VAR
+
+    d(result)
 
     expect(
-      result[`${this.sampleName}.cmd`].split('\n').find((l: string) => l.match(/SET.*SURF_TEST_ENV_VAR.*hello/))
-    ).to.be.ok;
-  });
+      result[`local.${sampleName}.plist`]
+        .split('\n')
+        .find((l: string) => l.match(/key.*SURF_TEST_ENV_VAR.*string.*hello/))
+    ).toBeTruthy()
+  })
 
-  it('should have the command', async function() {
-    expect((await this.fixture.getAffinityForJob(this.sampleName, this.sampleCommand)) > 0).to.be.ok;
+  it('should have the command', async () => {
+    const result = await fixture.installJob(sampleName, sampleCommand, true)
 
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+    const execStartLine = result[`local.${sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/))
+    expect(execStartLine.indexOf(sampleCommand.split(' ')[0])).toBeGreaterThan(0)
+  })
 
-    let execStartLine = result[`${this.sampleName}.cmd`].split('\n').find((l: string) => l.match(/surf-build/));
-    expect(execStartLine).to.be.ok;
-  });
-});
+  it('should ensure that absolute paths are rooted', async () => {
+    if (process.platform === 'win32') return
 
-describe('launchd job installer', function() {
-  beforeEach(function() {
-    this.fixture = new LaunchdInstaller();
-    this.sampleName = 'example-csharp';
-    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
+    const result = await fixture.installJob(sampleName, 'ls -al', true)
 
-  it('should capture Surf environment variables', async function() {
-    process.env.SURF_TEST_ENV_VAR = 'hello';
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
-    delete process.env.SURF_TEST_ENV_VAR;
+    const execStartLine = result[`local.${sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/))
 
-    d(result);
+    d(`execStartLine: ${execStartLine}`)
+    expect(execStartLine.indexOf('/bin/ls')).toBeGreaterThan(0)
+  })
+})
 
-    expect(
-      result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/key.*SURF_TEST_ENV_VAR.*string.*hello/))
-    ).to.be.ok;
-  });
+describe('Job installer API', () => {
+  it('should return some content', async () => {
+    const result = await installJob(sampleName, sampleCommand, true)
+    const keys = Object.keys(result)
+    expect((result[keys[0]] || '').split('\n').length).toBeGreaterThan(2)
+  }, 10_000)
 
-  it('should have the command', async function() {
-    let result = await this.fixture.installJob(this.sampleName, this.sampleCommand, true);
+  it('should capture extra env vars', async () => {
+    process.env.__FOOBAR = 'baz'
+    process.env.__BAMF = 'baz'
+    const result = await installJob(sampleName, sampleCommand, true, 'docker', ['__FOOBAR', '__BAMF'])
+    delete process.env.__BAMF
+    delete process.env.__FOOBAR
 
-    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/));
-    expect(execStartLine.indexOf(this.sampleCommand.split(' ')[0]) > 0).to.be.ok;
-  });
+    const lines = (result.Dockerfile || '').split('\n')
+    expect(lines.length).toBeGreaterThan(2)
+    expect(lines.find((x: string) => x.match(/^ENV.*FOOBAR.*baz/))).toBeTruthy()
+    expect(lines.find((x: string) => x.match(/^ENV.*BAMF.*baz/))).toBeTruthy()
+  }, 10_000)
 
-  it('should ensure that absolute paths are rooted', async function() {
-    if (process.platform === 'win32') return;
+  it('should allow us to explicitly select the Docker API', async () => {
+    const result = await installJob(sampleName, sampleCommand, true, 'docker')
+    const lines = (result.Dockerfile || '').split('\n')
 
-    let result = await this.fixture.installJob(this.sampleName, 'ls -al', true);
-
-    let execStartLine = result[`local.${this.sampleName}.plist`].split('\n').find((l: string) => l.match(/Program/));
-
-    d(`execStartLine: ${execStartLine}`);
-    expect(execStartLine.indexOf('/bin/ls') > 0).to.be.ok;
-  });
-});
-
-describe('Job installer API', function() {
-  this.timeout(10 * 1000);
-
-  beforeEach(function() {
-    this.sampleName = 'example-csharp';
-    this.sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"';
-  });
-
-  it('should return some content', async function() {
-    let result = await installJob(this.sampleName, this.sampleCommand, true);
-    let keys = Object.keys(result);
-    expect(result[keys[0]].split('\n').length > 2).to.be.ok;
-  });
-
-  it('should capture extra env vars', async function() {
-    process.env.__FOOBAR = 'baz';
-    process.env.__BAMF = 'baz';
-    let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker', ['__FOOBAR', '__BAMF']);
-    delete process.env.__BAMF;
-    delete process.env.__FOOBAR;
-
-    let lines = result['Dockerfile'].split('\n');
-    expect(lines.length > 2).to.be.ok;
-    expect(lines.find((x: string) => x.match(/^ENV.*FOOBAR.*baz/))).to.be.ok;
-    expect(lines.find((x: string) => x.match(/^ENV.*BAMF.*baz/))).to.be.ok;
-  });
-
-  it('should allow us to explicitly select the Docker API', async function() {
-    let result = await installJob(this.sampleName, this.sampleCommand, true, 'docker');
-    let lines = result['Dockerfile'].split('\n');
-
-    expect(lines.length > 2).to.be.ok;
-    expect(lines.find((x: string) => x.match(/^CMD /))).to.be.ok;
-    expect(lines.find((x: string) => x.match(/^ExecPath/))).not.to.be.ok;
-  });
-});
+    expect(lines.length).toBeGreaterThan(2)
+    expect(lines.find((x: string) => x.match(/^CMD /))).toBeTruthy()
+    expect(lines.find((x: string) => x.match(/^ExecPath/))).toBeFalsy()
+  }, 10_000)
+})

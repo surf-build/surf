@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import main from './job-installer-main';
-import * as path from 'path';
+import * as path from 'node:path'
+import main from './job-installer-main'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-install');
+const d = require('debug')('surf:surf-install')
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
@@ -35,22 +35,22 @@ GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use.
 GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post status to.
 GIST_ENTERPRISE_URL - the GitHub Enterprise URL to (optionally) post Gists to.
 GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the build output Gist.
-`);
+`)
 
-const argv = yargs.argv;
+const argv = yargs.argv
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

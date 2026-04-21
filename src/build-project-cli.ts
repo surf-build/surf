@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import main from './build-project-main';
-import * as path from 'path';
+import * as path from 'node:path'
+import main from './build-project-main'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-build');
+const d = require('debug')('surf:surf-build')
 
 // tslint:disable-next-line:no-var-requires
 const yargs = require('yargs')
@@ -30,22 +30,22 @@ GIST_TOKEN - the GitHub (.com or Enterprise) API token to use to create the buil
 SURF_SHA1 - an alternate way to specify the --sha parameter, provided
             automatically by surf-client.
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf-client.`);
+            automatically by surf-client.`)
 
-const argv = yargs.argv;
+const argv = yargs.argv
 
 if (argv.version) {
   // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
 main(argv, () => yargs.showHelp())
   .then((x) => process.exit(x))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

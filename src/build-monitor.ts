@@ -1,181 +1,200 @@
-import {spawn} from 'spawn-rx';
-import {Observable, Scheduler, Subject, Subscription, Observer} from 'rxjs';
-import { IScheduler } from 'rxjs/Scheduler';
-
-import SerialSubscription from 'rxjs-serial-subscription';
-
-import {getNwoFromRepoUrl} from './github-api';
-
-import './custom-rx-operators';
+import {
+  EMPTY,
+  from,
+  interval,
+  Observable,
+  type Observer,
+  queueScheduler,
+  type SchedulerLike,
+  Subject,
+  Subscription,
+} from 'rxjs'
+import { catchError, finalize, map, mergeAll, observeOn, share, switchMap, takeUntil, tap } from 'rxjs/operators'
+import { delayFailures } from './custom-rx-operators'
+import { getNwoFromRepoUrl } from './github-api'
+import { spawn } from './spawn-rx'
 
 // tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-monitor');
+const d = require('debug')('surf:build-monitor')
 
-export function getSeenRefs(refs: [any]): Set<string> {
+export function getSeenRefs(refs: any[]): Set<string> {
   return refs.reduce((acc, x) => {
-    acc.add(x.object.sha);
-    return acc;
-  }, new Set<string>());
+    acc.add(x.object.sha)
+    return acc
+  }, new Set<string>())
 }
 
 interface CurrentBuild {
-  observable: Observable<string | {}>;
-  cancel: (() => void);
+  observable: Observable<string>
+  cancel: () => void
 }
 
 export default class BuildMonitor {
-  private readonly currentBuilds = new Map<string, CurrentBuild>();
-  private readonly scheduler: IScheduler;
-  private readonly currentRunningMonitor = new SerialSubscription();
-  private readonly buildsToActuallyExecute = new Subject<Observable<string | {}>>();
-  private readonly seenCommits = new Set<string>();
+  private readonly currentBuilds = new Map<string, CurrentBuild>()
+  private readonly scheduler: SchedulerLike
+  private readonly currentRunningMonitor = new Subscription()
+  private readonly buildsToActuallyExecute = new Subject<Observable<string>>()
+  public seenCommits = new Set<string>()
 
-  public readonly buildMonitorCrashed = new Subject<Error>();
+  public readonly buildMonitorCrashed = new Subject<Error>()
 
   constructor(
-      private cmdWithArgs: string[],
-      private repo: string,
-      private maxConcurrentJobs: number,
-      private fetchRefs: (() => Observable<[any]>),
-      initialRefs?: [any],
-      scheduler?: IScheduler,
-      private pollInterval = 5000,
-      private enableCancellation = true) {
-
-    this.scheduler = scheduler || Scheduler.queue;
-    this.currentRunningMonitor = new SerialSubscription();
-    this.buildsToActuallyExecute = new Subject();
-    this.buildMonitorCrashed = new Subject();
+    private cmdWithArgs: string[],
+    private repo: string,
+    private maxConcurrentJobs: number,
+    public fetchRefs: () => Observable<any[]>,
+    initialRefs?: any[],
+    scheduler?: SchedulerLike,
+    public pollInterval = 5000,
+    private enableCancellation = true
+  ) {
+    this.scheduler = scheduler || queueScheduler
+    this.currentRunningMonitor = new Subscription()
+    this.buildsToActuallyExecute = new Subject()
+    this.buildMonitorCrashed = new Subject()
 
     this.buildMonitorCrashed.subscribe((e) => {
-      console.error(`Build Monitor crashed! ${e.message}`);
-      console.error(e.stack);
+      console.error(`Build Monitor crashed! ${e.message}`)
+      console.error(e.stack)
 
-      this.unsubscribe();
-    });
+      this.unsubscribe()
+    })
 
     if (initialRefs) {
-      this.seenCommits = getSeenRefs(initialRefs);
+      this.seenCommits = getSeenRefs(initialRefs)
     } else {
-      this.seenCommits = new Set();
+      this.seenCommits = new Set()
     }
   }
 
   unsubscribe() {
-    this.currentRunningMonitor.unsubscribe();
+    this.currentRunningMonitor.unsubscribe()
   }
 
   runBuild(ref: any) {
-    let args = this.cmdWithArgs.slice(1).concat([ref.object.sha]);
-    let envToAdd: any = {
-      'SURF_SHA1': ref.object.sha,
-      'SURF_REPO': this.repo,
-      'SURF_NWO': getNwoFromRepoUrl(this.repo),
-      'SURF_REF': ref.ref.replace(/^refs\/heads\//, '')
-    };
-
-    if (ref.object.pr) {
-      envToAdd.SURF_PR_NUM = ref.object.pr.number;
+    const args = this.cmdWithArgs.slice(1).concat([ref.object.sha])
+    const envToAdd: any = {
+      SURF_SHA1: ref.object.sha,
+      SURF_REPO: this.repo,
+      SURF_NWO: getNwoFromRepoUrl(this.repo),
+      SURF_REF: ref.ref.replace(/^refs\/heads\//, ''),
     }
 
-    let opts = {
-      env: Object.assign({}, envToAdd, process.env)
-    };
+    if (ref.object.pr) {
+      envToAdd.SURF_PR_NUM = ref.object.pr.number
+    }
 
-    d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`);
-    console.log(`Building ${this.repo}@${ref.object.sha} (${ref.ref})`);
+    const opts = {
+      env: Object.assign({}, envToAdd, process.env),
+    }
 
-    return spawn(this.cmdWithArgs[0], args, opts)
-      .do((x) => console.log(x), e => console.error(e));
+    d(`About to run: ${this.cmdWithArgs[0]} ${args.join(' ')}`)
+    console.log(`Building ${this.repo}@${ref.object.sha} (${ref.ref})`)
+
+    return spawn(this.cmdWithArgs[0], args, opts).pipe(
+      tap({
+        next: (output) => console.log(output),
+        error: (error) => console.error(error),
+      })
+    )
   }
 
   getOrCreateBuild(ref: any) {
-    let ret = this.currentBuilds[ref.object.sha];
-    if (ret) return ret;
+    const ret = this.currentBuilds.get(ref.object.sha)
+    if (ret) return ret
 
-    d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`);
-    let cs = new Subject();
-    let cancel = () => cs.next(true);
+    d(`Queuing build for SHA: ${ref.object.sha}, ${ref.ref}`)
+    this.seenCommits.add(ref.object.sha)
+    const cs = new Subject<void>()
+    const cancel = () => cs.next()
+    const innerObs = this.runBuild(ref).pipe(
+      takeUntil(cs),
+      finalize(() => {
+        d(`Removing ${ref.object.sha} from active builds`)
+        this.currentBuilds.delete(ref.object.sha)
+      }),
+      share()
+    )
 
-    let innerObs = this.runBuild(ref)
-      .takeUntil(cs)
-      .publishLast();
+    const buildObs = new Observable<string>((subj: Observer<string>) => innerObs.subscribe(subj))
 
-    innerObs.catch(() => Observable.of(''))
-      .subscribe(() => {
-        d(`Removing ${ref.object.sha} from active builds`);
-        delete this.currentBuilds[ref.object.sha];
-      });
-
-    let connected: Subscription;
-    let buildObs = Observable.create((subj: Observer<string | {}>) => {
-      this.seenCommits.add(ref.object.sha);
-
-      let disp = innerObs.subscribe(subj);
-      if (!connected) connected = innerObs.connect();
-
-      return disp;
-    });
-
-    return this.currentBuilds[ref.object.sha] = { observable: buildObs, cancel };
+    const currentBuild = { observable: buildObs, cancel }
+    this.currentBuilds.set(ref.object.sha, currentBuild)
+    return currentBuild
   }
 
   start() {
-    let fetchCurrentRefs = Observable.interval(this.pollInterval, this.scheduler)
-      .switchMap(() => this.fetchRefs());
+    const fetchCurrentRefs = interval(this.pollInterval, this.scheduler).pipe(switchMap(() => this.fetchRefs()))
 
-    let disp = this.buildsToActuallyExecute
-      .map((x) => x.delayFailures(4000).catch((e) => {
+    const disp = this.buildsToActuallyExecute
+      .pipe(
+        map((build) =>
+          delayFailures(build, 4000).pipe(
+            catchError((e) => {
+              console.log(e.message.replace(/[\r\n]+$/, ''))
+              d(e.stack)
+              return EMPTY
+            })
+          )
+        ),
+        mergeAll(this.maxConcurrentJobs)
+      )
+      .subscribe(
+        () => {},
+        (e) => this.buildMonitorCrashed.next(e)
+      )
 
-        console.log(e.message.replace(/[\r\n]+$/, ''));
-        d(e.stack);
+    const disp2 = fetchCurrentRefs.subscribe(
+      (refs) => {
+        const seenRefs = getSeenRefs(refs)
 
-        return Observable.empty();
-      }))
-      .mergeAll(this.maxConcurrentJobs)
-      .subscribe(() => {}, (e) => this.buildMonitorCrashed.next(e));
+        // Cancel any builds that are out-of-date
+        const cancellers = Array.from(this.currentBuilds.keys()).reduce(
+          (acc, x) => {
+            if (seenRefs.has(x)) return acc
 
-    let disp2 = fetchCurrentRefs.subscribe((refs) => {
-      let seenRefs = getSeenRefs(refs);
+            acc.push(this.currentBuilds.get(x)!.cancel)
+            return acc
+          },
+          [] as (() => void)[]
+        )
 
-      // Cancel any builds that are out-of-date
-      let cancellers = Array.from(this.currentBuilds.keys()).reduce((acc,x) => {
-        if (seenRefs.has(x)) return acc;
+        // NB: We intentionally collect all of these via the reducer first to avoid
+        // altering currentBuilds while iterating through it
+        if (this.enableCancellation) {
+          cancellers.forEach((x) => {
+            x()
+          })
+        }
 
-        acc.push(this.currentBuilds.get(x)!.cancel);
-        return acc;
-      }, new Array<() => void>());
+        const refsToBuild = this.determineRefsToBuild(refs)
 
-      // NB: We intentionally collect all of these via the reducer first to avoid
-      // altering currentBuilds while iterating through it
-      if (this.enableCancellation) cancellers.forEach((x) => x());
+        // NB: If we don't do this, we can stack overflow if the build queue
+        // gets too deep
+        from(refsToBuild)
+          .pipe(observeOn(this.scheduler))
+          .subscribe((x) => this.buildsToActuallyExecute.next(this.getOrCreateBuild(x).observable))
+      },
+      (e) => this.buildMonitorCrashed.next(e)
+    )
 
-      let refsToBuild = this.determineRefsToBuild(refs);
+    const newSub = new Subscription()
+    newSub.add(disp)
+    newSub.add(disp2)
 
-      // NB: If we don't do this, we can stack overflow if the build queue
-      // gets too deep
-      Observable.from(refsToBuild)
-        .observeOn(this.scheduler)
-        .subscribe((x) =>
-          this.buildsToActuallyExecute.next(this.getOrCreateBuild(x).observable));
-    }, (e) => this.buildMonitorCrashed.next(e));
-
-    let newSub = new Subscription();
-    newSub.add(disp);  newSub.add(disp2);
-
-    this.currentRunningMonitor.add(newSub);
-    return newSub;
+    this.currentRunningMonitor.add(newSub)
+    return newSub
   }
 
-  determineRefsToBuild(refInfo: [any]) {
-    let dedupe = new Set();
+  determineRefsToBuild(refInfo: any[]) {
+    const dedupe = new Set()
 
     return refInfo.filter((ref) => {
-      if (this.seenCommits.has(ref.object.sha)) return false;
-      if (dedupe.has(ref.object.sha)) return false;
+      if (this.seenCommits.has(ref.object.sha)) return false
+      if (dedupe.has(ref.object.sha)) return false
 
-      dedupe.add(ref.object.sha);
-      return true;
-    });
+      dedupe.add(ref.object.sha)
+      return true
+    })
   }
 }
