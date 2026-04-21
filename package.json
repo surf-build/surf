@@ -42,7 +42,7 @@
     "mime-types": "^3.0.1",
     "parse-link-header": "^2.0.0",
     "rxjs": "^7.8.2",
-    "spawn-rx": "^6.0.0",
+    "spawn-rx": "^6.0.1",
     "string-argv": "^0.3.2",
     "xml-escape": "^1.1.0",
     "yargs": "^18.0.0"

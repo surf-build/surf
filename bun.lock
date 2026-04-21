@@ -12,7 +12,7 @@
         "mime-types": "^3.0.1",
         "parse-link-header": "^2.0.0",
         "rxjs": "^7.8.2",
-        "spawn-rx": "^6.0.0",
+        "spawn-rx": "^6.0.1",
         "string-argv": "^0.3.2",
         "xml-escape": "^1.1.0",
         "yargs": "^18.0.0",
@@ -120,7 +120,7 @@
 
     "rxjs": ["rxjs@7.8.2", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA=="],
 
-    "spawn-rx": ["spawn-rx@6.0.0", "", { "dependencies": { "debug": "^4.3.7", "lru-cache": "^11.2.4", "rxjs": "^7.8.1" } }, "sha512-eGIWeP/77orCn1BqGnC8l6+Gqb+ZrKEs++XXKBMFHxIxUwKz8xHp+5anI2WPgjXFW5e/H2KjFJi3iBTNZGpXZw=="],
+    "spawn-rx": ["spawn-rx@6.0.1", "", { "dependencies": { "debug": "^4.3.7", "lru-cache": "^11.2.4", "rxjs": "^7.8.1" } }, "sha512-D8DoVRt/jh1lJqTnRHL8Xqk1VX9ad3ALvJlJW5ZKpUrGagFRMHu8/GWCS6JEWaVgtVs+IAg1GXN4qAq66nH7gg=="],
 
     "string-argv": ["string-argv@0.3.2", "", {}, "sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q=="],
 
