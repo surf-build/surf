@@ -1,27 +1,27 @@
 export interface BuildCommand {
-  cmd: string;
-  args: string[];
-  cwd: string;
+  cmd: string
+  args: string[]
+  cwd: string
 }
 
 export interface BuildCommandResult {
-  cmds: BuildCommand[];
-  artifactDirs?: string[];
+  cmds: BuildCommand[]
+  artifactDirs?: string[]
 }
 
 export default class BuildDiscoverBase {
-  public shouldAlwaysRun: boolean;
-  public rootDir: string;
+  public shouldAlwaysRun: boolean
+  public rootDir: string
 
   constructor(rootDir: string) {
-    this.rootDir = rootDir;
+    this.rootDir = rootDir
   }
 
-  getAffinityForRootDir(): Promise<number>  {
-    throw new Error('Implement me!');
+  getAffinityForRootDir(): Promise<number> {
+    throw new Error('Implement me!')
   }
 
   getBuildCommand(_sha: string): Promise<BuildCommandResult> {
-    throw new Error('Implement me!');
+    throw new Error('Implement me!')
   }
 }

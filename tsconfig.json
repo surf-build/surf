@@ -1,33 +1,25 @@
 {
   "compilerOptions": {
-    "removeComments": false,
-    "preserveConstEnums": true,
-    "sourceMap": true,
-    "declaration": true,
-    "noImplicitAny": true,
+    "allowJs": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "noImplicitAny": false,
     "noImplicitReturns": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noImplicitThis": true,
-    "noUnusedParameters": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "noImplicitThis": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "pretty": true,
-    "target": "es2015",
-    "outDir": "lib",
-    "lib": ["es2015", "dom"]
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "strictNullChecks": true,
+    "target": "es2022",
+    "types": ["bun-types", "bun-types/test", "node"],
+    "useUnknownInCatchVariables": false,
+    "lib": ["es2022", "dom"]
   },
-  "formatCodeOptions": {
-    "indentSize": 2,
-    "tabSize": 2
-  },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts"
-  ]  
+  "include": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["lib", "node_modules"]
 }

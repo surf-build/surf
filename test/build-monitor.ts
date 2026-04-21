@@ -1,355 +1,350 @@
-import * as path from 'path';
-import * as fs from 'mz/fs';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { readdir, readFile } from 'node:fs/promises'
+import * as path from 'node:path'
+import createDebug from 'debug'
+import { Observable, of, Subject, Subscription, throwError, VirtualTimeScheduler } from 'rxjs'
+import { delay, share, tap } from 'rxjs/operators'
+import BuildMonitor from '../src/build-monitor'
+import { subUnsub } from '../src/custom-rx-operators'
 
-import {expect} from 'chai';
-import './support';
+const d = createDebug('surf-test:build-monitor')
 
-import BuildMonitor from '../src/build-monitor';
-import {Observable, Subscription, Subject, Observer} from 'rxjs';
-
-import {TestScheduler} from '@kwonoj/rxjs-testscheduler-compat';
-
-import '../src/custom-rx-operators';
-
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:build-monitor');
-
-function getSeenRefs(refs: [any]) {
+function getSeenRefs(refs: any[]) {
   return refs.reduce((acc, x) => {
-    acc.add(x.object.sha);
-    return acc;
-  }, new Set<string>());
+    acc.add(x.object.sha)
+    return acc
+  }, new Set<string>())
 }
 
-describe('the build monitor', function() {
-  beforeEach(async function() {
-    let acc = {};
-    let fixturesDir = path.join(__dirname, '..', 'fixtures');
+class AdvancingScheduler extends VirtualTimeScheduler {
+  advanceBy(ms: number) {
+    this.maxFrames = this.frame + ms
+    this.flush()
+  }
+}
 
-    for (let name of await fs.readdir(fixturesDir)) {
-      if (!name.match(/^refs.*\.json$/i)) continue;
+describe('the build monitor', () => {
+  let refExamples: Record<string, any[]> = {}
+  let sched: AdvancingScheduler
+  let fixture: BuildMonitor
 
-      let contents = await fs.readFile(path.join(fixturesDir, name), 'utf8');
-      acc[name] = JSON.parse(contents.split('\n')[0]);
+  beforeEach(async () => {
+    const acc: Record<string, any[]> = {}
+    const fixturesDir = path.join(__dirname, '..', 'fixtures')
+
+    for (const name of await readdir(fixturesDir)) {
+      if (!name.match(/^refs.*\.json$/i)) continue
+
+      const contents = await readFile(path.join(fixturesDir, name), 'utf8')
+      acc[name] = JSON.parse(contents.split('\n')[0])
     }
 
-    this.refExamples = acc;
+    refExamples = acc
+    sched = new AdvancingScheduler()
+    fixture = new BuildMonitor([], '', 2, () => throwError(() => new Error('no')), undefined, sched as any)
+  })
 
-    this.sched = new TestScheduler();
-    this.fixture = new BuildMonitor([], '', 2, () => Observable.throw(new Error('no')), undefined, this.sched);
-  });
+  afterEach(() => {
+    fixture.unsubscribe()
+  })
 
-  afterEach(function() {
-    this.fixture.unsubscribe();
-  });
-
-  it('shouldnt run builds in getOrCreateBuild until you subscribe', function() {
-    let buildCount = 0;
-    let runBuildCount = 0;
+  it('shouldnt run builds in getOrCreateBuild until you subscribe', () => {
+    let buildCount = 0
+    let runBuildCount = 0
 
     // Scheduling is live
-    this.sched.advanceBy(1000);
+    sched.advanceBy(1000)
 
-    let buildSubject = new Subject();
-    this.fixture.runBuild = () => {
-      runBuildCount++;
-      return buildSubject.subUnsub(() => buildCount++);
-    };
+    const buildSubject = new Subject<string>()
+    fixture.runBuild = () => {
+      runBuildCount++
+      return subUnsub(buildSubject, () => buildCount++)
+    }
 
-    d('Initial getOrCreateBuild');
-    let ref = this.refExamples['refs1.json'][1];
-    let result = this.fixture.getOrCreateBuild(ref);
-    this.sched.advanceBy(1000);
-    expect(buildCount).to.equal(0);
-    expect(runBuildCount).to.equal(1);
+    d('Initial getOrCreateBuild')
+    const ref = refExamples['refs1.json'][1]
+    let result = fixture.getOrCreateBuild(ref)
+    sched.advanceBy(1000)
+    expect(buildCount).toBe(0)
+    expect(runBuildCount).toBe(1)
 
-    d('Subscribing 1x');
-    result.observable.subscribe();
-    this.sched.advanceBy(1000);
-    expect(buildCount).to.equal(1);
+    d('Subscribing 1x')
+    result.observable.subscribe()
+    sched.advanceBy(1000)
+    expect(buildCount).toBe(1)
 
     // Double subscribes do nothing
-    d('Subscribing 2x');
-    result.observable.subscribe();
-    this.sched.advanceBy(1000);
-    expect(buildCount).to.equal(1);
+    d('Subscribing 2x')
+    result.observable.subscribe()
+    sched.advanceBy(1000)
+    expect(buildCount).toBe(1)
 
-    d('Second getOrCreateBuild');
-    result = this.fixture.getOrCreateBuild(ref);
-    result.observable.subscribe();
-    this.sched.advanceBy(1000);
-    expect(buildCount).to.equal(1);
-    expect(runBuildCount).to.equal(1);
+    d('Second getOrCreateBuild')
+    result = fixture.getOrCreateBuild(ref)
+    result.observable.subscribe()
+    sched.advanceBy(1000)
+    expect(buildCount).toBe(1)
+    expect(runBuildCount).toBe(1)
 
-    d('Complete the build');
-    buildSubject.next('');
-    buildSubject.complete();
+    d('Complete the build')
+    buildSubject.next('')
+    buildSubject.complete()
 
-    d('Third getOrCreateBuild');
-    result = this.fixture.getOrCreateBuild(ref);
-    result.observable.subscribe();
-    this.sched.advanceBy(1000);
+    d('Third getOrCreateBuild')
+    result = fixture.getOrCreateBuild(ref)
+    result.observable.subscribe()
+    sched.advanceBy(1000)
 
-    expect(buildCount).to.equal(2);
-    expect(runBuildCount).to.equal(2);
-  });
+    expect(buildCount).toBe(2)
+    expect(runBuildCount).toBe(2)
+  })
 
-  it('should decide to build new refs from a blank slate', function() {
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
+  it('should decide to build new refs from a blank slate', () => {
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
 
-    let buildCount = 0;
-    this.fixture.runBuild = () => {
-      buildCount++;
-      return Observable.of('');
-    };
+    let buildCount = 0
+    fixture.runBuild = () => {
+      buildCount++
+      return of('')
+    }
 
-    this.fixture.start();
-    expect(buildCount).to.equal(0);
+    fixture.start()
+    expect(buildCount).toBe(0)
 
-    this.sched.advanceBy(30 * 1000);
-    expect(buildCount).to.equal(10);
-  });
+    sched.advanceBy(30 * 1000)
+    expect(buildCount).toBe(10)
+  })
 
-  it('should decide to build only changed refs', function() {
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
+  it('should decide to build only changed refs', () => {
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
 
-    let buildCount = 0;
-    this.fixture.runBuild = (ref: any) => {
-      buildCount++;
-      return Observable.of('')
-        .subUnsub(() => d(`Building ${ref.object.sha}`));
-    };
+    let buildCount = 0
+    fixture.runBuild = (ref: any) => {
+      buildCount++
+      return subUnsub(of(''), () => d(`Building ${ref.object.sha}`))
+    }
 
-    this.fixture.start();
-    expect(buildCount).to.equal(0);
+    fixture.start()
+    expect(buildCount).toBe(0)
 
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    expect(buildCount).to.equal(10);
+    sched.advanceBy(fixture.pollInterval + 1000)
+    expect(buildCount).toBe(10)
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs2.json']);
+    fixture.fetchRefs = () => of(refExamples['refs2.json'])
 
     // Move to the next interval, we should only run the one build
-    this.sched.advanceBy(this.fixture.pollInterval);
-    expect(buildCount).to.equal(11);
-  });
+    sched.advanceBy(fixture.pollInterval)
+    expect(buildCount).toBe(11)
+  })
 
-  it('should only build at a max level of concurrency', function() {
-    let liveBuilds = 0;
-    let completedBuilds = 0;
-    let completedShas = new Set();
+  it('should only build at a max level of concurrency', () => {
+    let liveBuilds = 0
+    let completedBuilds = 0
+    const completedShas = new Set<string>()
 
-    this.fixture.runBuild = (ref: any) => {
-      return Observable.of('')
-        .do(() => {
-          if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`);
-          liveBuilds++;
-          d(`Starting build: ${ref.object.sha}`);
-        })
-        .delay(2 * 1000, this.sched)
-        .do(() => {}, () => {}, () => {
-          liveBuilds--;
-          completedBuilds++;
-          completedShas.add(ref.object.sha);
-          d(`Completing build: ${ref.object.sha}`);
-        })
-        .publish()
-        .refCount();
-    };
+    fixture.runBuild = (ref: any) => {
+      return of('').pipe(
+        tap(() => {
+          if (completedShas.has(ref.object.sha)) d(`Double building! ${ref.object.sha}`)
+          liveBuilds++
+          d(`Starting build: ${ref.object.sha}`)
+        }),
+        delay(2 * 1000, sched),
+        tap({
+          complete: () => {
+            liveBuilds--
+            completedBuilds++
+            completedShas.add(ref.object.sha)
+            d(`Completing build: ${ref.object.sha}`)
+          },
+        }),
+        share()
+      )
+    }
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
 
-    this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 2);
+    fixture.start()
+    sched.advanceBy(fixture.pollInterval + 2)
 
-    expect(liveBuilds).to.equal(2);
-    expect(completedBuilds).to.equal(0);
+    expect(liveBuilds).toBe(2)
+    expect(completedBuilds).toBe(0)
 
-    this.sched.advanceBy(this.fixture.pollInterval);
-    expect(liveBuilds).to.equal(2);
-    expect(completedBuilds).to.equal(4);  // two builds per 2sec, for 5sec
+    sched.advanceBy(fixture.pollInterval)
+    expect(liveBuilds).toBe(2)
+    expect(completedBuilds).toBe(4)
 
-    this.sched.advanceBy(30 * 1000);
-    expect(liveBuilds).to.equal(0);
-    expect(completedBuilds).to.equal(10);
-  });
+    sched.advanceBy(30 * 1000)
+    expect(liveBuilds).toBe(0)
+    expect(completedBuilds).toBe(10)
+  })
 
-  it('shouldnt cancel any builds when we only look at one set of refs', function() {
-    let liveBuilds = 0;
-    let cancelledRefs = new Array<string>();
+  it('shouldnt cancel any builds when we only look at one set of refs', () => {
+    let liveBuilds = 0
+    const cancelledRefs: string[] = []
 
-    this.fixture.runBuild = (ref: any) => {
-      let ret = Observable.of('')
-        .do(() => {
-          liveBuilds++;
-          d(`Starting build: ${ref.object.sha}`);
-        })
-        .delay(2 * 1000, this.sched)
-        .do(() => {}, () => {}, () => {
-          liveBuilds--;
-          d(`Completing build: ${ref.object.sha}`);
-        })
-        .publish()
-        .refCount();
+    fixture.runBuild = (ref: any) => {
+      const ret = of('').pipe(
+        tap(() => {
+          liveBuilds++
+          d(`Starting build: ${ref.object.sha}`)
+        }),
+        delay(2 * 1000, sched),
+        tap({
+          complete: () => {
+            liveBuilds--
+            d(`Completing build: ${ref.object.sha}`)
+          },
+        }),
+        share()
+      )
 
-      return Observable.create((subj: Observer<string|{}>) => {
-        let producedItem = false;
-        let disp = ret
-          .do(() => producedItem = true)
-          .subscribe(subj);
-
-        return new Subscription(() => {
-          disp.unsubscribe();
-          if (producedItem) return;
-
-          d(`Canceled ref before it finished! ${ref.object.sha}`);
-          liveBuilds--;
-          cancelledRefs.push(ref.object.sha);
-        });
-      });
-    };
-
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
-
-    this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-
-    expect(liveBuilds).to.equal(2);
-
-    this.sched.advanceBy(1000);
-    expect(liveBuilds).to.equal(2);
-
-    this.sched.advanceBy(30 * 1000);
-
-    expect(liveBuilds).to.equal(0);
-    expect(cancelledRefs.length).to.equal(0);
-  });
-
-  it.skip('should cancel builds when their refs disappear', function() {
-    let liveBuilds = 0;
-    let cancelledRefs = new Array<string>();
-
-    this.fixture.runBuild = (ref: any) => {
-      let ret = Observable.of('')
-        .do(() => {
-          liveBuilds++;
-          d(`Starting build: ${ref.object.sha}`);
-        })
-        .delay(10 * this.fixture.pollInterval, this.sched)
-        .do(() => {}, () => {}, () => {
-          liveBuilds--;
-          d(`Completing build: ${ref.object.sha}`);
-        })
-        .publish()
-        .refCount();
-
-      return Observable.create((subj: Observer<string|{}>) => {
-        let producedItem = false;
-        let disp = ret
-          .do(() => producedItem = true)
-          .subscribe(subj);
+      return new Observable((subj) => {
+        let producedItem = false
+        const disp = ret.pipe(tap(() => (producedItem = true))).subscribe(subj)
 
         return new Subscription(() => {
-          disp.unsubscribe();
-          if (producedItem) return;
+          disp.unsubscribe()
+          if (producedItem) return
 
-          d(`Canceled ref before it finished! ${ref.object.sha}`);
-          liveBuilds--;
-          cancelledRefs.push(ref.object.sha);
-        });
-      });
-    };
-
-    this.fixture.seenCommits = getSeenRefs(this.refExamples['refs1.json']);
-
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs3.json']);
-
-    this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-
-    expect(liveBuilds).to.equal(2);
-
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs4.json']);
-
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    expect(liveBuilds).to.equal(1);
-  });
-
-  it('should cancel builds when their refs change', function() {
-    let liveBuilds = 0;
-    let cancelledRefs = new Array<string>();
-
-    this.fixture.runBuild = (ref: any) => {
-      let ret = Observable.of('')
-        .do(() => {
-          liveBuilds++;
-          d(`Starting build: ${ref.object.sha}`);
+          d(`Canceled ref before it finished! ${ref.object.sha}`)
+          liveBuilds--
+          cancelledRefs.push(ref.object.sha)
         })
-        .delay(10 * 1000, this.sched)
-        .do(() => {}, () => {}, () => {
-          liveBuilds--;
-          d(`Completing build: ${ref.object.sha}`);
-        })
-        .publish()
-        .refCount();
+      })
+    }
 
-      return Observable.create((subj: Observer<string|{}>) => {
-        let producedItem = false;
-        let disp = ret
-          .do(() => producedItem = true)
-          .subscribe(subj);
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
+
+    fixture.start()
+    sched.advanceBy(fixture.pollInterval + 1000)
+
+    expect(liveBuilds).toBe(2)
+
+    sched.advanceBy(1000)
+    expect(liveBuilds).toBe(2)
+
+    sched.advanceBy(30 * 1000)
+
+    expect(liveBuilds).toBe(0)
+    expect(cancelledRefs.length).toBe(0)
+  })
+
+  it.skip('should cancel builds when their refs disappear', () => {
+    let liveBuilds = 0
+    const cancelledRefs: string[] = []
+
+    fixture.runBuild = (ref: any) => {
+      const ret = of('').pipe(
+        tap(() => {
+          liveBuilds++
+          d(`Starting build: ${ref.object.sha}`)
+        }),
+        delay(10 * fixture.pollInterval, sched),
+        tap({
+          complete: () => {
+            liveBuilds--
+            d(`Completing build: ${ref.object.sha}`)
+          },
+        }),
+        share()
+      )
+
+      return new Observable((subj) => {
+        let producedItem = false
+        const disp = ret.pipe(tap(() => (producedItem = true))).subscribe(subj)
 
         return new Subscription(() => {
-          disp.unsubscribe();
-          if (producedItem) return;
+          disp.unsubscribe()
+          if (producedItem) return
 
-          d(`Canceled ref before it finished! ${ref.object.sha}`);
-          liveBuilds--;
-          cancelledRefs.push(ref.object.sha);
-        });
-      });
-    };
+          d(`Canceled ref before it finished! ${ref.object.sha}`)
+          liveBuilds--
+          cancelledRefs.push(ref.object.sha)
+        })
+      })
+    }
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
+    fixture.seenCommits = getSeenRefs(refExamples['refs1.json'])
 
-    this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    expect(liveBuilds).to.equal(2);
+    fixture.fetchRefs = () => of(refExamples['refs3.json'])
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs2.json']);
+    fixture.start()
+    sched.advanceBy(fixture.pollInterval + 1000)
 
-    this.sched.advanceBy(this.fixture.pollInterval + 1000);
-    expect(liveBuilds).to.equal(2);
-  });
+    expect(liveBuilds).toBe(2)
 
-  it('shouldnt die when builds fail', function() {
-    this.fixture.runBuild = () => Observable.throw(new Error('no'));
+    fixture.fetchRefs = () => of(refExamples['refs4.json'])
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs1.json']);
+    sched.advanceBy(fixture.pollInterval + 1000)
+    expect(liveBuilds).toBe(1)
+  })
 
-    this.fixture.start();
-    this.sched.advanceBy(this.fixture.pollInterval + 1);
+  it('should cancel builds when their refs change', () => {
+    let liveBuilds = 0
+    const cancelledRefs: string[] = []
 
-    let ranBuild = false;
-    this.fixture.runBuild = () => {
-      ranBuild = true;
-      return Observable.of('');
-    };
+    fixture.runBuild = (ref: any) => {
+      const ret = of('').pipe(
+        tap(() => {
+          liveBuilds++
+          d(`Starting build: ${ref.object.sha}`)
+        }),
+        delay(10 * 1000, sched),
+        tap({
+          complete: () => {
+            liveBuilds--
+            d(`Completing build: ${ref.object.sha}`)
+          },
+        }),
+        share()
+      )
 
-    this.fixture.fetchRefs = () =>
-      Observable.of(this.refExamples['refs2.json']);
+      return new Observable((subj) => {
+        let producedItem = false
+        const disp = ret.pipe(tap(() => (producedItem = true))).subscribe(subj)
 
-    this.sched.advanceBy(this.fixture.pollInterval);
+        return new Subscription(() => {
+          disp.unsubscribe()
+          if (producedItem) return
 
-    expect(ranBuild).to.be.ok;
-  });
-});
+          d(`Canceled ref before it finished! ${ref.object.sha}`)
+          liveBuilds--
+          cancelledRefs.push(ref.object.sha)
+        })
+      })
+    }
+
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
+
+    fixture.start()
+    sched.advanceBy(fixture.pollInterval + 1000)
+    expect(liveBuilds).toBe(2)
+
+    fixture.fetchRefs = () => of(refExamples['refs2.json'])
+
+    sched.advanceBy(fixture.pollInterval + 1000)
+    expect(liveBuilds).toBe(2)
+  })
+
+  it('shouldnt die when builds fail', () => {
+    fixture.runBuild = () => throwError(() => new Error('no'))
+
+    fixture.fetchRefs = () => of(refExamples['refs1.json'])
+
+    fixture.start()
+    sched.advanceBy(fixture.pollInterval + 1)
+
+    let ranBuild = false
+    fixture.runBuild = () => {
+      ranBuild = true
+      return of('')
+    }
+
+    fixture.fetchRefs = () => of(refExamples['refs2.json'])
+
+    sched.advanceBy(fixture.pollInterval)
+
+    expect(ranBuild).toBe(true)
+  })
+})

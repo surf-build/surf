@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import main from './download-release-main';
-import * as path from 'path';
+import createDebug from 'debug'
+import yargsFactory from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import pkgJson from '../package.json' with { type: 'json' }
+import main from './download-release-main'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-download');
-
-// tslint:disable-next-line:no-var-requires
-const yargs = require('yargs')
+const d = createDebug('surf:surf-download')
+const yargs = yargsFactory(hideBin(process.argv))
+  .exitProcess(false)
   .usage(`Usage: surf-download -r http://github.com/some/repo -t some-tag
 Download all of the artifacts for a given Release`)
   .alias('r', 'repo')
@@ -22,22 +23,24 @@ Download all of the artifacts for a given Release`)
 Some useful environment variables:
 
 GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.
-`);
+`)
 
-const argv = yargs.argv;
+const argv = yargs.parseSync()
+
+if (argv.help) {
+  process.exit(0)
+}
 
 if (argv.version) {
-  // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
 }
 
 main(argv, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

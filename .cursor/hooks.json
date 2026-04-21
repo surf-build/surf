@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [{ "command": "bun f && bun check" }]
+  }
+}

@@ -1,63 +1,64 @@
-import * as fs from 'fs';
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import createDebug from 'debug'
+import { findActualExecutable, spawnPromise } from 'spawn-rx'
+import JobInstallerBase from '../job-installer-base'
+import { statNoException } from '../promise-array'
+import { compileTemplate } from '../template'
 
-// tslint:disable-next-line:no-var-requires
-const template = require('lodash.template');
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const d = createDebug('surf:systemd')
 
-import JobInstallerBase from '../job-installer-base';
-import {statNoException} from '../promise-array';
-import {findActualExecutable, spawnPromise} from 'spawn-rx';
-
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:systemd');
-
-// NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
-const makeSystemdService =
-  template(fs.readFileSync(require.resolve('../../src/job-installers/systemd.service.in'), 'utf8'));
+const makeSystemdService = compileTemplate(fs.readFileSync(path.join(__dirname, 'systemd.service.in'), 'utf8'))
 
 export default class SystemdInstaller extends JobInstallerBase {
   getName() {
-    return 'systemd';
+    return 'systemd'
   }
 
   async getAffinityForJob(_name: string, _command: string) {
-    if (process.platform !== 'linux') return 0;
-    let systemctl = await statNoException('/usr/bin/systemctl');
+    if (process.platform !== 'linux') return 0
+    const systemctl = await statNoException('/usr/bin/systemctl')
 
     if (!systemctl) {
-      d(`Can't find systemctl, assuming systemd not installed`);
-      return 0;
+      d(`Can't find systemctl, assuming systemd not installed`)
+      return 0
     }
 
-    return 5;
+    return 5
   }
 
   async installJob(name: string, command: string, returnContent?: boolean) {
     // NB: systemd requires commands to be have absolute paths
-    let m = command.match(/^(\S+)(.*)/)!;
-    if (!m) throw new Error('Not a command');
+    const m = command.match(/^(\S+)(.*)/)!
+    if (!m) throw new Error('Not a command')
 
-    let [, cmd, params] = m;
-    command = findActualExecutable(cmd, []).cmd + params;
+    const [, cmd, params] = m
+    command = findActualExecutable(cmd, []).cmd + params
 
-    let opts = {
+    const opts = {
       envs: this.getInterestingEnvVars().map((x) => `${x}=${process.env[x]}`),
-      name, command
-    };
-
-    let target = `/etc/systemd/system/${name}.service`;
-
-    if (returnContent) {
-      let ret = {};
-      ret[`${name}.service`] = makeSystemdService(opts);
-      return ret;
+      name,
+      command,
     }
 
-    fs.writeFileSync(target, makeSystemdService(opts));
-    await spawnPromise('systemctl', ['daemon-reload']);
-    await spawnPromise('systemctl', ['start', name]);
+    const target = `/etc/systemd/system/${name}.service`
 
-    return { 'README.txt': `systemd service written to '${target}
+    if (returnContent) {
+      const ret = {}
+      ret[`${name}.service`] = makeSystemdService(opts)
+      return ret
+    }
 
-To run it at system startup: sudo systemctl enable ${name}'` };
+    fs.writeFileSync(target, makeSystemdService(opts))
+    await spawnPromise('systemctl', ['daemon-reload'])
+    await spawnPromise('systemctl', ['start', name])
+
+    return {
+      'README.txt': `systemd service written to '${target}
+
+To run it at system startup: sudo systemctl enable ${name}'`,
+    }
   }
 }

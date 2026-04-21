@@ -1,64 +1,62 @@
-import './support';
-import {expect} from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { stat } from 'node:fs/promises'
+import * as path from 'node:path'
+import createDebug from 'debug'
+import { cloneOrFetchRepo, cloneRepo, fetchRepo, parseGitDiffOutput } from '../src/git-api'
+import { mkdirp, rimraf } from '../src/recursive-fs'
 
-import * as path from 'path';
-import { cloneRepo, fetchRepo, cloneOrFetchRepo, parseGitDiffOutput } from '../src/git-api';
-import { rimraf, mkdirp } from '../src/recursive-fs';
-import * as fs from 'mz/fs';
+const d = createDebug('surf-test:git-api')
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:git-api');
+let count = 0
 
-let count = 0;
+describe('The node-git helper methods', () => {
+  let targetDir = ''
 
-describe('The node-git helper methods', function() {
-  this.timeout(20 * 1000);
+  beforeEach(async () => {
+    targetDir = await mkdirp(path.join(__dirname, `__nodegit_${++count}`))
+    d(`targetDir: ${targetDir}`)
+  })
 
-  beforeEach(async function() {
-    this.targetDir = await mkdirp(path.join(__dirname, `__nodegit_${++count}`));
-    d(`targetDir: ${this.targetDir}`);
-  });
+  afterEach(async () => {
+    await rimraf(targetDir)
+  })
 
-  afterEach(async function() {
-    //d(this.targetDir);
-    await rimraf(this.targetDir);
-  });
+  it('should clone a public repo with cloneRepo', async () => {
+    await cloneRepo('https://github.com/surf-build/surf', targetDir)
 
-  it('should clone a public repo with cloneRepo', async function() {
-    await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
+    const result = await stat(path.join(targetDir, 'HEAD'))
+    expect(result).toBeTruthy()
+  }, 20_000)
 
-    let result = await fs.stat(path.join(this.targetDir, 'HEAD'));
-    expect(result).to.be.ok;
-  });
+  it('should fetch a public repo with fetchRepo', async () => {
+    await cloneRepo('https://github.com/surf-build/surf', targetDir)
+    await fetchRepo(targetDir)
 
-  it('should fetch a public repo with fetchRepo', async function() {
-    await cloneRepo('https://github.com/surf-build/surf', this.targetDir);
-    await fetchRepo(this.targetDir);
+    const result = await stat(path.join(targetDir, 'HEAD'))
+    expect(result).toBeTruthy()
+  }, 20_000)
 
-    let result = await fs.stat(path.join(this.targetDir, 'HEAD'));
-    expect(result).to.be.ok;
-  });
+  it('should clone or fetch a public repo', async () => {
+    d('Running clone')
+    await cloneOrFetchRepo('https://github.com/surf-build/surf', targetDir)
 
-  it('should clone or fetch a public repo', async function() {
-    d('Running clone');
-    await cloneOrFetchRepo('https://github.com/surf-build/surf', this.targetDir);
+    d('Running fetch')
+    const repoDir = await cloneOrFetchRepo('https://github.com/surf-build/surf', targetDir)
 
-    d('Running fetch');
-    let repoDir = await cloneOrFetchRepo('https://github.com/surf-build/surf', this.targetDir);
+    const result = await stat(path.join(repoDir, 'HEAD'))
+    expect(result).toBeTruthy()
+  }, 20_000)
+})
 
-    let result = await fs.stat(path.join(repoDir, 'HEAD'));
-    expect(result).to.be.ok;
-  });
-});
-
-describe('The parseGitDiffOutput function', function() {
-  let diffStatFile = path.join(__dirname, '..', 'fixtures', 'diffstat.txt');
-  let fixtureData = fs.readFileSync(diffStatFile, 'utf8');
+describe('The parseGitDiffOutput function', () => {
+  const diffStatFile = path.join(__dirname, '..', 'fixtures', 'diffstat.txt')
+  const fixtureData = readFileSync(diffStatFile, 'utf8')
 
   it('should parse the fixture file', () => {
-    let result = parseGitDiffOutput(fixtureData);
+    const result = parseGitDiffOutput(fixtureData)
 
-    expect(result).to.contain('src/build-discover-base.ts');
-    expect(result).to.contain('test/job-installers.ts');
-  });
-});
+    expect(result).toContain('src/build-discover-base.ts')
+    expect(result).toContain('test/job-installers.ts')
+  })
+})

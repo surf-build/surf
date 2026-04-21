@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import main from './commit-status-main';
-import * as path from 'path';
+import createDebug from 'debug'
+import yargsFactory from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import pkgJson from '../package.json' with { type: 'json' }
+import main from './commit-status-main'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-status');
-
-// tslint:disable-next-line:no-var-requires
-const yargs = require('yargs')
+const d = createDebug('surf:surf-status')
+const yargs = yargsFactory(hideBin(process.argv))
+  .exitProcess(false)
   .usage(`Usage: surf-status --repo https://github.com/owner/repo
 Returns the GitHub Status for all the branches in a repo`)
   .alias('r', 'repo')
@@ -25,22 +26,30 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use.
 GITHUB_TOKEN - the GitHub API token to use. Must be provided.
 
 SURF_REPO - an alternate way to specify the --repo parameter, provided
-            automatically by surf.`);
+            automatically by surf.`)
 
-const argv = yargs.argv;
-
-if (argv.version) {
-  // tslint:disable-next-line:no-var-requires
-  let pkgJson = require(path.join(__dirname, '..', 'package.json'));
-  console.log(`Surf ${pkgJson.version}`);
-  process.exit(0);
+const argv = yargs.parseSync() as {
+  r?: string
+  repo?: string
+  j?: boolean
+  help?: boolean
+  version?: boolean
 }
 
-main(argv.r, argv.j, argv.help, () => yargs.showHelp())
+if (argv.help) {
+  process.exit(0)
+}
+
+if (argv.version) {
+  console.log(`Surf ${pkgJson.version}`)
+  process.exit(0)
+}
+
+main(argv.r ?? argv.repo, argv.j, argv.help, () => yargs.showHelp())
   .then(() => process.exit(0))
   .catch((e) => {
-    console.log(`Fatal Error: ${e.message}`);
-    d(e.stack);
+    console.log(`Fatal Error: ${e.message}`)
+    d(e.stack)
 
-    process.exit(-1);
-  });
+    process.exit(-1)
+  })

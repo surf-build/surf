@@ -1,61 +1,75 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as temp from 'temp';
+import { spawn as childProcessSpawn } from 'node:child_process'
+import * as fs from 'node:fs'
+import { mkdtempSync } from 'node:fs'
+import * as os from 'node:os'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import createDebug from 'debug'
+import { findActualExecutable, spawnPromise } from 'spawn-rx'
+import pkgJson from '../../package.json' with { type: 'json' }
+import JobInstallerBase from '../job-installer-base'
+import { compileTemplate } from '../template'
 
-import JobInstallerBase from '../job-installer-base';
-import {findActualExecutable, spawnPromise, spawnDetachedPromise} from 'spawn-rx';
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const d = createDebug('surf:docker')
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:docker');
-
-// tslint:disable-next-line:no-var-requires
-const template = require('lodash.template');
-
-// tslint:disable-next-line:no-var-requires
-const pkgJson = require(path.join(__dirname, '..', '..', 'package.json'));
-
-// NB: This has to be ../src or else we'll try to get it in ./lib and it'll fail
-const makeDockerfile =
-  template(fs.readFileSync(require.resolve('../../src/job-installers/docker.in'), 'utf8'));
+const makeDockerfile = compileTemplate(fs.readFileSync(path.join(__dirname, 'docker.in'), 'utf8'))
 
 export default class DockerInstaller extends JobInstallerBase {
   getName() {
-    return 'docker';
+    return 'docker'
   }
 
   async getAffinityForJob(_name: string, _command: string) {
-    let docker = findActualExecutable('docker', []).cmd;
+    const docker = findActualExecutable('docker', []).cmd
     if (docker === 'docker') {
-      d(`Can't find docker in PATH, assuming not installed`);
-      return 0;
+      d(`Can't find docker in PATH, assuming not installed`)
+      return 0
     }
 
     // Let local daemons trump docker
-    return 3;
+    return 3
   }
 
   async installJob(name: string, command: string, returnContent?: boolean) {
-    let opts = {
+    const opts = {
       envs: this.getInterestingEnvVars().map((x) => `${x}=${process.env[x]}`),
-      pkgJson, name, command
-    };
-
-    if (returnContent) {
-      return { 'Dockerfile' : makeDockerfile(opts) };
+      pkgJson,
+      name,
+      command,
     }
 
-    let dir = temp.mkdirSync('surf');
-    let target = path.join(dir, 'Dockerfile');
-    fs.writeFileSync(target, makeDockerfile(opts), 'utf8');
+    if (returnContent) {
+      return { Dockerfile: makeDockerfile(opts) }
+    }
 
-    console.error(`Building Docker image, this will take a bit...`);
-    await spawnPromise('docker', ['build', '-t', name, dir]);
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'surf-'))
+    const target = path.join(dir, 'Dockerfile')
+    fs.writeFileSync(target, makeDockerfile(opts), 'utf8')
 
-    spawnDetachedPromise('docker', ['run', name])
-      .catch((e) => console.error(`Failed to execute docker-run! ${e.message}`));
+    console.error(`Building Docker image, this will take a bit...`)
+    await spawnPromise('docker', ['build', '-t', name, dir])
 
-    return { 'README.txt': `Created new docker image: ${name}
+    this.spawnDetachedDockerRun(name)
 
-To start it: docker run ${name}'` };
+    return {
+      'README.txt': `Created new docker image: ${name}
+
+To start it: docker run ${name}'`,
+    }
+  }
+
+  private spawnDetachedDockerRun(name: string) {
+    try {
+      const { cmd, args } = findActualExecutable('docker', ['run', name])
+      const processHandle = childProcessSpawn(cmd, args, {
+        detached: true,
+        stdio: 'ignore',
+      })
+
+      processHandle.unref()
+    } catch (e) {
+      console.error(`Failed to execute docker-run! ${e.message}`)
+    }
   }
 }
