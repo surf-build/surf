@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
+import createDebug from 'debug'
 import { installJob } from '../src/job-installer-api'
 import DockerInstaller from '../src/job-installers/docker'
 import LaunchdInstaller from '../src/job-installers/launchd'
 import SystemdInstaller from '../src/job-installers/systemd'
 import TaskSchedulerInstaller from '../src/job-installers/task-scheduler'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:job-installers')
+const d = createDebug('surf-test:job-installers')
 const sampleName = 'example-csharp'
 const sampleCommand = 'surf-build -r https://github.com/surf-build/example-csharp -- surf-build -n "surf"'
 

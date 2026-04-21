@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { readdir, readFile } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import { Observable, of, Subject, Subscription, throwError, VirtualTimeScheduler } from 'rxjs'
 import { delay, share, tap } from 'rxjs/operators'
 import BuildMonitor from '../src/build-monitor'
 import { subUnsub } from '../src/custom-rx-operators'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:build-monitor')
+const d = createDebug('surf-test:build-monitor')
 
 function getSeenRefs(refs: any[]) {
   return refs.reduce((acc, x) => {

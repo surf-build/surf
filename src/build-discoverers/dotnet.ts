@@ -1,10 +1,10 @@
 import { readdir } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import BuildDiscoverBase from '../build-discover-base'
 import { readdirRecursive, statNoException, uniq } from '../promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-discover-dotnet')
+const d = createDebug('surf:build-discover-dotnet')
 
 export default class DotNetBuildDiscoverer extends BuildDiscoverBase {
   async findSolutionFile(dir = this.rootDir, recurse = true): Promise<string | null> {

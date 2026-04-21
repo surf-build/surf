@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import BuildDiscoverBase from '../build-discover-base'
 import { statNoException } from '../promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-discover-npm')
+const d = createDebug('surf:build-discover-npm')
 
 export default class NpmBuildDiscoverer extends BuildDiscoverBase {
   async getAffinityForRootDir() {

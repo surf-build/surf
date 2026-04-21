@@ -4,7 +4,7 @@ import path from 'node:path'
 const projectRoot = process.cwd()
 const sourceDir = path.join(projectRoot, 'src')
 const outputDir = path.join(projectRoot, 'lib')
-const externalPackages = ['runas', 'yargs']
+const externalPackages = ['runas']
 
 const entrypoints = await collectFiles(sourceDir, (file) => file.endsWith('.ts') && !file.endsWith('.d.ts'))
 const cliEntrypoints = entrypoints.filter((file) => file.endsWith('-cli.ts'))
@@ -16,7 +16,7 @@ await mkdir(outputDir, { recursive: true })
 const result = await Bun.build({
   entrypoints,
   external: externalPackages,
-  format: 'cjs',
+  format: 'esm',
   outdir: outputDir,
   root: sourceDir,
   sourcemap: 'external',

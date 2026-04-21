@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs'
 import * as path from 'node:path'
-import { determineBuildCommands } from '../build-api'
+import createDebug from 'debug'
 import BuildDiscoverBase, { type BuildCommandResult } from '../build-discover-base'
+import { determineBuildCommands } from '../determine-build-commands'
 import { getChangedFiles } from '../git-api'
 import { asyncReduce, statNoException, uniq } from '../promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-discover-monorepo')
+const d = createDebug('surf:build-discover-monorepo')
 
 export interface SurfConfiguration {
   projects: string[]

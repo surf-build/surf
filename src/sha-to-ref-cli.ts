@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-import * as path from 'node:path'
-
+import createDebug from 'debug'
+import yargsFactory from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import pkgJson from '../package.json' with { type: 'json' }
 import { getHeadForRepo, getOriginForRepo } from './git-api'
 import { findPRForCommit, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-publish')
-
-// tslint:disable-next-line:no-var-requires
-const yargs = require('yargs')
+const d = createDebug('surf:surf-publish')
+const yargs = yargsFactory(hideBin(process.argv))
+  .exitProcess(false)
   .usage(`Usage: surf-pr-info http://github.com/some/repo -s some-sha1
 Returns the PR number for a given SHA1
 `)
@@ -29,11 +29,13 @@ GITHUB_ENTERPRISE_URL - the GitHub Enterprise URL to use instead of .com.
 GITHUB_TOKEN - the GitHub (.com or Enterprise) API token to use. Must be provided.
 `)
 
-const argv = yargs.argv
+const argv = yargs.parseSync()
+
+if (argv.help) {
+  process.exit(0)
+}
 
 if (argv.version) {
-  // tslint:disable-next-line:no-var-requires
-  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
   console.log(`Surf ${pkgJson.version}`)
   process.exit(0)
 }

@@ -1,10 +1,10 @@
 import { readdir } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import BuildDiscoverBase from '../build-discover-base'
 import { statNoException } from '../promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-discover-autotools')
+const d = createDebug('surf:build-discover-autotools')
 
 export default class AutotoolsBuildDiscoverer extends BuildDiscoverBase {
   async getAffinityForRootDir() {

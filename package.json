@@ -2,6 +2,7 @@
   "name": "surf-build",
   "version": "2.0.0",
   "description": "The simplest GitHub build server",
+  "type": "module",
   "packageManager": "bun@1.3.12",
   "bin": {
     "surf-run": "./lib/run-on-every-ref-cli.js",

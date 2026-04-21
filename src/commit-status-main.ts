@@ -1,12 +1,18 @@
 #!/usr/bin/env node
 import chalk from 'chalk'
+import createDebug from 'debug'
 import { getOriginForRepo } from './git-api'
 import { fetchAllRefsWithInfo, getCombinedStatusesForCommit, getNwoFromRepoUrl } from './github-api'
 import { asyncMap } from './promise-array'
 
-const d = require('debug')('surf:commit-status-main')
+const d = createDebug('surf:commit-status-main')
 
-export default async function main(theRepo: string, jsonOnly: boolean, help: boolean, showHelp: () => void) {
+export default async function main(
+  theRepo: string | undefined,
+  jsonOnly: boolean | undefined,
+  help: boolean | undefined,
+  showHelp: () => void
+) {
   if (help) {
     showHelp()
     process.exit(0)

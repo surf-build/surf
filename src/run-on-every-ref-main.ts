@@ -1,4 +1,5 @@
 import onDeath from 'death'
+import createDebug from 'debug'
 import { defer, from, lastValueFrom, merge } from 'rxjs'
 import { delay, retry, take } from 'rxjs/operators'
 import BuildMonitor from './build-monitor'
@@ -6,8 +7,7 @@ import { delayFailures } from './custom-rx-operators'
 import { getOriginForRepo } from './git-api'
 import { fetchAllRefsWithInfo, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:run-on-every-ref')
+const d = createDebug('surf:run-on-every-ref')
 
 const DeathPromise = new Promise<number>((_res, rej) => {
   onDeath((sig: number) => rej(new Error(`Signal ${sig} thrown`)))

@@ -1,5 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import { cloneRepo, getGistTempdir, getOriginForRepo } from './git-api'
 import {
   createRelease,
@@ -12,8 +13,7 @@ import {
 } from './github-api'
 import { retryPromise } from './promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-publish')
+const d = createDebug('surf:surf-publish')
 
 async function cloneSurfBuildGist(url: string) {
   const targetDir = getGistTempdir(getIdFromGistUrl(url))

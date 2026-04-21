@@ -1,10 +1,10 @@
 import { stat } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import BuildDiscoverBase, { type BuildCommand } from '../build-discover-base'
 import { mkdirp } from '../recursive-fs'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:build-discover-drivers')
+const d = createDebug('surf:build-discover-drivers')
 
 const possibleScriptPathsWin32 = [
   'script/ci.ps1',

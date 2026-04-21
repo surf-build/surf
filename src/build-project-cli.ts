@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import * as path from 'node:path'
+import createDebug from 'debug'
+import yargsFactory from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import pkgJson from '../package.json' with { type: 'json' }
 import main from './build-project-main'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-build')
-
-// tslint:disable-next-line:no-var-requires
-const yargs = require('yargs')
+const d = createDebug('surf:surf-build')
+const yargs = yargsFactory(hideBin(process.argv))
+  .exitProcess(false)
   .usage(`Usage: surf-build -r http://github.com/some/repo -s SHA1
 Clones a repo from GitHub and builds the given SHA1`)
   .alias('r', 'repo')
@@ -32,11 +33,13 @@ SURF_SHA1 - an alternate way to specify the --sha parameter, provided
 SURF_REPO - an alternate way to specify the --repo parameter, provided
             automatically by surf-client.`)
 
-const argv = yargs.argv
+const argv = yargs.parseSync()
+
+if (argv.help) {
+  process.exit(0)
+}
 
 if (argv.version) {
-  // tslint:disable-next-line:no-var-requires
-  const pkgJson = require(path.join(__dirname, '..', 'package.json'))
   console.log(`Surf ${pkgJson.version}`)
   process.exit(0)
 }

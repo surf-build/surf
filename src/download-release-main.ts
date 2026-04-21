@@ -1,9 +1,9 @@
 import * as path from 'node:path'
-
+import createDebug from 'debug'
 import { downloadReleaseAsset, getNwoFromRepoUrl, getReleaseByTag } from './github-api'
 import { asyncMap, retryPromise } from './promise-array'
 
-const d = require('debug')('surf:surf-publish')
+const d = createDebug('surf:surf-publish')
 
 export default async function main(argv: any, showHelp: () => void) {
   const repo = argv.repo || process.env.SURF_REPO

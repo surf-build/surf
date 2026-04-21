@@ -1,6 +1,7 @@
 import { open } from 'node:fs/promises'
 import * as path from 'node:path'
 import onDeath from 'death'
+import createDebug from 'debug'
 import { lastValueFrom } from 'rxjs'
 import { concatMap, reduce } from 'rxjs/operators'
 import { determineBuildCommands, runAllBuildCommands, uploadBuildArtifacts } from './build-api'
@@ -22,8 +23,7 @@ const DeathPromise = new Promise<number>((_res, rej) => {
   onDeath((sig: number) => rej(new Error(`Signal ${sig} thrown`)))
 })
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:surf-build')
+const d = createDebug('surf:surf-build')
 
 function getRootAppDir() {
   let ret: string

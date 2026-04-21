@@ -1,22 +1,25 @@
-import * as fs from 'node:fs'
-import * as path from 'node:path'
+import createDebug from 'debug'
 import type JobInstallerBase from './job-installer-base'
+import DockerInstaller from './job-installers/docker'
+import LaunchdInstaller from './job-installers/launchd'
+import SystemdInstaller from './job-installers/systemd'
+import TaskSchedulerInstaller from './job-installers/task-scheduler'
 import { asyncReduce } from './promise-array'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf:job-installer-api')
+const d = createDebug('surf:job-installer-api')
+
+const INSTALLER_CLASSES = [
+  DockerInstaller,
+  LaunchdInstaller,
+  SystemdInstaller,
+  TaskSchedulerInstaller,
+] as (new () => JobInstallerBase)[]
 
 export function createJobInstallers() {
-  const discoverClasses = fs.readdirSync(path.join(__dirname, 'job-installers'))
-
-  return discoverClasses
-    .filter((x) => x.match(/\.[jt]s$/i) && !x.match(/\.d\.ts$/i))
-    .map((x) => {
-      const Klass = require(path.join(__dirname, 'job-installers', x)).default
-
-      d(`Found job installer: ${Klass.name}`)
-      return new Klass() as JobInstallerBase
-    })
+  return INSTALLER_CLASSES.map((Klass) => {
+    d(`Found job installer: ${Klass.name}`)
+    return new Klass()
+  })
 }
 
 export async function getDefaultJobInstallerForPlatform(name: string, command: string) {

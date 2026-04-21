@@ -1,9 +1,10 @@
+import createDebug from 'debug'
 import { getAllWorkdirs, getOriginForRepo } from './git-api'
 import { fetchAllRefsWithInfo, getNwoFromRepoUrl, getSanitizedRepoUrl } from './github-api'
 import { asyncMap } from './promise-array'
 import { rimraf } from './recursive-fs'
 
-const d = require('debug')('surf:surf-clean')
+const d = createDebug('surf:surf-clean')
 
 export default async function main(argv: any, showHelp: () => void) {
   if (argv.help) {

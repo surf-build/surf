@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import * as path from 'node:path'
+import createDebug from 'debug'
 import { cloneOrFetchRepo, cloneRepo, fetchRepo, parseGitDiffOutput } from '../src/git-api'
 import { mkdirp, rimraf } from '../src/recursive-fs'
 
-// tslint:disable-next-line:no-var-requires
-const d = require('debug')('surf-test:git-api')
+const d = createDebug('surf-test:git-api')
 
 let count = 0
 

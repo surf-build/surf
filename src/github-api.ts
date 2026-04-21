@@ -1,9 +1,10 @@
 import { createReadStream, createWriteStream, ReadStream, statSync } from 'node:fs'
-import * as path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import createDebug from 'debug'
 import * as mimeTypes from 'mime-types'
 import * as parseLinkHeader from 'parse-link-header'
+import pkg from '../package.json' with { type: 'json' }
 import { asyncMap } from './promise-array'
 
 type CacheEntry<T> = {
@@ -13,8 +14,7 @@ type CacheEntry<T> = {
 
 type GitHubHeaders = Record<string, string>
 
-const pkg = require(path.join(__dirname, '..', 'package.json'))
-const d = require('debug')('surf:github-api')
+const d = createDebug('surf:github-api')
 const githubCache = new Map<string, CacheEntry<GitHubResponse>>()
 const refCache = new Map<string, CacheEntry<any>>()
 const sshRemoteUrl = /^git@(.*):([^.]*)(\.git)?$/i
