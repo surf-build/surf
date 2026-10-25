@@ -184,7 +184,10 @@ async function realMain(argv: any, showHelp: () => void) {
   const repoDir = getRepoCloneDir()
 
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`)
-  const bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir))
+  // Private repos need the token for the very first clone, not just for later
+  // pushes - without it cloneOrFetchRepo only ever sees public repos.
+  const cloneToken = process.env.GITHUB_ENTERPRISE_TOKEN ?? process.env.GITHUB_TOKEN ?? ''
+  const bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir, cloneToken))
 
   sha = await resolveBuildSha(bareRepoDir, repo, sha, showHelp)
   argv.sha = sha

@@ -1,6 +1,6 @@
 {
   "name": "surf-build",
-  "version": "3.0.0",
+  "version": "3.0.3",
   "description": "The simplest GitHub build server",
   "type": "module",
   "packageManager": "bun@1.3.12",
@@ -16,8 +16,8 @@
   },
   "scripts": {
     "build": "bun run scripts/build.mjs",
-    "check": "biome check . && bunx tsgo --noEmit",
-    "format": "biome check --write .",
+    "check": "biome check && bunx tsgo --noEmit",
+    "f": "biome check --write --unsafe",
     "test": "bun test ./test/*.ts",
     "prepublishOnly": "bun run build"
   },
