@@ -66,6 +66,30 @@ export function getHeadForRepo(targetDirname: string) {
   return git(['rev-parse', 'HEAD'], targetDirname)
 }
 
+// `--sha` is documented as a SHA1 but people pass branch and tag names too (and
+// surf-run used to hand us whatever a ref pointed at). Resolve everything to a
+// full commit SHA up front, because that is the only thing the GitHub status API
+// reliably accepts: a bare branch name there is a 404, which is why `-s branch`
+// worked without `-n` and failed with it.
+export async function resolveRefToSha(targetDirname: string, ref: string, token?: string) {
+  const candidates = [ref, `refs/heads/${ref}`, `refs/remotes/origin/${ref}`, `refs/tags/${ref}`]
+
+  for (const candidate of candidates) {
+    try {
+      const ret = await git(['rev-parse', '--verify', `${candidate}^{commit}`], targetDirname, token)
+      if (/^[0-9a-f]{40,64}$/i.test(ret)) return ret
+    } catch (e) {
+      d(`'${candidate}' does not resolve to a commit in ${targetDirname}: ${e.message}`)
+    }
+  }
+
+  throw new Error(`'${ref}' is not a commit, branch, or tag in ${targetDirname}`)
+}
+
+export function getDefaultBranchForRepo(targetDirname: string, token?: string) {
+  return git(['symbolic-ref', '--short', 'HEAD'], targetDirname, token)
+}
+
 export function getOriginForRepo(targetDirname: string) {
   return git(['remote', 'get-url', 'origin'], targetDirname)
 }

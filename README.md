@@ -155,13 +155,15 @@ provided.
 
 Clones a repo from GitHub, checks out the specified commit, and builds the project. If `-n` is specified, a status will be posted back to GitHub. If omitted, the build is only run locally.
 
+`-s` accepts anything git can resolve - a full or abbreviated SHA1, a branch, or a tag - and surf resolves it to a commit before doing anything else, so status posting (`-n`) works the same either way. If `-s` is omitted (and `SURF_SHA1` is unset), surf builds the tip of `main`, falling back to the repo's default branch if it has no `main`.
+
 ```
-Usage: surf-build -r http://github.com/some/repo -s SHA1
-Clones a repo from GitHub and builds the given SHA1
+Usage: surf-build -r http://github.com/some/repo [-s SHA1] [-n name]
+Clones a repo from GitHub and builds the given SHA1, branch, or tag (defaults to main)
 
 Options:
   -r, --repo     The repository to clone
-  -s, --sha      The sha to build
+  -s, --sha      The sha, branch, or tag to build (defaults to main)
   -n, --name     The name to give this build on GitHub
   -v, --version  Print the current version number and exit
 

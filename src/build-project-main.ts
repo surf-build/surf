@@ -9,11 +9,12 @@ import {
   checkoutSha,
   cloneOrFetchRepo,
   cloneRepo,
-  getHeadForRepo,
+  getDefaultBranchForRepo,
   getOriginForRepo,
   getTempdirForRepoUrl,
   getWorkdirForRepoUrl,
   resetOriginUrl,
+  resolveRefToSha,
 } from './git-api'
 import { createGist, findPRForCommit, getNwoFromRepoUrl, getSanitizedRepoUrl, postCommitStatus } from './github-api'
 import { retryPromise } from './promise-array'
@@ -108,6 +109,45 @@ async function configureEnvironmentVariablesForChild(nwo: string, sha: string, n
   }
 }
 
+// `-s` takes a SHA1 but any ref works too; everything is normalized to a full
+// commit SHA here, before anything talks to GitHub. Statuses (posted only when
+// `-n` is given) must be attached to a commit, so a branch name used to work
+// without `-n` and 404 with it.
+async function resolveBuildSha(bareRepoDir: string, repo: string, sha: string | undefined, showHelp: () => void) {
+  if (sha) {
+    try {
+      const ret = await resolveRefToSha(bareRepoDir, sha)
+      if (ret !== sha) d(`Resolved '${sha}' to ${ret}`)
+      return ret
+    } catch (e) {
+      console.error(`Failed to find '${sha}' in ${repo}: ${e.message}`)
+      d(e.stack)
+
+      showHelp()
+      process.exit(-1)
+    }
+  }
+
+  d(`SHA1 not specified, building main`)
+  try {
+    return await resolveRefToSha(bareRepoDir, 'main')
+  } catch (e) {
+    d(`No main branch in ${repo}, falling back to the default branch: ${e.message}`)
+  }
+
+  try {
+    const defaultBranch = await getDefaultBranchForRepo(bareRepoDir)
+    const ret = await resolveRefToSha(bareRepoDir, defaultBranch)
+    d(`Building default branch ${defaultBranch}: ${ret}`)
+    return ret
+  } catch (e) {
+    console.error(`Failed to find the main or default branch for repo ${repo}: ${e.message}`)
+    d(e.stack)
+
+    showHelp()
+    process.exit(-1)
+  }
+}
 async function realMain(argv: any, showHelp: () => void) {
   let sha = argv.sha || process.env.SURF_SHA1
   let repo = argv.repo || process.env.SURF_REPO
@@ -146,32 +186,8 @@ async function realMain(argv: any, showHelp: () => void) {
   d(`Running initial cloneOrFetchRepo: ${repo} => ${repoDir}`)
   const bareRepoDir = await retryPromise(() => cloneOrFetchRepo(repo, repoDir))
 
-  if (!sha) {
-    d(`SHA1 not specified, trying to retrieve SHA1 for current repo in directory`)
-    try {
-      sha = await getHeadForRepo(process.cwd())
-      argv.sha = sha
-      d(`Current checkout is at ${sha}`)
-    } catch (e) {
-      console.error(`Failed to find the commit for cwd ${process.cwd()}: ${e.message}`)
-      d(e.stack)
-    }
-  }
-
-  if (!sha) {
-    d(`SHA1 not specified, trying to retrieve default branch`)
-    try {
-      sha = await getHeadForRepo(bareRepoDir)
-      argv.sha = sha
-      d(`Default branch is ${sha}`)
-    } catch (e) {
-      console.error(`Failed to find the current commit for repo ${repo}: ${e.message}`)
-      d(e.stack)
-
-      showHelp()
-      process.exit(-1)
-    }
-  }
+  sha = await resolveBuildSha(bareRepoDir, repo, sha, showHelp)
+  argv.sha = sha
 
   const nwo = getNwoFromRepoUrl(repo)
   await configureEnvironmentVariablesForChild(nwo, sha, name, repo)

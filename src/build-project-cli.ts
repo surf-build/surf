@@ -9,12 +9,12 @@ import main from './build-project-main'
 const d = createDebug('surf:surf-build')
 const yargs = yargsFactory(hideBin(process.argv))
   .exitProcess(false)
-  .usage(`Usage: surf-build -r http://github.com/some/repo -s SHA1
-Clones a repo from GitHub and builds the given SHA1`)
+  .usage(`Usage: surf-build -r http://github.com/some/repo [-s SHA1] [-n name]
+Clones a repo from GitHub and builds the given SHA1, branch, or tag (defaults to main)`)
   .alias('r', 'repo')
   .describe('repo', 'The repository to clone')
   .alias('s', 'sha')
-  .describe('sha', 'The sha to build')
+  .describe('sha', 'The sha, branch, or tag to build (defaults to main)')
   .alias('n', 'name')
   .describe('name', 'The name to give this build on GitHub')
   .alias('v', 'version')
