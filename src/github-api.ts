@@ -311,7 +311,7 @@ export function downloadReleaseAsset(nwo: string, assetId: string, targetFile: s
 }
 
 export async function findPRForCommit(nwo: string, sha: string, token?: string) {
-  const result = (await gitHub(apiUrl(`search/issues?q=${sha}`), token)).result
+  const result = (await gitHub(apiUrl(`search/issues?q=${sha}+is:pr`), token)).result
   const item = result.items.find((entry: { pull_request?: { url: string } }) => {
     return Boolean(entry.pull_request?.url.includes(`/${nwo}/`))
   })

@@ -244,6 +244,10 @@ async function realMain(argv: any, showHelp: () => void) {
         uploadBuildArtifacts(gistInfo.result.id, gistInfo.result.git_pull_url, artifactDirs || [], buildLog, token)
       )
     } catch (e) {
+      // Don't report success while pointing the check at a gist that is
+      // missing the artifacts - that is exactly how the previous failure
+      // turned into a green check and exit code 0.
+      buildPassed = false
       console.error(`Failed to upload build artifacts: ${e.message}`)
       d(e.stack)
     }

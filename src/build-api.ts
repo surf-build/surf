@@ -3,7 +3,7 @@ import { concat } from 'rxjs'
 import { share } from 'rxjs/operators'
 import { spawn } from 'spawn-rx'
 import type { BuildCommand } from './build-discover-base'
-import { addFilesToGist, getGistTempdir, pushGistRepoToMaster } from './git-api'
+import { addFilesToGist, commitGistChanges, getGistTempdir, pushGistRepoToMaster } from './git-api'
 
 export { createBuildDiscovers } from './build-discover-registry'
 export { determineBuildCommands } from './determine-build-commands'
@@ -45,12 +45,16 @@ export async function uploadBuildArtifacts(
 ) {
   const targetDir = getGistTempdir(gistId)
 
-  // Add the build log even though it isn't an artifact
-  await addFilesToGist(gistCloneUrl, targetDir, buildLog, token)
+  // Add the build log even though it isn't an artifact. Every add used to
+  // commit on its own, which produced one empty commit per artifact directory,
+  // so stage everything first and commit once.
+  await addFilesToGist(gistCloneUrl, targetDir, buildLog, token, false)
 
   for (const artifactDir of artifactDirs) {
-    await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token)
+    await addFilesToGist(gistCloneUrl, targetDir, artifactDir, token, false)
   }
+
+  await commitGistChanges(targetDir, token)
 
   await pushGistRepoToMaster(targetDir, token)
   return targetDir

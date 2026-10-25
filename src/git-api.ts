@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto'
 import { cpSync, statSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import * as path from 'node:path'
 import createDebug from 'debug'
 import { findActualExecutable, spawnPromise } from 'spawn-rx'
@@ -10,20 +11,54 @@ import { mkdirp, mkdirpSync, rimraf } from './recursive-fs'
 
 const d = createDebug('surf:git-api')
 
-let askPassPath: string
-export async function git(args: string[], cwd: string, token?: string): Promise<string> {
-  const ourToken = token || process.env.GITHUB_TOKEN
-  if (!askPassPath) {
-    askPassPath = findActualExecutable('git-askpass-env', []).cmd
+let askPassPath: string | undefined
+
+// GIT_ASKPASS has to be an executable we can actually run: resolving through
+// PATH only works when the global install prepended its node_modules dir, so a
+// local build/src run ends up with "cannot run git-askpass-env".
+function resolveAskPassPath(): string | undefined {
+  if (askPassPath) return askPassPath
+
+  try {
+    askPassPath = createRequire(import.meta.url).resolve('git-askpass-env/lib/index.js')
+    return askPassPath
+  } catch (e) {
+    d(`Failed to resolve git-askpass-env, falling back to PATH: ${(e as Error).message}`)
   }
 
+  try {
+    askPassPath = findActualExecutable('git-askpass-env', []).cmd
+  } catch (e) {
+    d(`Could not find git-askpass-env at all: ${(e as Error).message}`)
+  }
+
+  return askPassPath
+}
+
+export async function git(args: string[], cwd: string, token?: string): Promise<string> {
+  const ourToken = token || process.env.GITHUB_TOKEN
+  const askPass = resolveAskPassPath()
+
   d(`Actually using token! ${ourToken}`)
-  process.env.GIT_ASKPASS = askPassPath
+  if (askPass) {
+    process.env.GIT_ASKPASS = askPass
+    d(`Using askpass helper: ${askPass}`)
+  } else {
+    delete process.env.GIT_ASKPASS
+  }
+
   process.env.GIT_ASKPASS_USER = ourToken
   process.env.GIT_ASKPASS_PASSWORD = 'x-oauth-basic'
 
+  // Any credential.helper configured on the machine (gh, manager, osxkeychain,
+  // store) is consulted *before* GIT_ASKPASS, so the token above would be
+  // silently ignored and git would push as whatever account the helper knows.
+  // Wipe the helper list per invocation so the token we were given is the one
+  // git actually uses.
+  const finalArgs = ourToken ? ['-c', 'credential.helper=', ...args] : args
+
   d(`Running command: git ${args.join(' ')} in ${cwd}`)
-  const output = await spawnPromise('git', args, { cwd })
+  const output = await spawnPromise('git', finalArgs, { cwd })
   return output.trim()
 }
 
@@ -206,7 +241,8 @@ export async function addFilesToGist(
   repoUrl: string,
   targetDirname: string,
   artifactDirOrFile: string,
-  token?: string
+  token?: string,
+  commit = true
 ) {
   if (!(await statNoException(targetDirname))) {
     d(`${targetDirname} doesn't exist, cloning it`)
@@ -216,7 +252,7 @@ export async function addFilesToGist(
 
   const statInfo = await stat(artifactDirOrFile)
   if (statInfo.isFile()) {
-    d(`Adding artifact directly as file: ${artifactDirOrFile}}`)
+    d(`Adding artifact directly as file: ${artifactDirOrFile}`)
     const tgt = path.join(targetDirname, path.basename(artifactDirOrFile))
     cpSync(artifactDirOrFile, tgt)
 
@@ -235,17 +271,28 @@ export async function addFilesToGist(
     }
   }
 
-  d(`Writing commit to gist`)
-  await git(
-    ['commit', '--author="Surf Build Server <none@example.com>"', '--allow-empty', '-m', '"Add files"'],
-    targetDirname
-  )
+  if (commit) {
+    await commitGistChanges(targetDirname, token)
+  }
 
   return targetDirname
 }
 
+export async function commitGistChanges(targetDirname: string, token?: string) {
+  // Quoting inside the args is wrong for spawn (there is no shell to strip it),
+  // so pass the author value verbatim.
+  d(`Writing commit to gist`)
+  await git(
+    ['commit', '--author=Surf Build Server <none@example.com>', '--allow-empty', '-m', 'Add files'],
+    targetDirname,
+    token
+  )
+}
+
 export async function pushGistRepoToMaster(targetDirname: string, token: string) {
-  await git(['push', 'origin', 'main'], targetDirname, token)
+  // Freshly created gists are on `main` today but used `master` historically;
+  // push the branch we actually cloned instead of guessing.
+  await git(['push', 'origin', 'HEAD'], targetDirname, token)
 }
 
 function getSortableTimestamp() {

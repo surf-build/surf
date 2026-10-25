@@ -37,6 +37,7 @@
   "homepage": "https://github.com/surf-build/surf",
   "dependencies": {
     "chalk": "^5.6.2",
+    "death": "^1.1.0",
     "debug": "^4.4.3",
     "git-askpass-env": "^0.0.3",
     "lodash.template": "^4.18.1",
