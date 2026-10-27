@@ -98,7 +98,7 @@ surf-run
 
 Surf is great at running builds to verify your PRs, which show up here on the GitHub UI:
 
-![](http://cl.ly/0Q0S0A233I0u/Fix_miscellaneous_Windows_bugs_by_paulcbetts__Pull_Request_7__surf-buildsurf_2016-01-27_21-51-35.png)
+<img width="1728" height="608" alt="image" src="https://github.com/user-attachments/assets/95f6c3ed-5eaf-498f-8cfb-e44358a83883" />
 
 To set this up, all we need to do is pass `-n` to `surf-build` - here's an example with PowerShell in Windows: 
 
